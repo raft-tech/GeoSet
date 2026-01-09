@@ -26,18 +26,25 @@ import { MetricLegend, RGBAColor } from '../utils/colors';
 import { rgbaArrayToCssString } from '../utils/colorsFallback';
 import { Swatch } from '../utils/legendSwatch';
 
-const StyledLegend = styled.div`
-  ${({ theme }) => `
+// MapControls: top 12px + height 32px + padding 12px = 56px from top
+const MAP_CONTROLS_OFFSET = 56;
+
+const StyledLegend = styled.div<{ $isTopLeft?: boolean }>`
+  ${({ theme, $isTopLeft }) => `
     font-size: ${theme.fontSize}px;
     position: absolute;
     background: ${theme.colorBgElevated};
     box-shadow: 0 0 ${theme.sizeUnit}px ${theme.colorBorderSecondary};
-    margin: ${theme.sizeUnit * 6}px;
+    margin: ${theme.sizeUnit * 3}px;
     padding: ${theme.sizeUnit * 4}px ${theme.sizeUnit * 5}px;
     outline: none;
-    overflow-y: scroll;
-    max-height: 200px;
+    overflow-y: auto;
     max-width: 220px;
+    border-radius: 6px;
+    z-index: 10;
+
+    /* For top-left position (same corner as MapControls), limit max-height to avoid overlap */
+    max-height: ${$isTopLeft ? `calc(100% - ${MAP_CONTROLS_OFFSET + 24}px)` : 'calc(100% - 24px)'};
 
     & ul {
       list-style: none;
@@ -205,16 +212,28 @@ const Legend = ({
     );
   });
 
-  const vertical = position?.charAt(0) === 't' ? 'top' : 'bottom';
-  const horizontal = position?.charAt(1) === 'r' ? 'right' : 'left';
-  const style = {
-    position: 'absolute' as const,
-    [vertical]: '0px',
+  const isTop = position?.charAt(0) === 't';
+  const isLeft = position?.charAt(1) === 'l';
+  const vertical = isTop ? 'top' : 'bottom';
+  const horizontal = isLeft ? 'left' : 'right';
+
+  // Check if legend is in top-left corner (same as MapControls)
+  const isTopLeft = isTop && isLeft;
+
+  const style: React.CSSProperties = {
+    position: 'absolute',
     [horizontal]: '10px',
   };
 
+  // For top-left, offset below MapControls; otherwise use standard positioning
+  if (isTopLeft) {
+    style.top = `${MAP_CONTROLS_OFFSET}px`;
+  } else {
+    style[vertical] = '0px';
+  }
+
   return (
-    <StyledLegend className="dupa" style={style}>
+    <StyledLegend $isTopLeft={isTopLeft} style={style}>
       {metricLegendContent}
       <ul>{categories}</ul>
     </StyledLegend>

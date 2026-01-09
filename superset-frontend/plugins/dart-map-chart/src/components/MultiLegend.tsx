@@ -37,15 +37,18 @@ export type MultiLegendProps = {
   onToggleLayerVisibility?: (sliceId: string) => void;
 };
 
+// Control margin for legend positioning
+const LEGEND_MARGIN = 12;
+
 const LegendContainer = styled.div`
   position: absolute;
-  bottom: 12px;
-  left: 12px;
-  top: 12px;
+  top: ${LEGEND_MARGIN}px;
+  left: ${LEGEND_MARGIN}px;
+  bottom: ${LEGEND_MARGIN}px;
   z-index: 20;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
+  justify-content: flex-start;
   pointer-events: none;
 `;
 

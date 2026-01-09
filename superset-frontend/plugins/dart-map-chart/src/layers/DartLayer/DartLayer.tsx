@@ -56,6 +56,7 @@ import TooltipRow from '../../TooltipRow';
 import { calculateAutozoomViewport, Viewport } from '../../utils/fitViewport';
 import { TooltipProps } from '../../components/Tooltip';
 import Legend from '../../components/Legend';
+import MapControls from '../../components/MapControls';
 import { GeoJsonFeature } from '../../types';
 import { useDebouncedValue } from '../../utils/hooks';
 import { normalizeRGBA } from '../../utils/colorsFallback';
@@ -776,6 +777,19 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
     [categories],
   );
 
+  // Map control handlers
+  const handleZoomIn = useCallback(() => {
+    containerRef.current?.zoomIn();
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    containerRef.current?.zoomOut();
+  }, []);
+
+  const handleResetView = useCallback(() => {
+    containerRef.current?.resetView();
+  }, []);
+
   const viewport: Viewport = useMemo(() => {
     if (!formData.autozoom || !payload?.data?.features?.length) {
       return props.viewport;
@@ -899,6 +913,7 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
         ref={containerRef}
         mapboxApiAccessToken={effectiveMapboxKey || 'no-token'}
         viewport={viewport}
+        initialViewport={viewport}
         layerStates={layerState ? [layerState] : []}
         mapStyle={mapStyle || formData.mapbox_style}
         setControlValue={setControlValue}
@@ -915,6 +930,11 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
         toggleCategory={toggleCategory}
         icon={propVisualConfig?.pointType}
         geometryType={formData.geoJsonLayer}
+      />
+      <MapControls
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
+        onResetView={handleResetView}
       />
       {limitReached && (
         <LimitWarning>

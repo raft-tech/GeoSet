@@ -45,6 +45,7 @@ import { LayerState } from '../types';
 import buildDartMapLayerQuery from '../buildQuery';
 import transformDartMapLayerProps from '../transformProps';
 import MultiLegend, { LegendGroup } from '../components/MultiLegend';
+import MapControls from '../components/MapControls';
 import { CategoryState, MetricLegend, RGBAColor } from '../utils/colors';
 import { getGeometryType } from '../utils';
 import { fetchMapboxApiKey, getCachedMapboxApiKey } from '../utils/mapboxApi';
@@ -482,6 +483,19 @@ const DeckMulti = (props: DeckMultiProps) => {
     );
   }, [sortedLayers, props.viewport, width, height]);
 
+  // Map control handlers - must be defined before any conditional returns
+  const handleZoomIn = useCallback(() => {
+    containerRef.current?.zoomIn();
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    containerRef.current?.zoomOut();
+  }, []);
+
+  const handleResetView = useCallback(() => {
+    containerRef.current?.resetView();
+  }, []);
+
   // Show loading state until slices data is fetched and layers are processed
   const hasChartsToLoad = normalizedDeckSlices.length > 0;
   const isLoading = hasChartsToLoad && subSlicesLayers.length === 0;
@@ -507,11 +521,12 @@ const DeckMulti = (props: DeckMultiProps) => {
   }
 
   return (
-    <div>
+    <div style={{ position: 'relative', width, height, overflow: 'hidden' }}>
       <DeckGLContainerStyledWrapper
         ref={containerRef}
         mapboxApiAccessToken={effectiveMapboxKey || 'no-token'}
         viewport={viewport}
+        initialViewport={viewport}
         layerStates={layerStatesWithVisibility}
         mapStyle={mapStyle}
         setControlValue={setControlValue}
@@ -522,6 +537,12 @@ const DeckMulti = (props: DeckMultiProps) => {
         legendsBySlice={legendsBySlice}
         layerVisibility={layerVisibility}
         onToggleLayerVisibility={handleToggleLayerVisibility}
+      />
+      <MapControls
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
+        onResetView={handleResetView}
+        position="top-right"
       />
     </div>
   );

@@ -44,6 +44,7 @@ const TICK = 250; // milliseconds
 
 export type DeckGLContainerProps = {
   viewport: Viewport;
+  initialViewport?: Viewport;
   setControlValue?: (control: string, value: JsonValue) => void;
   mapStyle?: string;
   mapboxApiAccessToken: string;
@@ -55,6 +56,11 @@ export type DeckGLContainerProps = {
 
 export const StaticMapStyledWrapper = styled(StaticMap)`
   .mapboxgl-ctrl-logo {
+    display: none !important;
+  }
+
+  /* Hide the collapsed attribution button (non-functional "i" icon) */
+  .mapboxgl-ctrl-attrib.mapboxgl-compact {
     display: none !important;
   }
 `;
@@ -105,7 +111,46 @@ export const DeckGLContainer = memo(
       }).filter(Boolean);
     });
 
-    useImperativeHandle(ref, () => ({ setTooltip }), []);
+    // Store the initial viewport for reset functionality
+    const initialViewportRef = useRef<Viewport>(
+      props.initialViewport ?? props.viewport,
+    );
+
+    // Update initial viewport ref when initialViewport prop changes
+    useEffect(() => {
+      if (props.initialViewport) {
+        initialViewportRef.current = props.initialViewport;
+      }
+    }, [props.initialViewport]);
+
+    const ZOOM_INCREMENT = 0.5;
+
+    const zoomIn = useCallback(() => {
+      setViewState(prev => ({
+        ...prev,
+        zoom: Math.min((prev.zoom ?? 1) + ZOOM_INCREMENT, 22),
+      }));
+      setLastUpdate(Date.now());
+    }, []);
+
+    const zoomOut = useCallback(() => {
+      setViewState(prev => ({
+        ...prev,
+        zoom: Math.max((prev.zoom ?? 1) - ZOOM_INCREMENT, 0),
+      }));
+      setLastUpdate(Date.now());
+    }, []);
+
+    const resetView = useCallback(() => {
+      setViewState(initialViewportRef.current);
+      setLastUpdate(Date.now());
+    }, []);
+
+    useImperativeHandle(
+      ref,
+      () => ({ setTooltip, zoomIn, zoomOut, resetView }),
+      [zoomIn, zoomOut, resetView],
+    );
 
     const tick = useCallback(() => {
       // Rate limiting updating viewport controls as it triggers lots of renders
@@ -202,7 +247,7 @@ export const DeckGLContainer = memo(
         maxWidth: 120,
         unit: 'imperial',
       });
-      map.addControl(scaleControl, 'top-right');
+      map.addControl(scaleControl, 'bottom-right');
 
       const updateLayerVisibility = () => {
         const currZoom = map.getZoom();
@@ -284,4 +329,7 @@ export const DeckGLContainerStyledWrapper = styled(DeckGLContainer)`
 
 export type DeckGLContainerHandle = typeof DeckGLContainer & {
   setTooltip: (tooltip: ReactNode) => void;
+  zoomIn: () => void;
+  zoomOut: () => void;
+  resetView: () => void;
 };
