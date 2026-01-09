@@ -24,6 +24,11 @@ if [ "$DEV_MODE" == "true" ]; then
       echo "Reinstalling the app in editable mode"
       uv pip install -e .
     fi
+
+    # In dev mode, ensure the static assets directory exists
+    # The manifest will be populated from the mounted volume by docker-compose
+    echo "Ensuring static assets directory exists for dev mode"
+    mkdir -p /app/superset/static/assets
 fi
 REQUIREMENTS_LOCAL="/app/docker/requirements-local.txt"
 PORT=${PORT:-8088}
@@ -50,11 +55,7 @@ fi
 #
 if [ -f "${REQUIREMENTS_LOCAL}" ]; then
   echo "Installing local overrides at ${REQUIREMENTS_LOCAL}"
-  if command -v uv > /dev/null 2>&1; then
-    uv pip install --no-cache-dir -r "${REQUIREMENTS_LOCAL}"
-  else
-    pip install --no-cache-dir -r "${REQUIREMENTS_LOCAL}"
-  fi
+  uv pip install --no-cache-dir -r "${REQUIREMENTS_LOCAL}"
 else
   echo "Skipping local overrides"
 fi

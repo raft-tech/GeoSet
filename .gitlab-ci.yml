@@ -1,0 +1,43 @@
+variables:
+   # update the sprint number at the start of each sprint
+  SPRINT_NUMBER: "2"
+  # increment with each merge to main and reset to 0 at the start of each sprint
+  VALUE_INCREMENT: "2"
+
+  CODE_DIRECTORY: ./
+  DOCKER_FILE: Dockerfile
+
+default:
+  tags:
+    - live-dart-development
+
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      variables:
+        VERSION_TAG: "$SPRINT_NUMBER.$VALUE_INCREMENT"
+        FULL_IMAGE_NAME: "$CI_REGISTRY/$CI_PROJECT_PATH:$SPRINT_NUMBER.$VALUE_INCREMENT"
+    - when: always # Default tag and image
+      variables:
+        VERSION_TAG: "$CI_PIPELINE_ID-dev"
+        FULL_IMAGE_NAME: "$CI_REGISTRY/$CI_PROJECT_PATH:$CI_PIPELINE_ID"
+
+stages:
+  - build
+  - security-test
+  - security-scan
+  - testing-jobs
+
+Build Image and Push to Registry:
+  image:
+    name: quay.io/buildah/stable:v1.35.3
+  stage: build
+  needs: []
+  script:
+    - echo "$CI_REGISTRY_PASSWORD" | buildah login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
+    - export STORAGE_DRIVER=vfs
+    - sed -i "s/0.0.0-dev/$VERSION_TAG/" ./superset-frontend/package.json ./superset-frontend/package-lock.json
+    - buildah build -t $FULL_IMAGE_NAME --platform linux/amd64 --target final .
+    - buildah push $FULL_IMAGE_NAME
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_COMMIT_BRANCH == "main"'

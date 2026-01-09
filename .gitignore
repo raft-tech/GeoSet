@@ -31,12 +31,12 @@ cover
 .DS_Store
 .eggs
 .env
+.env.api
 .envrc
 .idea
 .mypy_cache
 .python-version
 .tox
-.vscode
 _build
 _images
 _modules
@@ -92,7 +92,6 @@ scripts/*.zip
 # IntelliJ
 *.iml
 venv
-.venv
 @eaDir/
 
 # PyCharm
@@ -118,7 +117,7 @@ superset/translations/**/messages.json
 superset/translations/**/messages.mo
 
 docker/requirements-local.txt
-
+docker/.env
 cache/
 docker/*local*
 
@@ -127,10 +126,11 @@ docker/*local*
 # Jest test report
 test-report.html
 superset/static/stats/statistics.html
-
-# LLM-related
-CLAUDE.local.md
 .aider*
-.claude_rc*
-.env.local
-PROJECT.md
+
+# miscellaneous scratch files
+scratch/
+
+# some VS Code files
+.vscode/launch.json
+.vscode/tasks.json

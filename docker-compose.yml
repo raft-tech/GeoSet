@@ -20,9 +20,6 @@
 # If you choose to use this type of deployment make sure to
 # create you own docker environment file (docker/.env) with your own
 # unique random secure passwords and SECRET_KEY.
-#
-# For verbose logging during development:
-# - Set SUPERSET_LOG_LEVEL=debug in docker/.env-local for detailed Superset logs
 # -----------------------------------------------------------------------
 x-superset-user: &superset-user root
 x-superset-volumes: &superset-volumes
@@ -32,24 +29,17 @@ x-superset-volumes: &superset-volumes
   - ./superset-frontend:/app/superset-frontend
   - superset_home:/app/superset_home
   - ./tests:/app/tests
+
 x-common-build: &common-build
   context: .
-  target: ${SUPERSET_BUILD_TARGET:-dev} # can use `dev` (default) or `lean`
-  cache_from:
-    - apache/superset-cache:3.10-slim-bookworm
+  target: final
   args:
-    DEV_MODE: "true"
     INCLUDE_CHROMIUM: ${INCLUDE_CHROMIUM:-false}
     INCLUDE_FIREFOX: ${INCLUDE_FIREFOX:-false}
     BUILD_TRANSLATIONS: ${BUILD_TRANSLATIONS:-false}
 
 services:
   nginx:
-    env_file:
-      - path: docker/.env # default
-        required: true
-      - path: docker/.env-local # optional override
-        required: false
     image: nginx:latest
     container_name: superset_nginx
     restart: unless-stopped
@@ -59,8 +49,6 @@ services:
       - "host.docker.internal:host-gateway"
     volumes:
       - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./docker/nginx/templates:/etc/nginx/templates:ro
-
   redis:
     image: redis:7
     container_name: superset_cache
@@ -107,6 +95,9 @@ services:
       superset-init:
         condition: service_completed_successfully
     volumes: *superset-volumes
+    environment:
+      CYPRESS_CONFIG: "${CYPRESS_CONFIG:-}"
+      SUPERSET_LOG_LEVEL: "${SUPERSET_LOG_LEVEL:-info}"
 
   superset-websocket:
     container_name: superset_websocket
@@ -158,6 +149,10 @@ services:
         condition: service_started
     user: *superset-user
     volumes: *superset-volumes
+    environment:
+      CYPRESS_CONFIG: "${CYPRESS_CONFIG:-}"
+      SUPERSET_LOAD_EXAMPLES: "${SUPERSET_LOAD_EXAMPLES:-yes}"
+      SUPERSET_LOG_LEVEL: "${SUPERSET_LOG_LEVEL:-info}"
     healthcheck:
       disable: true
 
@@ -202,6 +197,8 @@ services:
         required: false
     environment:
       CELERYD_CONCURRENCY: 2
+      CYPRESS_CONFIG: "${CYPRESS_CONFIG:-}"
+      SUPERSET_LOG_LEVEL: "${SUPERSET_LOG_LEVEL:-info}"
     restart: unless-stopped
     depends_on:
       superset-init:
@@ -233,6 +230,9 @@ services:
     volumes: *superset-volumes
     healthcheck:
       disable: true
+    environment:
+      CYPRESS_CONFIG: "${CYPRESS_CONFIG:-}"
+      SUPERSET_LOG_LEVEL: "${SUPERSET_LOG_LEVEL:-info}"
 
   superset-tests-worker:
     build:
@@ -253,6 +253,7 @@ services:
       REDIS_RESULTS_DB: 3
       REDIS_HOST: localhost
       CELERYD_CONCURRENCY: 8
+      SUPERSET_LOG_LEVEL: "${SUPERSET_LOG_LEVEL:-info}"
     network_mode: host
     depends_on:
       superset-init:

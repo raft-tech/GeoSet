@@ -1,0 +1,13 @@
+{
+  "globalColoring": {
+    "fillColor": [40, 147, 179, 255],
+    "strokeColor": [0, 0, 0, 255],
+    "strokeWidth": 2,
+    "icon_type": "circle",
+    "lineStyle": "solid", 
+    "fillPattern": "solid"
+  },
+  "legend": {
+    "name": "Water Coverage For US States"
+  }
+}

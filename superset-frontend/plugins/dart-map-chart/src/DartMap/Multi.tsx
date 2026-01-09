@@ -1,0 +1,530 @@
+/* eslint-disable react/jsx-handler-names */
+/* eslint-disable react/no-access-state-in-setstate */
+/* eslint-disable camelcase */
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { isEqual } from 'lodash';
+import {
+  Datasource,
+  HandlerFunction,
+  JsonObject,
+  JsonValue,
+  QueryFormData,
+  SupersetClient,
+  usePrevious,
+} from '@superset-ui/core';
+
+import {
+  DeckGLContainerHandle,
+  DeckGLContainerStyledWrapper,
+} from '../DeckGLContainer';
+import {
+  getLayer as getDartMapLayer,
+  getLayerState as layerStateGenerator,
+} from '../layers/DartLayer/DartLayer';
+import { calculateAutozoomViewport, Viewport } from '../utils/fitViewport';
+import { TooltipProps } from '../components/Tooltip';
+import { LayerState } from '../types';
+import buildDartMapLayerQuery from '../buildQuery';
+import transformDartMapLayerProps from '../transformProps';
+import MultiLegend, { LegendGroup } from '../components/MultiLegend';
+import { CategoryState, MetricLegend, RGBAColor } from '../utils/colors';
+import { getGeometryType } from '../utils';
+import { fetchMapboxApiKey, getCachedMapboxApiKey } from '../utils/mapboxApi';
+import { multiChartMigration } from '../utils/migrationApi';
+
+// Utility to convert snake_case or camelCase to Title Case
+const toTitleCase = (str: string) =>
+  str
+    .replace(/_/g, ' ')
+    .replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1));
+
+// Per-layer autozoom config
+interface DeckSliceConfig {
+  sliceId: number;
+  autozoom: boolean;
+}
+
+// Normalize deck slices (handle legacy number[] format)
+const normalizeDeckSlices = (
+  deckSlices: (DeckSliceConfig | number)[] | undefined,
+): DeckSliceConfig[] =>
+  deckSlices?.map(item =>
+    typeof item === 'number' ? { sliceId: item, autozoom: true } : item,
+  ) ?? [];
+
+export type DeckMultiProps = {
+  formData: QueryFormData;
+  payload: JsonObject;
+  setControlValue: (control: string, value: JsonValue) => void;
+  mapboxApiKey: string;
+  mapStyle: string;
+  viewport: Viewport;
+  onAddFilter: HandlerFunction;
+  height: number;
+  width: number;
+  datasource: Datasource;
+  onSelect: () => void;
+};
+
+type SubsliceLayerEntry = {
+  sliceId: number;
+  layerState: LayerState;
+  legendGroup: LegendGroup;
+  features: JsonObject[];
+  autozoom: boolean;
+};
+
+const DeckMulti = (props: DeckMultiProps) => {
+  const containerRef = useRef<DeckGLContainerHandle>(null);
+
+  const [subSlicesLayers, setSubSlicesLayers] = useState<SubsliceLayerEntry[]>(
+    [],
+  );
+  const [slicesData, setSlicesData] = useState<JsonObject[] | null>(null);
+  const [layerVisibility, setLayerVisibility] = useState<
+    Record<string, boolean>
+  >({});
+  const setTooltip = useCallback((tooltip: TooltipProps['tooltip']) => {
+    const { current } = containerRef;
+    if (current) {
+      current.setTooltip(tooltip);
+    }
+  }, []);
+  const { mapboxApiKey, mapStyle } = props;
+
+  // Fetch Mapbox API key from backend and update when available
+  // Use cached key for initial state (may already be available from pre-fetch)
+  const [effectiveMapboxKey, setEffectiveMapboxKey] = useState(
+    getCachedMapboxApiKey() ||
+      props.formData.mapboxApiKey ||
+      mapboxApiKey ||
+      '',
+  );
+  useEffect(() => {
+    // If we already have a valid key from props, use it
+    if (mapboxApiKey && mapboxApiKey !== '') {
+      setEffectiveMapboxKey(mapboxApiKey);
+      return;
+    }
+    // Otherwise fetch from API
+    fetchMapboxApiKey().then(key => {
+      if (key) {
+        setEffectiveMapboxKey(key);
+      }
+    });
+  }, [mapboxApiKey, props.formData.mapboxApiKey]);
+
+  // Normalize deck slices (handle legacy number[] format)
+  const normalizedDeckSlices = useMemo(
+    () => normalizeDeckSlices(props.formData.deckSlices),
+    [props.formData.deckSlices],
+  );
+
+  // Fetch slice metadata when deckSlices changes and payload doesn't have slices
+  useEffect(() => {
+    const { payload } = props;
+
+    // If payload already has slices (legacy mode), use them
+    if (payload?.data?.slices) {
+      setSlicesData(payload.data.slices);
+      return;
+    }
+
+    // Otherwise, fetch slice metadata from API
+    if (normalizedDeckSlices.length === 0) {
+      setSlicesData([]);
+      return;
+    }
+
+    const sliceIds = normalizedDeckSlices.map(s => s.sliceId);
+
+    // Fetch each slice's metadata
+    Promise.all(
+      sliceIds.map((sliceId: number) =>
+        SupersetClient.get({ endpoint: `/api/v1/chart/${sliceId}` })
+          .then(({ json }: { json: JsonObject }) => {
+            const result = json?.result || {};
+            return {
+              slice_id: sliceId,
+              slice_name: result.slice_name,
+              form_data: result.params ? JSON.parse(result.params) : {},
+              datasource: result.datasource_id
+                ? `${result.datasource_id}__${result.datasource_type}`
+                : null,
+            };
+          })
+          .catch(() => null),
+      ),
+    ).then(slices => {
+      const validSlices = slices.filter(s => s !== null) as JsonObject[];
+      setSlicesData(validSlices);
+    });
+  }, [normalizedDeckSlices, props, props.payload.data.slices]);
+
+  const loadLayers = useCallback(
+    (
+      formData: QueryFormData,
+      slices: JsonObject[],
+      deckSlicesConfig: DeckSliceConfig[],
+    ) => {
+      setSubSlicesLayers([]);
+
+      if (!slices || slices.length === 0) {
+        return;
+      }
+
+      Promise.all(
+        slices.map((subslice: { slice_id: number } & JsonObject) => {
+          // Get autozoom setting for this slice from the config
+          const sliceConfig = deckSlicesConfig.find(
+            c => c.sliceId === subslice.slice_id,
+          );
+          const sliceAutozoom = sliceConfig?.autozoom ?? true;
+          let copyFormData = {
+            ...subslice.form_data,
+          };
+          if (formData.extraFormData) {
+            copyFormData = {
+              ...copyFormData,
+              extra_form_data: formData.extraFormData,
+            };
+          }
+
+          // Migrate form_data if needed, then build query and fetch data
+          return multiChartMigration(copyFormData)
+            .then(migratedFormData => {
+              const subsliceCopy = {
+                ...subslice,
+                form_data: migratedFormData as QueryFormData,
+              };
+
+              const queryContext = buildDartMapLayerQuery(
+                subsliceCopy.form_data,
+              );
+
+              return SupersetClient.post({
+                endpoint: '/api/v1/chart/data',
+                jsonPayload: { ...queryContext },
+              }).then(({ json }: { json: JsonObject }) => {
+                // Transform API response to match expected format
+                const result = json?.result?.[0] || {};
+                const payload = { data: result.data || [] };
+
+                // Build ChartProps-like object for transformProps
+                const chartProps = {
+                  height: 400,
+                  width: 600,
+                  formData: subsliceCopy.form_data,
+                  queriesData: [{ data: payload?.data || [] }],
+                  hooks: {
+                    onAddFilter: props.onAddFilter,
+                    setControlValue: () => {},
+                  },
+                } as any;
+
+                // Use transformProps to process data (same logic as standalone chart)
+                const transformedProps = transformDartMapLayerProps(chartProps);
+
+                const newLayer = getDartMapLayer(
+                  transformedProps.formData as any,
+                  transformedProps.payload,
+                  props.onAddFilter,
+                  setTooltip,
+                  transformedProps.categories || {},
+                  transformedProps.visualConfig,
+                  transformedProps.hoverColumnNames,
+                );
+
+                if (!newLayer) {
+                  return null;
+                }
+                // Extract legend name from form_data.params.geojsonConfig or fall back to slice name
+                const payloadData = payload?.data || [];
+                const geometryType = getGeometryType(payloadData[0]?.geojson);
+                let transformPropsGeojsonLayer =
+                  transformedProps.formData.geoJsonLayer;
+
+                if (transformPropsGeojsonLayer !== geometryType) {
+                  transformPropsGeojsonLayer = geometryType;
+                }
+                const transformedPropsConfig =
+                  transformedProps.formData.geojsonConfig;
+                let icon; // need to get icon from json payload
+                let params;
+                const legendName = (() => {
+                  try {
+                    params = JSON.parse(transformedPropsConfig || '{}');
+                    icon = params.globalColoring.pointType;
+                    if (params.legend) {
+                      const formattedLegendName = toTitleCase(
+                        params.legend?.name,
+                      );
+                      return formattedLegendName || subslice.slice_name;
+                    }
+                    return subslice.slice_name;
+                  } catch (e) {
+                    return subslice.slice_name;
+                  }
+                })();
+
+                // Build the LegendGroup based on what coloring mode is active
+                const { categories, visualConfig } = transformedProps;
+                const { dimension, metricLegend } = visualConfig;
+                const hasCategories =
+                  dimension && categories && Object.keys(categories).length > 0;
+                const hasMetric =
+                  metricLegend !== null && metricLegend !== undefined;
+
+                let legendGroup: LegendGroup;
+
+                if (hasMetric) {
+                  // Metric-based coloring (gradient)
+                  const ml = metricLegend as MetricLegend;
+                  legendGroup = {
+                    legendName,
+                    sliceName: subslice.slice_name,
+                    icon,
+                    geometryType: transformPropsGeojsonLayer,
+                    type: 'metric',
+                    metric: {
+                      lower: ml.min,
+                      upper: ml.max,
+                      startColor: ml.startColor,
+                      endColor: ml.endColor,
+                    },
+                  };
+                } else if (hasCategories) {
+                  // Category-based coloring
+                  const categoryEntries = Object.entries(
+                    categories as Record<string, CategoryState>,
+                  )
+                    .filter(([_, catState]) => catState.enabled !== false)
+                    .map(([label, catState]) => ({
+                      label: catState.legend_name || label,
+                      fillColor: catState.color,
+                      strokeColor: visualConfig.strokeColor as RGBAColor,
+                    }));
+
+                  legendGroup = {
+                    legendName,
+                    sliceName: subslice.slice_name,
+                    icon,
+                    geometryType: transformPropsGeojsonLayer,
+                    type: 'categorical',
+                    categories: categoryEntries,
+                  };
+                } else {
+                  // Simple/static coloring
+                  const fillColor = visualConfig.fillColor as RGBAColor;
+                  const strokeColor = visualConfig.strokeColor as RGBAColor;
+
+                  let legendTitle = '';
+                  if (legendName) {
+                    legendTitle = params.legend?.title || subslice.slice_name;
+                  }
+
+                  legendGroup = {
+                    legendName,
+                    legendParentTitle: legendTitle,
+                    sliceName: subslice.slice_name,
+                    icon,
+                    geometryType: transformPropsGeojsonLayer,
+                    type: 'simple',
+                    simpleStyle: {
+                      fillColor,
+                      strokeColor,
+                    },
+                  };
+                }
+
+                const zoomSlider = subsliceCopy.form_data.minMaxZoomSlider || [
+                  0, 22,
+                ];
+                const newLayerStateOptions = {
+                  minZoom: zoomSlider[0],
+                  maxZoom: zoomSlider[1],
+                };
+
+                const newLayerState = layerStateGenerator(
+                  newLayer,
+                  newLayerStateOptions,
+                );
+
+                if (!newLayerState) {
+                  return null;
+                }
+
+                // Store layer with its features for autozoom calculation
+                const layerFeatures: JsonObject[] =
+                  transformedProps.payload?.data?.features || [];
+
+                return {
+                  sliceId: subsliceCopy.slice_id,
+                  layerState: newLayerState,
+                  legendGroup,
+                  features: layerFeatures,
+                  autozoom: sliceAutozoom,
+                };
+              });
+            })
+            .catch(() => null);
+        }),
+      ).then(results => {
+        const validLayers = results.filter(
+          (entry): entry is SubsliceLayerEntry => entry !== null,
+        );
+        setSubSlicesLayers(validLayers);
+      });
+    },
+    [props.onAddFilter, setTooltip],
+  );
+
+  const prevSlicesData = usePrevious(slicesData);
+
+  useEffect(() => {
+    if (!isEqual(prevSlicesData, slicesData) && slicesData?.length) {
+      loadLayers(props.formData, slicesData, normalizedDeckSlices);
+    }
+  }, [
+    loadLayers,
+    prevSlicesData,
+    slicesData,
+    props.formData,
+    normalizedDeckSlices,
+  ]);
+
+  // Sync autozoom settings when they change (without reloading layers)
+  useEffect(() => {
+    setSubSlicesLayers(currentLayers => {
+      if (!currentLayers.length) return currentLayers;
+
+      const autozoomMap = new Map(
+        normalizedDeckSlices.map(c => [c.sliceId, c.autozoom]),
+      );
+
+      const needsUpdate = currentLayers.some(
+        layer => layer.autozoom !== (autozoomMap.get(layer.sliceId) ?? true),
+      );
+
+      if (!needsUpdate) return currentLayers;
+
+      return currentLayers.map(layer => ({
+        ...layer,
+        autozoom: autozoomMap.get(layer.sliceId) ?? true,
+      }));
+    });
+  }, [normalizedDeckSlices]);
+
+  const { setControlValue, height, width } = props;
+
+  // Toggle layer visibility callback
+  const handleToggleLayerVisibility = useCallback((sliceId: string) => {
+    setLayerVisibility(prev => ({
+      ...prev,
+      [sliceId]: !(prev[sliceId] !== false),
+    }));
+  }, []);
+
+  // Sort layers based on config order
+  const sortedLayers = useMemo(() => {
+    const sliceIdOrder = normalizedDeckSlices.map(c => c.sliceId);
+    return [...subSlicesLayers].sort(
+      (a, b) =>
+        sliceIdOrder.indexOf(b.sliceId) - sliceIdOrder.indexOf(a.sliceId),
+    );
+  }, [subSlicesLayers, normalizedDeckSlices]);
+
+  // Set layer visibility via options.userVisible (preserves icon atlas for faster toggle)
+  const layerStatesWithVisibility = sortedLayers.map(entry => {
+    const isVisible = layerVisibility[String(entry.sliceId)] !== false;
+    return {
+      ...entry.layerState,
+      options: {
+        ...entry.layerState.options,
+        userVisible: isVisible,
+      },
+    };
+  });
+
+  // Build legendsBySlice for MultiLegend component
+  const legendsBySlice: Record<string, LegendGroup> = Object.fromEntries(
+    sortedLayers.map(entry => [String(entry.sliceId), entry.legendGroup]),
+  );
+
+  // Calculate autozoom viewport from layers with autozoom enabled
+  const viewport: Viewport = useMemo(() => {
+    const autozoomLayers = sortedLayers.filter(entry => entry.autozoom);
+    if (!autozoomLayers.length) return props.viewport;
+    const allFeatures = autozoomLayers.flatMap(entry => entry.features);
+    return calculateAutozoomViewport(
+      allFeatures,
+      props.viewport,
+      width,
+      height,
+    );
+  }, [sortedLayers, props.viewport, width, height]);
+
+  // Show loading state until slices data is fetched and layers are processed
+  const hasChartsToLoad = normalizedDeckSlices.length > 0;
+  const isLoading = hasChartsToLoad && subSlicesLayers.length === 0;
+
+  if (isLoading) {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height,
+          width,
+        }}
+      >
+        <img
+          alt="Loading..."
+          src="/static/assets/images/loading.gif"
+          style={{ width: 50 }}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <DeckGLContainerStyledWrapper
+        ref={containerRef}
+        mapboxApiAccessToken={effectiveMapboxKey || 'no-token'}
+        viewport={viewport}
+        layerStates={layerStatesWithVisibility}
+        mapStyle={mapStyle}
+        setControlValue={setControlValue}
+        height={height}
+        width={width}
+      />
+      <MultiLegend
+        legendsBySlice={legendsBySlice}
+        layerVisibility={layerVisibility}
+        onToggleLayerVisibility={handleToggleLayerVisibility}
+      />
+    </div>
+  );
+};
+
+export default memo(DeckMulti);

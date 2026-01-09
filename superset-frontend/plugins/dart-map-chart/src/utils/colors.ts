@@ -1,0 +1,479 @@
+/* eslint-disable theme-colors/no-literal-colors */
+/* eslint-disable no-plusplus */
+/* eslint-disable no-console */
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+import { CategoricalColorNamespace, QueryFormData } from '@superset-ui/core';
+import { rgb } from 'd3-color';
+import { GeoJsonFeature } from '../types';
+import { normalizeRGBA, hasValidFill } from './colorsFallback';
+
+const { getScale } = CategoricalColorNamespace;
+
+export type RGBAColor = [number, number, number, number];
+export const DEFAULT_SUPERSET_COLOR: RGBAColor = [0, 122, 135, 150];
+
+export type CategoryState = {
+  color: RGBAColor;
+  enabled: boolean;
+  legend_name?: string;
+};
+
+export type ColorByValueConfig = {
+  valueColumn: string;
+  lowerBound?: number;
+  upperBound?: number;
+  startColor: RGBAColor;
+  endColor: RGBAColor;
+  breakpoints?: number[];
+};
+
+export type MetricLegend = {
+  min: number;
+  max: number;
+  startColor: RGBAColor;
+  endColor: RGBAColor;
+  legendName: string;
+};
+
+// eslint-disable-next-line import/prefer-default-export
+/**
+ * Converts a hex string (e.g. "#ff8800") to an RGBA array.
+ */
+export function hexToRGB(
+  hex: string | undefined,
+  alpha = 255,
+): [number, number, number, number] {
+  if (!hex) {
+    return [0, 0, 0, alpha];
+  }
+  const { r, g, b } = rgb(hex);
+  return [r, g, b, alpha];
+}
+
+export const toRGBA = (
+  color?: number[],
+  fallback: RGBAColor = DEFAULT_SUPERSET_COLOR,
+): RGBAColor => {
+  if (!Array.isArray(color)) return fallback;
+  const out = color.slice(0, 4);
+  while (out.length < 4) out.push(255);
+  return out as RGBAColor;
+};
+
+/**
+ * Converts an RGBA array [r, g, b, a] to a hex string #RRGGBBAA
+ * Alpha is optional; defaults to FF if missing.
+ */
+export function rgbaArrayToHex(rgba: number[]): string {
+  if (!Array.isArray(rgba) || rgba.length < 3) {
+    console.warn('Invalid RGBA array:', rgba);
+    return '#000000';
+  }
+
+  const r = Math.round(rgba[0]).toString(16).padStart(2, '0');
+  const g = Math.round(rgba[1]).toString(16).padStart(2, '0');
+  const b = Math.round(rgba[2]).toString(16).padStart(2, '0');
+  const a =
+    rgba.length === 4
+      ? Math.round(rgba[3]).toString(16).padStart(2, '0')
+      : 'ff';
+
+  return `#${r}${g}${b}${a}`;
+}
+
+/**
+ * Convert a CSS rgb/rgba string into an [r,g,b,a] array.
+ * We only use this internally after interpolateRgb(),
+ * which returns css color strings.
+ */
+export function cssToRgbaArray(css: string): [number, number, number, number] {
+  const ctx = document.createElement('canvas').getContext('2d')!;
+  ctx.fillStyle = css;
+  const computed = ctx.fillStyle as string; // normalized "rgba(r,g,b,a)"
+  const m = computed.match(/rgba?\((\d+), (\d+), (\d+)(?:, ([\d.]+))?\)/);
+  if (!m) return [0, 0, 0, 255];
+
+  const r = Number(m[1]);
+  const g = Number(m[2]);
+  const b = Number(m[3]);
+  const a = m[4] !== undefined ? Math.round(Number(m[4]) * 255) : 255;
+
+  return [r, g, b, a];
+}
+
+/**
+ * Convert any color input to RGBA array.
+ * Accepts hex, CSS rgba(), or RGBA array.
+ */
+export function normalizeColorInput(input: any): RGBAColor {
+  if (Array.isArray(input)) return toRGBA(input);
+
+  if (typeof input === 'string') {
+    if (input.startsWith('#'))
+      return toRGBA(hexToRGB(input), DEFAULT_SUPERSET_COLOR);
+    return toRGBA(cssToRgbaArray(input), DEFAULT_SUPERSET_COLOR);
+  }
+
+  return DEFAULT_SUPERSET_COLOR;
+}
+
+/**
+ * Builds the category color map with enabled state for legends.
+ * @param fallbackColor - The fallback color to use when no custom mapping exists.
+ *                        For Line/LineString geometries, pass strokeColor instead of fillColor.
+ */
+export function getCategories(
+  fd: QueryFormData,
+  dimension: string | undefined,
+  fallbackColor: RGBAColor,
+  features: GeoJsonFeature[],
+  customMapping?: Record<
+    string,
+    { fillColor?: string | number[]; legend_name?: string }
+  >,
+  defaultLegendNames: string[] = ['Other'],
+): Record<string, CategoryState> {
+  const dim = dimension ?? fd.dimension;
+
+  const categories: Record<string, CategoryState> = {};
+  if (!dim) return categories;
+
+  // Track index for assigning defaultLegendNames to null categories
+  let nullCategoryIndex = 0;
+
+  for (const feature of features) {
+    // Use nullish coalescing to preserve null/undefined distinction from ||
+    const rawCategory =
+      feature.extraProps?.[dim] !== undefined
+        ? feature.extraProps[dim]
+        : feature.properties?.[dim];
+
+    // Determine if this is a null category (null, undefined, or already normalized to __NULL__)
+    const isNullCategory =
+      rawCategory === null ||
+      rawCategory === undefined ||
+      String(rawCategory) === '__NULL__' ||
+      String(rawCategory).trim().toLowerCase() === '__null__';
+
+    // Normalize the lookup key - use __null__ for null categories
+    const lookupKey = isNullCategory
+      ? '__null__'
+      : String(rawCategory).trim().toLowerCase();
+
+    // Use only lowercased key for mapping
+    const entry = customMapping ? customMapping[lookupKey] : undefined;
+
+    if (!categories[lookupKey]) {
+      // Get actual color from feature (ALREADY COMPUTED)
+      const featureRGBA: RGBAColor =
+        (Array.isArray(feature.color) && feature.color.length === 4
+          ? toRGBA(feature.color)
+          : entry?.fillColor !== undefined
+            ? normalizeColorInput(entry.fillColor)
+            : fallbackColor) ?? fallbackColor;
+
+      let legendName: string;
+      if (typeof entry === 'object' && entry.legend_name) {
+        legendName = entry.legend_name;
+      } else if (isNullCategory) {
+        // Use defaultLegendNames for null categories
+        legendName =
+          defaultLegendNames[nullCategoryIndex % defaultLegendNames.length] ||
+          'Other';
+        nullCategoryIndex++;
+      } else {
+        legendName = String(rawCategory);
+      }
+
+      categories[lookupKey] = {
+        color: featureRGBA,
+        enabled: true,
+        legend_name: legendName,
+      };
+    }
+  }
+  return categories;
+}
+
+/**
+ * Normalizes user-provided categorical color mappings.
+ * Converts an array of { CategoryName: { fillColor, legend_entry_name } } objects
+ * into a flat Record<string, { fillColor?: string; legend_name?: string }>
+ */
+export function normalizeCategoryColorMapping(
+  categoricalColors: Array<
+    Record<
+      string,
+      {
+        fillColor?: RGBAColor;
+        legend_entry_name?: string;
+      }
+    >
+  >,
+): Record<string, { fillColor?: RGBAColor; legend_name?: string }> {
+  if (!categoricalColors) return {};
+
+  const mapping: Record<
+    string,
+    { fillColor?: RGBAColor; legend_name?: string }
+  > = {};
+
+  if (Array.isArray(categoricalColors)) {
+    categoricalColors.forEach(entry => {
+      const [key, val] = Object.entries(entry)[0];
+      const normKey = String(key).trim().toLowerCase();
+
+      const fill: RGBAColor | undefined =
+        val.fillColor && hasValidFill(val.fillColor)
+          ? toRGBA(val.fillColor)
+          : undefined;
+      const legendName = val.legend_entry_name || key;
+
+      mapping[normKey] = {
+        fillColor: fill,
+        legend_name: legendName,
+      };
+    });
+    return mapping;
+  }
+
+  // Normalize object mapping (already in dictionary form)
+  if (typeof categoricalColors === 'object' && categoricalColors !== null) {
+    for (const [key, val] of Object.entries<any>(categoricalColors)) {
+      const normKey = key.trim().toLowerCase();
+
+      const fill: RGBAColor | undefined = val.fillColor
+        ? toRGBA(val.fillColor)
+        : undefined;
+      const legendName = val.legend_entry_name || key;
+
+      mapping[normKey] = {
+        fillColor: fill,
+        legend_name: legendName,
+      };
+    }
+  }
+  return mapping;
+}
+
+export function applyColorMapping(
+  features: GeoJsonFeature[],
+  dimension: string,
+  mapping: Record<string, { fillColor?: RGBAColor; legend_name?: string }>,
+  strokeColor: RGBAColor = [0, 0, 0, 255],
+  alpha = 150,
+  strokeAlpha = 255,
+  globalFallback: RGBAColor = [0, 122, 135, 255],
+  defaultLegendNames: string[] = ['Other'],
+): GeoJsonFeature[] {
+  if (!Array.isArray(features) || !features.length) return [];
+
+  // Precompute normalized stroke color once
+  const strokeRGBA: RGBAColor = [...strokeColor].slice(0, 4) as RGBAColor;
+  strokeRGBA[3] = strokeAlpha;
+
+  // Normalize mapping keys to lowercase
+  const normalizedMapping: Record<
+    string,
+    { fillColor: RGBAColor; legendName: string }
+  > = {};
+  for (const [key, value] of Object.entries(mapping)) {
+    const lowerKey = key.trim().toLowerCase();
+    const fill: RGBAColor = value.fillColor
+      ? toRGBA(value.fillColor, globalFallback)
+      : [...globalFallback];
+    normalizedMapping[lowerKey] = {
+      fillColor: fill,
+      legendName: value.legend_name ?? key,
+    };
+  }
+
+  // Track unmapped categories to assign consistent legend names per unique category
+  const unmappedCategoryLegendNames: Record<string, string> = {};
+  let defaultNameIndex = 0;
+
+  return features.map(feature => {
+    const key =
+      feature.extraProps?.[dimension] || feature.properties?.[dimension];
+    const lookupKey = key ? String(key).trim().toLowerCase() : '__null__';
+    const category = normalizedMapping[lookupKey];
+
+    // Determine legend name
+    let legendName: string;
+    let fillRGBA: RGBAColor;
+
+    if (category) {
+      const { legendName: catLegendName, fillColor } = category;
+      legendName = catLegendName;
+      // Ensure fillRGBA is always RGBAColor (length 4)
+      fillRGBA = [...fillColor].slice(0, 4) as RGBAColor;
+      fillRGBA[3] = alpha;
+    } else {
+      // Check if we've already assigned a legend name to this unmapped category
+      if (unmappedCategoryLegendNames[lookupKey] === undefined) {
+        // Assign the next defaultLegendName to this unique unmapped category
+        unmappedCategoryLegendNames[lookupKey] =
+          defaultLegendNames[defaultNameIndex % defaultLegendNames.length];
+        defaultNameIndex++;
+      }
+      legendName = unmappedCategoryLegendNames[lookupKey];
+      fillRGBA = [...globalFallback].slice(0, 4) as RGBAColor;
+      fillRGBA[3] = alpha;
+    }
+
+    return {
+      ...feature,
+      color: fillRGBA,
+      strokeColor: strokeRGBA,
+      properties: {
+        ...feature.properties,
+        fillColor: fillRGBA,
+        strokeColor: strokeRGBA,
+        legendName,
+      },
+    };
+  });
+}
+
+/**
+ * Applies categorical color to features using a precomputed color map.
+ */
+export function addColor(
+  fd: QueryFormData,
+  dimension: string,
+  fillColor: RGBAColor,
+  features: GeoJsonFeature[],
+  customMapping?: Record<
+    string,
+    RGBAColor | { fillColor?: RGBAColor; legend_name?: string }
+  >,
+): GeoJsonFeature[] {
+  const fallback = fillColor || DEFAULT_SUPERSET_COLOR;
+  const colorFn = getScale(fd.colorScheme);
+
+  return features.map(feature => {
+    let color: RGBAColor = fallback;
+    const cat =
+      feature.extraProps?.[dimension] || feature.properties?.[dimension];
+    if (cat != null) {
+      const entry = customMapping?.[cat];
+      if (Array.isArray(entry)) {
+        color = toRGBA(entry, fallback);
+      } else if (entry?.fillColor) {
+        color = toRGBA(entry.fillColor, fallback);
+      } else {
+        // fallback to Superset categorical scale
+        const defaultColor = colorFn(cat, fd.sliceId);
+        color = Array.isArray(defaultColor)
+          ? normalizeRGBA(defaultColor, fallback)
+          : fallback;
+      }
+    }
+
+    return { ...feature, color };
+  });
+}
+
+/**
+ * Returns a color scale function for a metric.
+ * Handles both continuous ranges and optional breakpoints.
+ */
+export function computeMetricColorScaleUnified(
+  spec: ColorByValueConfig,
+  dataDomain: [number, number],
+): (val: number) => RGBAColor {
+  const { startColor, endColor, breakpoints, lowerBound, upperBound } = spec;
+  const [min, max] = dataDomain;
+
+  const lower = lowerBound ?? min;
+  const upper = upperBound ?? max;
+
+  // Helper: interpolate each channel linearly
+  const interpolateRGBA = (start: RGBAColor, end: RGBAColor) => (t: number) =>
+    start.map((s, i) => Math.round(s + t * (end[i] - s))) as RGBAColor;
+
+  /**
+   * Utility: clamp a value to the metric domain.
+   */
+  const clampToDomain = (v: number) => Math.max(lower, Math.min(v, upper));
+
+  // If breakpoints are provided, create discrete segments
+  if (Array.isArray(breakpoints) && breakpoints.length > 0) {
+    // Precompute a linear fraction for each breakpoint
+    const stops = [lower, ...breakpoints, upper];
+    const interp = interpolateRGBA(startColor, endColor);
+    const numSegments = stops.length - 1;
+
+    return (val: number) => {
+      if (val == null) return [...startColor];
+      const clamped = clampToDomain(val);
+      for (let i = 0; i < numSegments; i++) {
+        if (clamped <= stops[i + 1]) {
+          const t = (clamped - stops[i]) / (stops[i + 1] - stops[i]);
+          return interp(t);
+        }
+      }
+      return [...endColor];
+    };
+  }
+
+  // Continuous metric coloring
+  const lerp = interpolateRGBA(startColor, endColor);
+  return (val: number) => {
+    if (val == null) return [...startColor];
+    const clamped = clampToDomain(val);
+    const t = (clamped - lower) / (upper - lower);
+    return lerp(t);
+  };
+}
+
+export function getFeatureColor(
+  feature: any,
+  metricKey: string | undefined,
+  metricScale: ((val: number) => number[]) | undefined,
+  usingMetric = false,
+  usingDimension = false,
+  fillColorArray = [0, 122, 135, 150],
+  defaultAlpha = 150,
+): RGBAColor {
+  // METRIC-BASED COLORING
+  if (usingMetric && metricKey && metricScale) {
+    const val = feature.properties[metricKey];
+    // metricScale(val) now returns [r, g, b, a]
+    const rgba = metricScale(val) ?? fillColorArray;
+
+    // Ensure 4-length array
+    const arr = rgba.slice(0, 4) as RGBAColor;
+    if (arr.length < 4) arr.push(defaultAlpha);
+
+    return arr;
+  }
+  // DIMENSION-BASED COLORING
+  if (usingDimension && Array.isArray(feature?.color)) {
+    const c = feature.color.slice(0, 4);
+    while (c.length < 4) c.push(defaultAlpha);
+    return c as RGBAColor;
+  }
+  // FALLBACK
+  // Ensure the returned array has exactly 4 elements
+  const arr = (fillColorArray ?? DEFAULT_SUPERSET_COLOR).slice(0, 4);
+  while (arr.length < 4) arr.push(defaultAlpha); // Default alpha if missing
+  return arr as RGBAColor;
+}
