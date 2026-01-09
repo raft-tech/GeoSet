@@ -325,6 +325,33 @@ export function getLayer(
     return f;
   });
 
+  // Sort features by category order for z-index rendering.
+  // Categories earlier in the JSON config render on top (last in draw order).
+  // So we sort in reverse: higher index = earlier in array = drawn first (bottom).
+  const categoryKeys = Object.keys(categories);
+  const UNCATEGORIZED_INDEX = Number.MAX_SAFE_INTEGER; // Ensures uncategorized sorts to bottom
+
+  const sortedFeatures = [...visibleFeatures].sort((a, b) => {
+    if (isMetric) return 0; // Don't sort in metric mode
+
+    const getCategoryIndex = (f: GeoJsonFeature) => {
+      const categoryRaw =
+        (f as any).categoryName ?? f.properties?.[dimension as string];
+      if (categoryRaw == null) return UNCATEGORIZED_INDEX; // Put uncategorized at bottom (drawn first)
+
+      const lookupKey =
+        typeof categoryRaw === 'string'
+          ? categoryRaw.trim().toLowerCase()
+          : String(categoryRaw).trim().toLowerCase();
+
+      const idx = categoryKeys.indexOf(lookupKey);
+      return idx === -1 ? UNCATEGORIZED_INDEX : idx; // Unknown categories also at bottom
+    };
+
+    // Reverse order: higher index drawn first (bottom), lower index drawn last (top)
+    return getCategoryIndex(b) - getCategoryIndex(a);
+  });
+
   // Create tooltip content generator with hover column filtering
   const tooltipContentGenerator = (o: JsonObject) =>
     setTooltipContent(
@@ -357,8 +384,8 @@ export function getLayer(
           iconName = 'circle';
         }
         return new IconLayer({
-          id: `icon-layer-${fd.slice_id}-${visibleFeatures.length}`,
-          data: visibleFeatures as Feature<Geometry, GeoJsonProperties>[],
+          id: `icon-layer-${fd.slice_id}-${sortedFeatures.length}`,
+          data: sortedFeatures as Feature<Geometry, GeoJsonProperties>[],
           getIconColor: (f: any) => f.color,
           getPosition: f => f.geometry?.coordinates,
           getIcon: f => {
@@ -377,9 +404,9 @@ export function getLayer(
           sizeUnits: 'pixels',
           // Force layer update when data or icons change
           updateTriggers: {
-            getIcon: [iconName, fillColorArray, visibleFeatures.length],
-            getIconColor: [visibleFeatures.length],
-            getPosition: [visibleFeatures.length],
+            getIcon: [iconName, fillColorArray, sortedFeatures.length],
+            getIconColor: [sortedFeatures.length],
+            getPosition: [sortedFeatures.length],
           },
           // Load icons immediately
           loadOptions: {
@@ -394,7 +421,7 @@ export function getLayer(
 
       return new ScatterplotLayer({
         id: `point-layer-${fd.slice_id}`,
-        data: visibleFeatures as Feature<Geometry, GeoJsonProperties>[],
+        data: sortedFeatures as Feature<Geometry, GeoJsonProperties>[],
         filled: filled ?? fd.filled,
         stroked: stroked ?? fd.stroked,
         extruded: extruded ?? fd.extruded,
@@ -414,7 +441,7 @@ export function getLayer(
     case 'Line':
       return new LineLayer({
         id: `line-layer-${fd.slice_id}` as const,
-        data: visibleFeatures as Feature<Geometry, GeoJsonProperties>[],
+        data: sortedFeatures as Feature<Geometry, GeoJsonProperties>[],
         filled: filled ?? fd.filled,
         stroked: stroked ?? fd.stroked,
         extruded: extruded ?? fd.extruded,
@@ -436,7 +463,7 @@ export function getLayer(
     case 'LineString':
       return new PathLayer({
         id: `path-layer-${fd.slice_id}`,
-        data: visibleFeatures as Feature<Geometry, GeoJsonProperties>[],
+        data: sortedFeatures as Feature<Geometry, GeoJsonProperties>[],
         filled: filled ?? fd.filled,
         stroked: stroked ?? fd.stroked,
         extruded: extruded ?? fd.extruded,
@@ -460,7 +487,7 @@ export function getLayer(
     case 'Polygon': {
       // --- Flatten MultiPolygons into individual polygons ---
       const polygonData = expandPolygonFeatures(
-        visibleFeatures as Feature<Geometry, GeoJsonProperties>[],
+        sortedFeatures as Feature<Geometry, GeoJsonProperties>[],
       );
 
       // Compute effective stroked based on lineWidth
@@ -486,7 +513,7 @@ export function getLayer(
     case 'GeoJSON':
       return new GeoJsonLayer({
         id: `geojson-layer-${fd.slice_id}` as const,
-        data: visibleFeatures as Feature<Geometry, GeoJsonProperties>[],
+        data: sortedFeatures as Feature<Geometry, GeoJsonProperties>[],
         extruded: extruded ?? fd.extruded,
         filled: filled ?? fd.filled,
         stroked: stroked ?? fd.stroked,
@@ -515,7 +542,7 @@ export function getLayer(
     default:
       return new GeoJsonLayer({
         id: `geojson-layer-${fd.slice_id}` as const,
-        data: visibleFeatures as Feature<Geometry, GeoJsonProperties>[],
+        data: sortedFeatures as Feature<Geometry, GeoJsonProperties>[],
         extruded: extruded ?? fd.extruded,
         filled: filled ?? fd.filled,
         stroked: stroked ?? fd.stroked,

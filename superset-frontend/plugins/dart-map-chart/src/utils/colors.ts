@@ -138,6 +138,10 @@ export function normalizeColorInput(input: any): RGBAColor {
  * Builds the category color map with enabled state for legends.
  * @param fallbackColor - The fallback color to use when no custom mapping exists.
  *                        For Line/LineString geometries, pass strokeColor instead of fillColor.
+ *
+ * The order of categories in the returned object is determined by:
+ * 1. First, categories from customMapping in their defined order (controls z-order rendering)
+ * 2. Then, any additional categories found in features but not in customMapping
  */
 export function getCategories(
   fd: QueryFormData,
@@ -158,57 +162,91 @@ export function getCategories(
   // Track index for assigning defaultLegendNames to null categories
   let nullCategoryIndex = 0;
 
+  // Collect all unique category keys from features
+  const featureCategoryKeys = new Set<string>();
+  const featureCategoryMap = new Map<
+    string,
+    { rawCategory: any; feature: GeoJsonFeature; isNullCategory: boolean }
+  >();
+
   for (const feature of features) {
-    // Use nullish coalescing to preserve null/undefined distinction from ||
     const rawCategory =
       feature.extraProps?.[dim] !== undefined
         ? feature.extraProps[dim]
         : feature.properties?.[dim];
 
-    // Determine if this is a null category (null, undefined, or already normalized to __NULL__)
     const isNullCategory =
       rawCategory === null ||
       rawCategory === undefined ||
       String(rawCategory) === '__NULL__' ||
       String(rawCategory).trim().toLowerCase() === '__null__';
 
-    // Normalize the lookup key - use __null__ for null categories
     const lookupKey = isNullCategory
       ? '__null__'
       : String(rawCategory).trim().toLowerCase();
 
-    // Use only lowercased key for mapping
-    const entry = customMapping ? customMapping[lookupKey] : undefined;
-
-    if (!categories[lookupKey]) {
-      // Get actual color from feature (ALREADY COMPUTED)
-      const featureRGBA: RGBAColor =
-        (Array.isArray(feature.color) && feature.color.length === 4
-          ? toRGBA(feature.color)
-          : entry?.fillColor !== undefined
-            ? normalizeColorInput(entry.fillColor)
-            : fallbackColor) ?? fallbackColor;
-
-      let legendName: string;
-      if (typeof entry === 'object' && entry.legend_name) {
-        legendName = entry.legend_name;
-      } else if (isNullCategory) {
-        // Use defaultLegendNames for null categories
-        legendName =
-          defaultLegendNames[nullCategoryIndex % defaultLegendNames.length] ||
-          'Other';
-        nullCategoryIndex++;
-      } else {
-        legendName = String(rawCategory);
-      }
-
-      categories[lookupKey] = {
-        color: featureRGBA,
-        enabled: true,
-        legend_name: legendName,
-      };
+    if (!featureCategoryKeys.has(lookupKey)) {
+      featureCategoryKeys.add(lookupKey);
+      featureCategoryMap.set(lookupKey, {
+        rawCategory,
+        feature,
+        isNullCategory,
+      });
     }
   }
+
+  // Helper to add a category to the result
+  const addCategory = (lookupKey: string) => {
+    if (categories[lookupKey]) return; // Already added
+
+    const featureData = featureCategoryMap.get(lookupKey);
+    if (!featureData) return; // Category not found in features
+
+    const { rawCategory, feature, isNullCategory } = featureData;
+    const entry = customMapping ? customMapping[lookupKey] : undefined;
+
+    const featureRGBA: RGBAColor =
+      (Array.isArray(feature.color) && feature.color.length === 4
+        ? toRGBA(feature.color)
+        : entry?.fillColor !== undefined
+          ? normalizeColorInput(entry.fillColor)
+          : fallbackColor) ?? fallbackColor;
+
+    let legendName: string;
+    if (typeof entry === 'object' && entry.legend_name) {
+      legendName = entry.legend_name;
+    } else if (isNullCategory) {
+      legendName =
+        defaultLegendNames[nullCategoryIndex % defaultLegendNames.length] ||
+        'Other';
+      nullCategoryIndex++;
+    } else {
+      legendName = String(rawCategory);
+    }
+
+    categories[lookupKey] = {
+      color: featureRGBA,
+      enabled: true,
+      legend_name: legendName,
+    };
+  };
+
+  // First, add categories in the order they appear in customMapping
+  // This determines the z-order: first in mapping = rendered first (bottom)
+  if (customMapping) {
+    for (const mappingKey of Object.keys(customMapping)) {
+      const normalizedKey = mappingKey.trim().toLowerCase();
+      if (featureCategoryKeys.has(normalizedKey)) {
+        addCategory(normalizedKey);
+      }
+    }
+  }
+
+  // Then, add any remaining categories from features not in customMapping
+  for (const lookupKey of featureCategoryKeys) {
+    addCategory(lookupKey);
+  }
+
   return categories;
 }
 
