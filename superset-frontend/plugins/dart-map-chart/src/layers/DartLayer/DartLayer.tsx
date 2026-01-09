@@ -419,9 +419,9 @@ export function getLayer(
         extruded: extruded ?? fd.extruded,
         getSourcePosition: (f: any) => f.geometry?.coordinates[0],
         getTargetPosition: (f: any) => f.geometry?.coordinates[1],
-        // Use fillColor for colorByCategory (dimension), otherwise use strokeColor
+        // Use fillColor for colorByCategory (dimension) or colorByValue (metric), otherwise use strokeColor
         getColor: (feature: any) =>
-          dimension
+          dimension || isMetric
             ? feature.color || fillColorArray
             : feature.strokeColor || strokeColorArray,
         opacity: 0.8,
@@ -440,9 +440,9 @@ export function getLayer(
         stroked: stroked ?? fd.stroked,
         extruded: extruded ?? fd.extruded,
         getPath: (f: any) => f.geometry?.coordinates,
-        // Use fillColor for colorByCategory (dimension), otherwise use strokeColor
+        // Use fillColor for colorByCategory (dimension) or colorByValue (metric), otherwise use strokeColor
         getColor: (feature: any) =>
-          dimension
+          dimension || isMetric
             ? feature.color || fillColorArray
             : feature.strokeColor || strokeColorArray,
         getWidth: lineWidth ?? (fd.lineWidth || 2),
