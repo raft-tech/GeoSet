@@ -198,20 +198,6 @@ export type SelectOptionsPagePromise = (
   pageSize: number,
 ) => Promise<SelectOptionsTypePage>;
 
-export type DraggableSelectProps = Omit<SelectProps, 'ref' | 'mode'> & {
-  value?: SelectValue;
-  onChange?: (value: SelectValue, options: any) => void;
-  mode?: 'single' | 'multiple';
-};
-
-export interface DraggableTagProps {
-  label: ReactNode;
-  value: string;
-  index: number;
-  moveTag: (dragIndex: number, hoverIndex: number) => void;
-  onRemove: (value: string) => void;
-}
-
 export interface AsyncSelectProps extends BaseSelectProps {
   /**
    * It fires a request against the server after
