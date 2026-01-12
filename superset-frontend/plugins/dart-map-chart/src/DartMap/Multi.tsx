@@ -294,13 +294,24 @@ const DeckMulti = (props: DeckMultiProps) => {
                 const hasMetric =
                   metricLegend !== null && metricLegend !== undefined;
 
+                // Get legend config from JSON
+                // For categorical: legend.title is the header, legend.name is null
+                // For simple/base: legend.title is the header, legend.name is the expanded content
+                const legendTitle = params?.legend?.title
+                  ? toTitleCase(params.legend.title)
+                  : null;
+                const legendNameFromJson = params?.legend?.name
+                  ? toTitleCase(params.legend.name)
+                  : null;
+
                 let legendGroup: LegendGroup;
 
                 if (hasMetric) {
                   // Metric-based coloring (gradient)
+                  // Use legend.title from JSON for legend header
                   const ml = metricLegend as MetricLegend;
                   legendGroup = {
-                    legendName,
+                    legendName: legendTitle || legendName,
                     sliceName: subslice.slice_name,
                     icon,
                     geometryType: transformPropsGeojsonLayer,
@@ -314,6 +325,7 @@ const DeckMulti = (props: DeckMultiProps) => {
                   };
                 } else if (hasCategories) {
                   // Category-based coloring
+                  // Use legend.title from JSON for legend header (legend.name is null)
                   const categoryEntries = Object.entries(
                     categories as Record<string, CategoryState>,
                   )
@@ -325,7 +337,7 @@ const DeckMulti = (props: DeckMultiProps) => {
                     }));
 
                   legendGroup = {
-                    legendName,
+                    legendName: legendTitle || legendName,
                     sliceName: subslice.slice_name,
                     icon,
                     geometryType: transformPropsGeojsonLayer,
@@ -333,18 +345,15 @@ const DeckMulti = (props: DeckMultiProps) => {
                     categories: categoryEntries,
                   };
                 } else {
-                  // Simple/static coloring
+                  // Simple/static coloring (base charts - no categories or metrics)
+                  // legendParentTitle = legend.title (shown as header)
+                  // legendName = legend.name (shown in expanded content)
                   const fillColor = visualConfig.fillColor as RGBAColor;
                   const strokeColor = visualConfig.strokeColor as RGBAColor;
 
-                  let legendTitle = '';
-                  if (legendName) {
-                    legendTitle = params.legend?.title || subslice.slice_name;
-                  }
-
                   legendGroup = {
-                    legendName,
-                    legendParentTitle: legendTitle,
+                    legendName: legendNameFromJson || legendName,
+                    legendParentTitle: legendTitle || subslice.slice_name,
                     sliceName: subslice.slice_name,
                     icon,
                     geometryType: transformPropsGeojsonLayer,
