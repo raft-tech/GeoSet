@@ -505,6 +505,94 @@ const DeckMulti = (props: DeckMultiProps) => {
     containerRef.current?.resetView();
   }, []);
 
+  // Ruler/measure mode state
+  const [measureState, setMeasureState] = useState<{
+    startPoint: [number, number] | null;
+    endPoint: [number, number] | null;
+    isActive: boolean;
+    isDragging: boolean;
+  }>({
+    startPoint: null,
+    endPoint: null,
+    isActive: false,
+    isDragging: false,
+  });
+
+  const handleRulerToggle = useCallback(() => {
+    setMeasureState(prev => {
+      if (prev.isActive) {
+        return {
+          startPoint: null,
+          endPoint: null,
+          isActive: false,
+          isDragging: false,
+        };
+      }
+      return {
+        startPoint: null,
+        endPoint: null,
+        isActive: true,
+        isDragging: false,
+      };
+    });
+  }, []);
+
+  const handleMeasureClick = useCallback((coordinate: [number, number]) => {
+    setMeasureState(prev => {
+      if (!prev.isActive || prev.isDragging) return prev;
+      if (!prev.startPoint) {
+        return { ...prev, startPoint: coordinate };
+      }
+      if (!prev.endPoint) {
+        return { ...prev, endPoint: coordinate };
+      }
+      return { ...prev, startPoint: coordinate, endPoint: null };
+    });
+  }, []);
+
+  // Drag handlers for drag-to-measure
+  const handleMeasureDragStart = useCallback((coordinate: [number, number]) => {
+    setMeasureState(prev => {
+      if (!prev.isActive) return prev;
+      return {
+        ...prev,
+        startPoint: coordinate,
+        endPoint: null,
+        isDragging: true,
+      };
+    });
+  }, []);
+
+  const handleMeasureDrag = useCallback((coordinate: [number, number]) => {
+    setMeasureState(prev => {
+      if (!prev.isActive || !prev.isDragging) return prev;
+      return { ...prev, endPoint: coordinate };
+    });
+  }, []);
+
+  const handleMeasureDragEnd = useCallback((coordinate: [number, number]) => {
+    setMeasureState(prev => {
+      if (!prev.isActive || !prev.isDragging) return prev;
+      return { ...prev, endPoint: coordinate, isDragging: false };
+    });
+  }, []);
+
+  // Handle escape key to exit ruler mode
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && measureState.isActive) {
+        setMeasureState({
+          startPoint: null,
+          endPoint: null,
+          isActive: false,
+          isDragging: false,
+        });
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [measureState.isActive]);
+
   // Show loading state until slices data is fetched and layers are processed
   const hasChartsToLoad = normalizedDeckSlices.length > 0;
   const isLoading = hasChartsToLoad && subSlicesLayers.length === 0;
@@ -541,6 +629,11 @@ const DeckMulti = (props: DeckMultiProps) => {
         setControlValue={setControlValue}
         height={height}
         width={width}
+        measureState={measureState}
+        onMeasureClick={handleMeasureClick}
+        onMeasureDragStart={handleMeasureDragStart}
+        onMeasureDrag={handleMeasureDrag}
+        onMeasureDragEnd={handleMeasureDragEnd}
       />
       <MultiLegend
         legendsBySlice={legendsBySlice}
@@ -551,6 +644,8 @@ const DeckMulti = (props: DeckMultiProps) => {
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
         onResetView={handleResetView}
+        onRulerToggle={handleRulerToggle}
+        isRulerActive={measureState.isActive}
         position="top-right"
       />
     </div>

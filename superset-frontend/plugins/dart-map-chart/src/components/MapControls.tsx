@@ -23,6 +23,8 @@ export type MapControlsProps = {
   onZoomIn: () => void;
   onZoomOut: () => void;
   onResetView: () => void;
+  onRulerToggle: () => void;
+  isRulerActive: boolean;
   position?: 'top-left' | 'top-right';
 };
 
@@ -52,33 +54,33 @@ const ButtonGroup = styled.div(
 `,
 );
 
-const ControlButton = styled.button(
-  ({ theme }) => `
+const ControlButton = styled.button<{ $isActive?: boolean }>(
+  ({ theme, $isActive }) => `
   display: flex;
   align-items: center;
   justify-content: center;
   width: 32px;
   height: 32px;
-  background: transparent;
+  background: ${$isActive ? theme.colors.primary.light4 : 'transparent'};
   border: none;
   border-right: 1px solid ${theme.colors.grayscale.light2};
   cursor: pointer;
   font-family: inherit;
   font-size: 18px;
   font-weight: 600;
-  color: ${theme.colors.grayscale.dark1};
-  transition: background 0.15s ease;
+  color: ${$isActive ? theme.colors.primary.dark1 : theme.colors.grayscale.dark1};
+  transition: background 0.15s ease, color 0.15s ease;
 
   &:last-child {
     border-right: none;
   }
 
   &:hover {
-    background: ${theme.colors.grayscale.light4};
+    background: ${$isActive ? theme.colors.primary.light3 : theme.colors.grayscale.light4};
   }
 
   &:active {
-    background: ${theme.colors.grayscale.light3};
+    background: ${$isActive ? theme.colors.primary.light2 : theme.colors.grayscale.light3};
   }
 `,
 );
@@ -99,10 +101,31 @@ const HomeIcon = () => (
   </svg>
 );
 
+const RulerIcon = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z" />
+    <path d="m14.5 12.5 2-2" />
+    <path d="m11.5 9.5 2-2" />
+    <path d="m8.5 6.5 2-2" />
+    <path d="m17.5 15.5 2-2" />
+  </svg>
+);
+
 const MapControls = ({
   onZoomIn,
   onZoomOut,
   onResetView,
+  onRulerToggle,
+  isRulerActive,
   position = 'top-left',
 }: MapControlsProps) => (
   <ControlsContainer $position={position}>
@@ -115,6 +138,13 @@ const MapControls = ({
       </ControlButton>
       <ControlButton onClick={onZoomOut} title="Zoom out">
         −
+      </ControlButton>
+      <ControlButton
+        onClick={onRulerToggle}
+        title={isRulerActive ? 'Exit measure mode (Esc)' : 'Measure distance'}
+        $isActive={isRulerActive}
+      >
+        <RulerIcon />
       </ControlButton>
     </ButtonGroup>
   </ControlsContainer>

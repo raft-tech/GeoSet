@@ -68,6 +68,8 @@ import {
   getCachedMapboxApiKey,
 } from '../../utils/mapboxApi';
 import { handleSchemaCheck } from '../../utils/migrationApi';
+import MeasureOverlay, { MeasureState } from '../../components/MeasureOverlay';
+import { Coordinate } from '../../utils/measureDistance';
 
 const LimitWarning = styled.div`
   background-color: ${({ theme }) => theme.colorWarningBg};
@@ -817,6 +819,96 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
     containerRef.current?.resetView();
   }, []);
 
+  // Ruler/measure mode state
+  const [measureState, setMeasureState] = useState<MeasureState>({
+    startPoint: null,
+    endPoint: null,
+    isActive: false,
+    isDragging: false,
+  });
+
+  const handleRulerToggle = useCallback(() => {
+    setMeasureState(prev => {
+      if (prev.isActive) {
+        // Exiting ruler mode - clear points
+        return {
+          startPoint: null,
+          endPoint: null,
+          isActive: false,
+          isDragging: false,
+        };
+      }
+      // Entering ruler mode
+      return {
+        startPoint: null,
+        endPoint: null,
+        isActive: true,
+        isDragging: false,
+      };
+    });
+  }, []);
+
+  const handleMeasureClick = useCallback((coordinate: Coordinate) => {
+    setMeasureState(prev => {
+      if (!prev.isActive || prev.isDragging) return prev;
+
+      if (!prev.startPoint) {
+        // Set start point
+        return { ...prev, startPoint: coordinate };
+      }
+      if (!prev.endPoint) {
+        // Set end point
+        return { ...prev, endPoint: coordinate };
+      }
+      // Both points set - start new measurement
+      return { ...prev, startPoint: coordinate, endPoint: null };
+    });
+  }, []);
+
+  // Drag handlers for drag-to-measure
+  const handleMeasureDragStart = useCallback((coordinate: Coordinate) => {
+    setMeasureState(prev => {
+      if (!prev.isActive) return prev;
+      return {
+        ...prev,
+        startPoint: coordinate,
+        endPoint: null,
+        isDragging: true,
+      };
+    });
+  }, []);
+
+  const handleMeasureDrag = useCallback((coordinate: Coordinate) => {
+    setMeasureState(prev => {
+      if (!prev.isActive || !prev.isDragging) return prev;
+      return { ...prev, endPoint: coordinate };
+    });
+  }, []);
+
+  const handleMeasureDragEnd = useCallback((coordinate: Coordinate) => {
+    setMeasureState(prev => {
+      if (!prev.isActive || !prev.isDragging) return prev;
+      return { ...prev, endPoint: coordinate, isDragging: false };
+    });
+  }, []);
+
+  // Handle escape key to exit ruler mode
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && measureState.isActive) {
+        setMeasureState({
+          startPoint: null,
+          endPoint: null,
+          isActive: false,
+          isDragging: false,
+        });
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [measureState.isActive]);
+
   const viewport: Viewport = useMemo(() => {
     if (!formData.autozoom || !payload?.data?.features?.length) {
       return props.viewport;
@@ -946,6 +1038,11 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
         setControlValue={setControlValue}
         height={mapHeight}
         width={width}
+        measureState={measureState}
+        onMeasureClick={handleMeasureClick}
+        onMeasureDragStart={handleMeasureDragStart}
+        onMeasureDrag={handleMeasureDrag}
+        onMeasureDragEnd={handleMeasureDragEnd}
       />
       <Legend
         forceCategorical
@@ -962,6 +1059,15 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
         onResetView={handleResetView}
+        onRulerToggle={handleRulerToggle}
+        isRulerActive={measureState.isActive}
+      />
+      <MeasureOverlay
+        measureState={measureState}
+        onMapClick={handleMeasureClick}
+        onExit={handleRulerToggle}
+        width={width}
+        height={mapHeight}
       />
       {limitReached && (
         <LimitWarning>
