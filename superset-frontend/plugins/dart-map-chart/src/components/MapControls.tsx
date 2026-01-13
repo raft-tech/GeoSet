@@ -46,10 +46,10 @@ const ButtonGroup = styled.div(
   ({ theme }) => `
   display: flex;
   flex-direction: row;
-  background: ${theme.colors.grayscale.light5};
-  border: 1px solid ${theme.colors.grayscale.light2};
+  background: ${theme.colorBgElevated};
+  border: 1px solid ${theme.colorBorderSecondary};
   border-radius: 6px;
-  box-shadow: 0 2px 6px ${theme.colors.grayscale.base}1F;
+  box-shadow: 0 2px 6px ${theme.colorBorderSecondary}1F;
   overflow: hidden;
 `,
 );
@@ -61,14 +61,14 @@ const ControlButton = styled.button<{ $isActive?: boolean }>(
   justify-content: center;
   width: 32px;
   height: 32px;
-  background: ${$isActive ? theme.colors.primary.light4 : 'transparent'};
+  background: ${$isActive ? theme.colorPrimaryBg : 'transparent'};
   border: none;
-  border-right: 1px solid ${theme.colors.grayscale.light2};
+  border-right: 1px solid ${theme.colorBorderSecondary};
   cursor: pointer;
   font-family: inherit;
   font-size: 18px;
   font-weight: 600;
-  color: ${$isActive ? theme.colors.primary.dark1 : theme.colors.grayscale.dark1};
+  color: ${$isActive ? theme.colorPrimary : theme.colorText};
   transition: background 0.15s ease, color 0.15s ease;
 
   &:last-child {
@@ -76,11 +76,11 @@ const ControlButton = styled.button<{ $isActive?: boolean }>(
   }
 
   &:hover {
-    background: ${$isActive ? theme.colors.primary.light3 : theme.colors.grayscale.light4};
+    background: ${$isActive ? theme.colorPrimaryBgHover : theme.colorBgTextHover};
   }
 
   &:active {
-    background: ${$isActive ? theme.colors.primary.light2 : theme.colors.grayscale.light3};
+    background: ${$isActive ? theme.colorPrimaryBgHover : theme.colorBgTextActive};
   }
 `,
 );

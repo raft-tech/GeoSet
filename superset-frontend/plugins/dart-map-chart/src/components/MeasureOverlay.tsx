@@ -45,12 +45,12 @@ const InstructionBanner = styled.div`
   top: 56px;
   left: 50%;
   transform: translateX(-50%);
-  background: ${({ theme }) => theme.colors.grayscale.dark2}CC;
-  color: ${({ theme }) => theme.colors.grayscale.light5};
-  padding: ${({ theme }) => theme.gridUnit * 2}px
-    ${({ theme }) => theme.gridUnit * 4}px;
+  background: ${({ theme }) => theme.colorTextBase}CC;
+  color: ${({ theme }) => theme.colorBgElevated};
+  padding: ${({ theme }) => theme.sizeUnit * 2}px
+    ${({ theme }) => theme.sizeUnit * 4}px;
   border-radius: ${({ theme }) => theme.borderRadius}px;
-  font-size: ${({ theme }) => theme.typography.sizes.s}px;
+  font-size: ${({ theme }) => theme.fontSizeSM}px;
   z-index: 100;
   white-space: nowrap;
 `;
