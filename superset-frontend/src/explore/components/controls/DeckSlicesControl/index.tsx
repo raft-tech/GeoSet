@@ -248,10 +248,18 @@ const DeckSlicesControl = ({
       });
   }, [dataEndpoint]);
 
-  // Sync local values with prop value
+  // Sync and sanitize values when props or options change
   useEffect(() => {
-    setLocalValues(normalizeValue(value));
-  }, [value]);
+    const normalized = normalizeValue(value);
+    if (options.length === 0) {
+      setLocalValues(normalized);
+      return;
+    }
+
+    const validSliceIds = new Set(options.map(o => o.value));
+    const sanitized = normalized.filter(v => validSliceIds.has(v.sliceId));
+    setLocalValues(sanitized);
+  }, [value, options]);
 
   // Memoize derived values
   const selectedSliceIds = useMemo(
