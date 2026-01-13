@@ -27,12 +27,13 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
+  useMemo,
   useRef,
   useState,
 } from 'react';
 import { StaticMap, MapRef } from 'react-map-gl';
 import DeckGL from '@deck.gl/react';
-import type { Layer } from '@deck.gl/core';
+import type { Deck, Layer } from '@deck.gl/core';
 import { JsonObject, JsonValue, styled } from '@superset-ui/core';
 import mapboxgl from 'mapbox-gl';
 import Tooltip, { TooltipProps } from './components/Tooltip';
@@ -115,50 +116,57 @@ export const StaticMapStyledWrapper = styled(StaticMap)`
   }
 `;
 
+/**
+ * Uses DeckGL "uncontrolled mode" (initialViewState) to avoid re-renders during pan/zoom.
+ * Refs track view state internally; use setDeckViewState() for programmatic updates.
+ */
 export const DeckGLContainer = memo(
   forwardRef((props: DeckGLContainerProps, ref) => {
     const mapRef = useRef<MapRef>(null);
+    const deckRef = useRef<Deck>(null);
+    const currentViewport = useRef<Viewport>(props.viewport);
+    const pendingSaveTime = useRef<number | null>(null);
     const [tooltip, setTooltip] = useState<TooltipProps['tooltip']>(null);
-    const [lastUpdate, setLastUpdate] = useState<number | null>(null);
-
     const [viewState, setViewState] = useState(() => props.viewport);
 
     const [layerStates, setLayerStates] = useState(() => {
       if (!props.layerStates) {
         return [];
       }
-      return props.layerStates.map(ls => {
-        if (!ls || !ls.layer) {
-          return null;
-        }
+      return props.layerStates
+        .map(ls => {
+          if (!ls || !ls.layer) {
+            return null;
+          }
 
-        const { layer, options } = ls;
-        const currZoom = mapRef.current?.getMap()?.getZoom() ?? 0;
+          const { layer, options } = ls;
+          const currZoom = mapRef.current?.getMap()?.getZoom() ?? 0;
 
-        // Check zoom-based visibility
-        const zoomVisible =
-          (!options?.minZoom || currZoom >= options.minZoom) &&
-          (!options?.maxZoom || currZoom <= options.maxZoom);
+          // Check zoom-based visibility
+          const zoomVisible =
+            (!options?.minZoom || currZoom >= options.minZoom) &&
+            (!options?.maxZoom || currZoom <= options.maxZoom);
 
-        // Respect user-toggled visibility from options (undefined = visible)
-        const userVisible = options?.userVisible !== false;
-        const isVisible = zoomVisible && userVisible;
+          // Respect user-toggled visibility from options (undefined = visible)
+          const userVisible = options?.userVisible !== false;
+          const isVisible = zoomVisible && userVisible;
 
-        try {
-          const clonedLayer = layer.clone({ visible: isVisible });
-          return {
-            id: layer.id,
-            layer: clonedLayer,
-            options,
-          };
-        } catch (err) {
-          return {
-            id: layer.id,
-            layer,
-            options,
-          };
-        }
-      }).filter(Boolean);
+          try {
+            const clonedLayer = layer.clone({ visible: isVisible });
+            return {
+              id: layer.id,
+              layer: clonedLayer,
+              options,
+            };
+          } catch (err) {
+            return {
+              id: layer.id,
+              layer,
+              options,
+            };
+          }
+        })
+        .filter(Boolean);
     });
 
     // Store the initial viewport for reset functionality
@@ -175,26 +183,36 @@ export const DeckGLContainer = memo(
 
     const ZOOM_INCREMENT = 0.5;
 
-    const zoomIn = useCallback(() => {
-      setViewState(prev => ({
-        ...prev,
-        zoom: Math.min((prev.zoom ?? 1) + ZOOM_INCREMENT, 22),
-      }));
-      setLastUpdate(Date.now());
+    // Programmatically set view state in uncontrolled mode via deck.setProps
+    const setDeckViewState = useCallback((newViewState: Viewport) => {
+      setViewState(newViewState);
+      currentViewport.current = newViewState;
+      // Access the underlying Deck instance via .deck property
+      (deckRef.current as any)?.deck?.setProps({
+        initialViewState: newViewState,
+      });
+      pendingSaveTime.current = Date.now();
     }, []);
+
+    const zoomIn = useCallback(() => {
+      const currentZoom = currentViewport.current.zoom ?? 1;
+      setDeckViewState({
+        ...currentViewport.current,
+        zoom: Math.min(currentZoom + ZOOM_INCREMENT, 22),
+      });
+    }, [setDeckViewState]);
 
     const zoomOut = useCallback(() => {
-      setViewState(prev => ({
-        ...prev,
-        zoom: Math.max((prev.zoom ?? 1) - ZOOM_INCREMENT, 0),
-      }));
-      setLastUpdate(Date.now());
-    }, []);
+      const currentZoom = currentViewport.current.zoom ?? 1;
+      setDeckViewState({
+        ...currentViewport.current,
+        zoom: Math.max(currentZoom - ZOOM_INCREMENT, 0),
+      });
+    }, [setDeckViewState]);
 
     const resetView = useCallback(() => {
-      setViewState(initialViewportRef.current);
-      setLastUpdate(Date.now());
-    }, []);
+      setDeckViewState(initialViewportRef.current);
+    }, [setDeckViewState]);
 
     useImperativeHandle(
       ref,
@@ -204,36 +222,64 @@ export const DeckGLContainer = memo(
 
     const tick = useCallback(() => {
       // Rate limiting updating viewport controls as it triggers lots of renders
-      if (lastUpdate && Date.now() - lastUpdate > TICK) {
+      if (
+        pendingSaveTime.current &&
+        Date.now() - pendingSaveTime.current > TICK
+      ) {
         const setCV = props.setControlValue;
         if (setCV) {
-          setCV('viewport', viewState);
+          // Use the ref which always has the latest viewport (even during interaction)
+          setCV('viewport', currentViewport.current);
         }
-        setLastUpdate(null);
+        pendingSaveTime.current = null;
       }
-    }, [lastUpdate, props.setControlValue, viewState]);
+    }, [props.setControlValue]);
 
     useEffect(() => {
       const timer = setInterval(tick, TICK);
       return () => clearInterval(timer);
     }, [tick]);
 
-    // Sync viewport from props when it changes
+    // Sync viewport from props when it changes (e.g., autozoom from parent)
     useEffect(() => {
-      setViewState(props.viewport);
-    }, [props.viewport]);
+      setDeckViewState(props.viewport);
+    }, [props.viewport, setDeckViewState]);
 
     // Force DeckGL resize when container dimensions change
     useEffect(() => {
       requestAnimationFrame(() => {
-        setViewState(prev => ({ ...prev }));
+        (deckRef.current as any)?.deck?.setProps({
+          initialViewState: { ...currentViewport.current },
+        });
       });
     }, [props.width, props.height]);
 
+    // Only sync React state when interaction ends (uncontrolled mode perf optimization)
     const onViewStateChange = useCallback(
-      ({ viewState }: { viewState: JsonObject }) => {
-        setViewState(viewState as Viewport);
-        setLastUpdate(Date.now());
+      ({
+        viewState: newViewState,
+        interactionState,
+      }: {
+        viewState: JsonObject;
+        interactionState?: {
+          isDragging?: boolean;
+          isPanning?: boolean;
+          isZooming?: boolean;
+        };
+      }) => {
+        const newVS = newViewState as Viewport;
+        currentViewport.current = newVS;
+
+        // Only update React state when interaction ends (not during drag)
+        const isInteracting =
+          interactionState?.isDragging ||
+          interactionState?.isPanning ||
+          interactionState?.isZooming;
+        if (!isInteracting) {
+          setViewState(newVS);
+        }
+        // Always mark for save so viewport persists, but rate-limited by tick()
+        pendingSaveTime.current = Date.now();
       },
       [],
     );
@@ -265,54 +311,43 @@ export const DeckGLContainer = memo(
       distance,
     } = useMeasureLayers(measureState, project);
 
-    const getLayerObjects = useCallback(
-      () => {
-        if (!layerStates || layerStates.length === 0) {
-          return measureLayers as Layer[];
-        }
-        const layers = layerStates.map(layerState => {
-          if (!layerState?.layer) {
-            return null;
-          }
-          return layerState.layer;
-        }).filter(Boolean) as Layer[];
-        return [...layers, ...measureLayers] as Layer[];
-      },
-      [layerStates, measureLayers],
-    );
+    const allLayers = useMemo(() => {
+      if (!layerStates || layerStates.length === 0) {
+        return measureLayers as Layer[];
+      }
+      const layers = layerStates
+        .map(ls => ls?.layer)
+        .filter(Boolean) as Layer[];
+      return [...layers, ...measureLayers] as Layer[];
+    }, [layerStates, measureLayers]);
 
     useEffect(() => {
-      if (!props.layerStates) {
-        return;
-      }
+      if (!props.layerStates) return;
 
-      const newLayerStates = props.layerStates.map(ls => {
-        if (!ls || !ls.layer) {
-          return null;
-        }
+      const newLayerStates = props.layerStates
+        .map(ls => {
+          if (!ls?.layer) return null;
 
-        const { layer, options } = ls;
-        const currZoom = mapRef.current?.getMap()?.getZoom() ?? 0;
+          const { layer, options } = ls;
+          const currZoom = mapRef.current?.getMap()?.getZoom() ?? 0;
 
-        // Check zoom-based visibility
-        const zoomVisible =
-          (!options?.minZoom || currZoom >= options.minZoom) &&
-          (!options?.maxZoom || currZoom <= options.maxZoom);
+          const zoomVisible =
+            (!options?.minZoom || currZoom >= options.minZoom) &&
+            (!options?.maxZoom || currZoom <= options.maxZoom);
+          const userVisible = options?.userVisible !== false;
+          const isVisible = zoomVisible && userVisible;
 
-        // Respect user-toggled visibility from options (undefined = visible)
-        const userVisible = options?.userVisible !== false;
-        const isVisible = zoomVisible && userVisible;
-
-        try {
-          return {
-            id: layer.id,
-            layer: layer.clone({ visible: isVisible }),
-            options,
-          };
-        } catch (cloneErr) {
-          return { id: layer.id, layer, options };
-        }
-      }).filter(Boolean);
+          try {
+            return {
+              id: layer.id,
+              layer: layer.clone({ visible: isVisible }),
+              options,
+            };
+          } catch {
+            return { id: layer.id, layer, options };
+          }
+        })
+        .filter(Boolean);
 
       setLayerStates(newLayerStates);
     }, [props.layerStates]);
@@ -329,25 +364,27 @@ export const DeckGLContainer = memo(
       const updateLayerVisibility = () => {
         const currZoom = map.getZoom();
         setLayerStates(prevLayerStates =>
-          prevLayerStates.map(ls => {
-            if (!ls) return null;
-            const { layer, options } = ls;
+          prevLayerStates
+            .map(ls => {
+              if (!ls) return null;
+              const { layer, options } = ls;
 
-            // Check zoom-based visibility
-            const zoomVisible =
-              (!options.minZoom || currZoom >= options.minZoom) &&
-              (!options.maxZoom || currZoom <= options.maxZoom);
+              // Check zoom-based visibility
+              const zoomVisible =
+                (!options.minZoom || currZoom >= options.minZoom) &&
+                (!options.maxZoom || currZoom <= options.maxZoom);
 
-            // Respect user-toggled visibility from options (undefined = visible)
-            const userVisible = options.userVisible !== false;
-            const isVisible = zoomVisible && userVisible;
+              // Respect user-toggled visibility from options (undefined = visible)
+              const userVisible = options.userVisible !== false;
+              const isVisible = zoomVisible && userVisible;
 
-            return {
-              id: layer.id,
-              layer: layer.clone({ visible: isVisible }),
-              options,
-            };
-          }).filter(Boolean),
+              return {
+                id: layer.id,
+                layer: layer.clone({ visible: isVisible }),
+                options,
+              };
+            })
+            .filter(Boolean),
         );
       };
 
@@ -480,11 +517,12 @@ export const DeckGLContainer = memo(
         onMouseUp={handleMouseUp}
       >
         <DeckGL
+          ref={deckRef}
           controller={controllerOptions}
           width={width}
           height={height}
-          layers={getLayerObjects()}
-          viewState={viewState}
+          layers={allLayers}
+          initialViewState={viewState}
           onViewStateChange={onViewStateChange}
           onClick={handleClick}
           getCursor={getCursor}
