@@ -19,15 +19,17 @@
  */
 import { Feature, Polygon, MultiPolygon } from 'geojson';
 
-/** Ensures a polygon ring is closed (first == last vertex) */
+/** Ensures a polygon ring is closed (first == last vertex) - returns new array if modification needed */
 function closeRing(ring: number[][]): number[][] {
   if (!ring || ring.length < 3) return ring;
-  const [firstLng, firstLat] = ring[0];
-  const [lastLng, lastLat] = ring[ring.length - 1];
-  if (firstLng !== lastLng || firstLat !== lastLat) {
-    ring.push([firstLng, firstLat]);
+  const first = ring[0];
+  const last = ring[ring.length - 1];
+  // Check if already closed
+  if (first[0] === last[0] && first[1] === last[1]) {
+    return ring; // Already closed, return as-is
   }
-  return ring;
+  // Return new array with closing point (avoid mutating input)
+  return [...ring, [first[0], first[1]]];
 }
 
 export default function getPointsFromPolygon(
