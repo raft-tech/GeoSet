@@ -133,11 +133,11 @@ const MapControls = ({
       <ControlButton onClick={onResetView} title="Reset view">
         <HomeIcon />
       </ControlButton>
-      <ControlButton onClick={onZoomIn} title="Zoom in">
-        +
-      </ControlButton>
       <ControlButton onClick={onZoomOut} title="Zoom out">
         −
+      </ControlButton>
+      <ControlButton onClick={onZoomIn} title="Zoom in">
+        +
       </ControlButton>
       <ControlButton
         onClick={onRulerToggle}
