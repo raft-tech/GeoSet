@@ -184,12 +184,15 @@ export const DeckGLContainer = memo(
     const ZOOM_INCREMENT = 0.5;
 
     // Programmatically set view state in uncontrolled mode via deck.setProps
+    // transitionDuration forces DeckGL to actually move to the new viewport
     const setDeckViewState = useCallback((newViewState: Viewport) => {
       setViewState(newViewState);
       currentViewport.current = newViewState;
-      // Access the underlying Deck instance via .deck property
       (deckRef.current as any)?.deck?.setProps({
-        initialViewState: newViewState,
+        initialViewState: {
+          ...newViewState,
+          transitionDuration: 0,
+        },
       });
       pendingSaveTime.current = Date.now();
     }, []);
