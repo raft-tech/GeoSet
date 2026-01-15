@@ -463,30 +463,20 @@ const DeckMulti = (props: DeckMultiProps) => {
   }, [subSlicesLayers, normalizedDeckSlices]);
 
   // Set layer visibility via options.userVisible (preserves icon atlas for faster toggle)
-  // Memoized to prevent re-renders during pan/zoom
-  const layerStatesWithVisibility = useMemo(
-    () =>
-      sortedLayers.map(entry => {
-        const isVisible = layerVisibility[String(entry.sliceId)] !== false;
-        return {
-          ...entry.layerState,
-          options: {
-            ...entry.layerState.options,
-            userVisible: isVisible,
-          },
-        };
-      }),
-    [sortedLayers, layerVisibility],
-  );
+  const layerStatesWithVisibility = sortedLayers.map(entry => {
+    const isVisible = layerVisibility[String(entry.sliceId)] !== false;
+    return {
+      ...entry.layerState,
+      options: {
+        ...entry.layerState.options,
+        userVisible: isVisible,
+      },
+    };
+  });
 
   // Build legendsBySlice for MultiLegend component
-  // Memoized to prevent re-renders during pan/zoom
-  const legendsBySlice: Record<string, LegendGroup> = useMemo(
-    () =>
-      Object.fromEntries(
-        sortedLayers.map(entry => [String(entry.sliceId), entry.legendGroup]),
-      ),
-    [sortedLayers],
+  const legendsBySlice: Record<string, LegendGroup> = Object.fromEntries(
+    sortedLayers.map(entry => [String(entry.sliceId), entry.legendGroup]),
   );
 
   // Calculate autozoom viewport from layers with autozoom enabled
