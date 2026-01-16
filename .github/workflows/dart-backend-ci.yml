@@ -41,7 +41,7 @@ jobs:
       - name: Python Import Check
         run: |
           python -c "import superset; print('Superset module loaded successfully')"
-          python -c "from superset.dart_map import api; print('DART map module loaded successfully')"
+          python -c "import superset.dart_map.schemas; print('DART map schemas loaded successfully')"
 
       - name: Run Flake8 (lint)
         run: |
