@@ -1,0 +1,73 @@
+{
+  "globalColoring": {
+    "fillColor": [
+      40,
+      147,
+      179,
+      255
+    ],
+    "strokeColor": [
+      0,
+      0,
+      0,
+      255
+    ],
+    "strokeWidth": 2,
+    "lineStyle": "solid",
+    "fillPattern": "solid",
+    "pointType": "circle",
+    "pointSize": 10
+  },
+  "colorByCategory": {
+    "dimension": "category_column",
+    "categoricalColors": [
+      {
+        "category_1_name": {
+          "fillColor": [
+            0,
+            0,
+            255,
+            255
+          ],
+          "legend_entry_name": "category_1_legend_name"
+        }
+      },
+      {
+        "category_2_name": {
+          "fillColor": [
+            255,
+            0,
+            0,
+            255
+          ],
+          "legend_entry_name": "category_2_legend_name"
+        }
+      }
+    ],
+    "defaultLegendName": [
+      "Other"
+    ]
+  },
+  "colorByValue": {
+    "valueColumn": "column_metrics_will_be_applied_to",
+    "upperBound": null,
+    "lowerBound": null,
+    "startColor": [
+      0,
+      255,
+      0,
+      255
+    ],
+    "endColor": [
+      255,
+      0,
+      0,
+      255
+    ],
+    "breakpoints": []
+  },
+  "legend": {
+    "title": "legend_title",
+    "name": "human_readable_legend_name"
+  }
+}

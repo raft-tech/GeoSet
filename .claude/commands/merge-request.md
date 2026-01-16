@@ -4,7 +4,7 @@ Use the gh CLI tool to create a merge request for the current branch. Each merge
 
 Additionally, each merge request should be given a score indicating how focused the changes are. The score should range between 1 (unfocused) and 10 (focused). A merge request that changes many different, unrelated parts of the code is a 1. A merge request that focuses on one change is a 10.
 
-All merge requests should set the target branch to `main-dartmap`.
+All merge requests should set the target branch to `main`.
 
 If a merge request already exists for source branch, update the merge request title and body if necessary.
 
