@@ -1,4 +1,4 @@
-ame: "DART Backend CI"
+name: "DART Backend CI"
 
 on:
   push:
