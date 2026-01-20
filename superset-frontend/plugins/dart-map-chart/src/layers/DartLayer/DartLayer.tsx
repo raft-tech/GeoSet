@@ -112,6 +112,7 @@ const alterProps = (props: JsonObject = {}, propOverrides: JsonObject = {}) => {
       newProps[k] = props[k];
     }
   });
+
   // Normalize fillColor and strokeColor to RGBA arrays
   if (newProps.fillColor !== undefined) {
     newProps.fillColor = normalizeRGBA(newProps.fillColor);
