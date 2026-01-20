@@ -19,6 +19,7 @@
 
 import { SupersetClient, styled, t, css } from '@superset-ui/core';
 import {
+  Alert,
   Button,
   Card,
   Flex,
@@ -27,9 +28,16 @@ import {
   Typography,
   Icons,
 } from '@superset-ui/core/components';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { capitalize } from 'lodash/fp';
 import getBootstrapData from 'src/utils/getBootstrapData';
+
+type SsoHealthStatus = {
+  reachable: boolean;
+  status_code: number | null;
+  error: string | null;
+  configured: boolean;
+};
 
 type OAuthProvider = {
   name: string;
@@ -77,8 +85,35 @@ const StyledLabel = styled(Typography.Text)`
 export default function Login() {
   const [form] = Form.useForm<LoginForm>();
   const [loading, setLoading] = useState(false);
+  const [ssoHealth, setSsoHealth] = useState<SsoHealthStatus | null>(null);
+  const [checkingSso, setCheckingSso] = useState(true);
 
   const bootstrapData = getBootstrapData();
+  const authType: AuthType = bootstrapData.common.conf.AUTH_TYPE;
+
+  // Check SSO connectivity on mount for OAuth/OID auth types
+  useEffect(() => {
+    if (authType === AuthType.AuthOauth || authType === AuthType.AuthOID) {
+      setCheckingSso(true);
+      SupersetClient.get({ endpoint: '/api/v1/sso/health' })
+        .then(({ json }) => {
+          setSsoHealth(json as SsoHealthStatus);
+        })
+        .catch(() => {
+          setSsoHealth({
+            reachable: false,
+            status_code: null,
+            error: 'Failed to check SSO connectivity',
+            configured: true,
+          });
+        })
+        .finally(() => {
+          setCheckingSso(false);
+        });
+    } else {
+      setCheckingSso(false);
+    }
+  }, [authType]);
   const nextUrl = useMemo(() => {
     try {
       const params = new URLSearchParams(window.location.search);
@@ -100,7 +135,6 @@ export default function Login() {
       : base;
   };
 
-  const authType: AuthType = bootstrapData.common.conf.AUTH_TYPE;
   const providers: Provider[] = bootstrapData.common.conf.AUTH_PROVIDERS;
   const authRegistration: boolean =
     bootstrapData.common.conf.AUTH_USER_REGISTRATION;
@@ -142,14 +176,28 @@ export default function Login() {
       <StyledCard title={t('Sign in')} padded>
         {authType === AuthType.AuthOID && (
           <Flex justify="center" vertical gap="middle">
+            {!checkingSso && ssoHealth?.configured && !ssoHealth?.reachable && (
+              <Alert
+                type="error"
+                showIcon
+                message={t('VPN Connection Required')}
+                description={t(
+                  'Unable to reach the SSO server. Please ensure you are connected to the VPN before signing in.',
+                )}
+                css={css`
+                  margin-bottom: 16px;
+                `}
+              />
+            )}
             <Form layout="vertical" requiredMark="optional" form={form}>
               {providers.map((provider: OIDProvider) => (
-                <Form.Item<LoginForm>>
+                <Form.Item<LoginForm> key={provider.name}>
                   <Button
                     href={buildProviderLoginUrl(provider.name)}
                     block
                     iconPosition="start"
                     icon={getAuthIconElement(provider.name)}
+                    loading={checkingSso}
                   >
                     {t('Sign in with')} {capitalize(provider.name)}
                   </Button>
@@ -160,14 +208,28 @@ export default function Login() {
         )}
         {authType === AuthType.AuthOauth && (
           <Flex justify="center" gap={0} vertical>
+            {!checkingSso && ssoHealth?.configured && !ssoHealth?.reachable && (
+              <Alert
+                type="error"
+                showIcon
+                message={t('VPN Connection Required')}
+                description={t(
+                  'Unable to reach the SSO server. Please ensure you are connected to the VPN before signing in.',
+                )}
+                css={css`
+                  margin-bottom: 16px;
+                `}
+              />
+            )}
             <Form layout="vertical" requiredMark="optional" form={form}>
               {providers.map((provider: OAuthProvider) => (
-                <Form.Item<LoginForm>>
+                <Form.Item<LoginForm> key={provider.name}>
                   <Button
                     href={buildProviderLoginUrl(provider.name)}
                     block
                     iconPosition="start"
                     icon={getAuthIconElement(provider.name)}
+                    loading={checkingSso}
                   >
                     {t('Sign in with')} {capitalize(provider.name)}
                   </Button>
