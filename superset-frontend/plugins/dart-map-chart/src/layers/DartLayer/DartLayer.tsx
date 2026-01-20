@@ -61,6 +61,7 @@ import { GeoJsonFeature } from '../../types';
 import { useDebouncedValue } from '../../utils/hooks';
 import { normalizeRGBA } from '../../utils/colorsFallback';
 import { getColoredSvgUrl } from '../../utils/svgIcons';
+import { PointClusterLayer } from '../PointClusterLayer';
 import { validateLayerType } from '../../utilities/utils';
 import { expandPolygonFeatures } from '../../utils/expandPolygonFeatures';
 import {
@@ -377,65 +378,102 @@ export function getLayer(
   );
 
   switch (layerType) {
-    // POINTS -- should be ScatterplotLayer or IconLayer (pointType is given)
+    // POINTS -- uses PointClusterLayer for automatic clustering (unless metrics are applied)
     case 'Point': {
       const iconSize = Number(pointSize) || 5;
-      if (pointType) {
-        let iconName = pointType.replace('-icon', ''); // e.g. "fire-icon" -> "fire"
-        if (!iconName) {
-          iconName = 'circle';
-        }
-        return new IconLayer({
-          id: `icon-layer-${fd.slice_id}-${sortedFeatures.length}`,
-          data: sortedFeatures as Feature<Geometry, GeoJsonProperties>[],
-          getIconColor: (f: any) => f.color,
-          getPosition: f => f.geometry?.coordinates,
-          getIcon: f => {
-            const rgba = f.color || fillColorArray;
-            const url = getColoredSvgUrl(iconName, rgba);
 
-            return {
-              url,
-              width: 128,
-              height: 128,
-              anchorY: 128,
-            };
-          },
-          getSize: () => iconSize,
-          sizeScale: 2,
-          sizeUnits: 'pixels',
-          // Force layer update when data or icons change
-          updateTriggers: {
-            getIcon: [iconName, fillColorArray, sortedFeatures.length],
-            getIconColor: [sortedFeatures.length],
-            getPosition: [sortedFeatures.length],
-          },
-          // Load icons immediately
-          loadOptions: {
-            imagebitmap: {
-              resizeWidth: 128,
-              resizeHeight: 128,
+      // Skip clustering when metrics are applied - each point has a unique color value
+      if (isMetric) {
+        if (pointType) {
+          let iconName = pointType.replace('-icon', '');
+          if (!iconName) iconName = 'circle';
+
+          return new IconLayer({
+            id: `icon-layer-${fd.slice_id}-${sortedFeatures.length}`,
+            data: sortedFeatures as Feature<Geometry, GeoJsonProperties>[],
+            getIconColor: (f: any) => f.color,
+            getPosition: (f: any) => f.geometry?.coordinates,
+            getIcon: (f: any) => {
+              const rgba = f.color || fillColorArray;
+              const url = getColoredSvgUrl(iconName, rgba);
+              return {
+                url,
+                width: 128,
+                height: 128,
+                anchorY: 128,
+              };
             },
-          },
+            getSize: () => iconSize,
+            sizeScale: 2,
+            sizeUnits: 'pixels',
+            updateTriggers: {
+              getIcon: [iconName, fillColorArray, sortedFeatures.length],
+              getIconColor: [sortedFeatures.length],
+              getPosition: [sortedFeatures.length],
+            },
+            loadOptions: {
+              imagebitmap: {
+                resizeWidth: 128,
+                resizeHeight: 128,
+              },
+            },
+            ...baseLayerProps,
+          });
+        }
+
+        return new ScatterplotLayer({
+          id: `point-layer-${fd.slice_id}`,
+          data: sortedFeatures as Feature<Geometry, GeoJsonProperties>[],
+          filled: filled ?? fd.filled,
+          stroked: stroked ?? fd.stroked,
+          extruded: extruded ?? fd.extruded,
+          getPosition: (f: any) => f.geometry?.coordinates,
+          getFillColor: (feature: any) => feature.color || fillColorArray,
+          getLineColor: () => strokeColorArray,
+          getLineWidth: lineWidth ?? (fd.lineWidth || 1),
+          getRadius: () => iconSize,
+          radiusUnits: 'pixels',
+          radiusMinPixels: 1,
+          radiusMaxPixels: 50,
+          radiusScale: 1,
           ...baseLayerProps,
         });
       }
 
-      return new ScatterplotLayer({
-        id: `point-layer-${fd.slice_id}`,
-        data: sortedFeatures as Feature<Geometry, GeoJsonProperties>[],
+      // Build category colors map from categories prop
+      const categoryColorsMap: Record<string, number[]> = {};
+      for (const [key, value] of Object.entries(categories || {})) {
+        if ((value as { color?: number[] }).color) {
+          categoryColorsMap[key] = (value as { color: number[] }).color;
+        }
+      }
+
+      // Get icon name if pointType is specified
+      let iconName: string | undefined;
+      if (pointType) {
+        iconName = pointType.replace('-icon', '');
+        if (!iconName) iconName = 'circle';
+      }
+
+      // Use PointClusterLayer - automatically clusters nearby points
+      // Renders single points as IconLayer (if iconName) or ScatterplotLayer (if not)
+      return new PointClusterLayer({
+        id: `point-layer-${fd.slice_id}-${sortedFeatures.length}`,
+        data: sortedFeatures,
+        getPosition: (f: any) => f.geometry?.coordinates as [number, number],
+        categoryColors: categoryColorsMap,
+        defaultColor: fillColorArray,
+        // Dimension column for category lookup in cluster color
+        dimensionColumn: dimension as string | undefined,
+        // IconLayer props (only used if iconName is set)
+        iconName,
+        iconSize,
+        // ScatterplotLayer props (only used if iconName is NOT set)
+        pointRadius: iconSize,
         filled: filled ?? fd.filled,
         stroked: stroked ?? fd.stroked,
-        extruded: extruded ?? fd.extruded,
-        getPosition: f => f.geometry?.coordinates,
-        getFillColor: feature => feature.color || fillColorArray,
-        getLineColor: () => strokeColorArray,
-        getLineWidth: lineWidth ?? (fd.lineWidth || 1),
-        getRadius: () => iconSize,
-        radiusUnits: 'pixels',
-        radiusMinPixels: 1,
-        radiusMaxPixels: 50,
-        radiusScale: 1,
+        strokeColor: strokeColorArray,
+        lineWidth: lineWidth ?? (fd.lineWidth || 1),
         ...baseLayerProps,
       });
     }
