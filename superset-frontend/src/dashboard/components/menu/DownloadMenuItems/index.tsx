@@ -64,7 +64,7 @@ export const useDownloadMenuItems = (
 
   const onDownloadPdf = async (e: SyntheticEvent) => {
     try {
-      downloadAsPdf(SCREENSHOT_NODE_SELECTOR, dashboardTitle, true)(e);
+      await downloadAsPdf(SCREENSHOT_NODE_SELECTOR, dashboardTitle, true)(e);
     } catch (error) {
       logging.error(error);
       addDangerToast(t('Sorry, something went wrong. Try again later.'));

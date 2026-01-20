@@ -1517,35 +1517,6 @@ class MapboxViz(BaseViz):
             "color": self.form_data.get("mapbox_color"),
         }
 
-
-class DartDeckGLMultiLayer(BaseViz):
-    """Pile on multiple DeckGL layers for DART"""
-
-    viz_type = "deck_dart_multi"
-    verbose_name = _("Deck.gl - DART Multiple Layers")
-
-    is_timeseries = False
-    credits = '<a href="https://uber.github.io/deck.gl/">deck.gl</a>'
-
-    @deprecated(deprecated_in="3.0")
-    def query_obj(self) -> QueryObjectDict:
-        return {}
-
-    @deprecated(deprecated_in="3.0")
-    def get_data(self, df: pd.DataFrame) -> VizData:
-        # Late imports to avoid circular import issues
-        # pylint: disable=import-outside-toplevel
-        from superset import db
-        from superset.models.slice import Slice
-
-        slice_ids = self.form_data.get("deck_slices")
-        slices = db.session.query(Slice).filter(Slice.id.in_(slice_ids)).all()
-        return {
-            "mapboxApiKey": current_app.config["MAPBOX_API_KEY"],
-            "slices": [slc.data for slc in slices],
-        }
-
-
 class DeckGLMultiLayer(BaseViz):
     """Pile on multiple DeckGL layers"""
 
