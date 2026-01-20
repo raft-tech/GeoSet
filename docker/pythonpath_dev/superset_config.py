@@ -100,6 +100,11 @@ CELERY_CONFIG = CeleryConfig
 
 FEATURE_FLAGS = {"ALERT_REPORTS": True, "ACCESSIBILITY_SECTION_508": True}
 ALERT_REPORTS_NOTIFICATION_DRY_RUN = True
+
+# SSO Health Check configuration
+# This URL is used by the login page to check if the user can reach the SSO provider
+# If unreachable, a VPN connection warning will be displayed
+SSO_HEALTH_CHECK_URL = os.getenv("SSO_HEALTH_CHECK_URL", "https://sso.management.acf.gov")
 WEBDRIVER_BASEURL = "http://superset:8088/"  # When using docker compose baseurl should be http://superset_app:8088/  # noqa: E501
 # The base URL for the email report hyperlinks.
 WEBDRIVER_BASEURL_USER_FRIENDLY = WEBDRIVER_BASEURL

@@ -26,7 +26,7 @@ import {
   ScatterplotLayer,
 } from '@deck.gl/layers';
 import { PathStyleExtension } from '@deck.gl/extensions';
-// ignoring the eslint error below since typescript prefers 'geojson' to '@types/geojson'
+// Ignoring the eslint error below since typescript prefers 'geojson' to '@types/geojson'
 // eslint-disable-next-line import/no-unresolved
 import { Feature, Geometry, GeoJsonProperties } from 'geojson';
 import {

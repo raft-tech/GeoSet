@@ -19,6 +19,7 @@
 
 import { SupersetClient, styled, t, css } from '@superset-ui/core';
 import {
+  Alert,
   Button,
   Card,
   Flex,
@@ -27,9 +28,16 @@ import {
   Typography,
   Icons,
 } from '@superset-ui/core/components';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { capitalize } from 'lodash/fp';
 import getBootstrapData from 'src/utils/getBootstrapData';
+
+type SsoHealthStatus = {
+  reachable: boolean;
+  status_code: number | null;
+  error: string | null;
+  configured: boolean;
+};
 
 type OAuthProvider = {
   name: string;
@@ -77,8 +85,31 @@ const StyledLabel = styled(Typography.Text)`
 export default function Login() {
   const [form] = Form.useForm<LoginForm>();
   const [loading, setLoading] = useState(false);
+  const [ssoHealth, setSsoHealth] = useState<SsoHealthStatus | null>(null);
+  const [checkingSso, setCheckingSso] = useState(true);
 
   const bootstrapData = getBootstrapData();
+  const authType: AuthType = bootstrapData.common.conf.AUTH_TYPE;
+
+  // Check SSO connectivity on mount - backend determines if check should run
+  useEffect(() => {
+    setCheckingSso(true);
+    SupersetClient.get({ endpoint: '/api/v1/sso/health' })
+      .then(({ json }) => {
+        setSsoHealth(json as SsoHealthStatus);
+      })
+      .catch(() => {
+        setSsoHealth({
+          reachable: false,
+          status_code: null,
+          error: 'Failed to check SSO connectivity',
+          configured: true,
+        });
+      })
+      .finally(() => {
+        setCheckingSso(false);
+      });
+  }, []);
   const nextUrl = useMemo(() => {
     try {
       const params = new URLSearchParams(window.location.search);
@@ -100,10 +131,13 @@ export default function Login() {
       : base;
   };
 
-  const authType: AuthType = bootstrapData.common.conf.AUTH_TYPE;
   const providers: Provider[] = bootstrapData.common.conf.AUTH_PROVIDERS;
   const authRegistration: boolean =
     bootstrapData.common.conf.AUTH_USER_REGISTRATION;
+
+  // Disable login when SSO is configured but unreachable
+  const ssoUnreachable =
+    !checkingSso && ssoHealth?.configured && !ssoHealth?.reachable;
 
   const onFinish = (values: LoginForm) => {
     setLoading(true);
@@ -142,14 +176,33 @@ export default function Login() {
       <StyledCard title={t('Sign in')} padded>
         {authType === AuthType.AuthOID && (
           <Flex justify="center" vertical gap="middle">
+            {ssoUnreachable && (
+              <Alert
+                type="error"
+                showIcon
+                message={t('VPN Connection Required')}
+                description={t(
+                  'Unable to reach the SSO server. Please ensure you are connected to the VPN before signing in.',
+                )}
+                css={css`
+                  margin-bottom: 16px;
+                `}
+              />
+            )}
             <Form layout="vertical" requiredMark="optional" form={form}>
               {providers.map((provider: OIDProvider) => (
-                <Form.Item<LoginForm>>
+                <Form.Item<LoginForm> key={provider.name}>
                   <Button
-                    href={buildProviderLoginUrl(provider.name)}
+                    href={
+                      ssoUnreachable
+                        ? undefined
+                        : buildProviderLoginUrl(provider.name)
+                    }
                     block
                     iconPosition="start"
                     icon={getAuthIconElement(provider.name)}
+                    loading={checkingSso}
+                    disabled={ssoUnreachable}
                   >
                     {t('Sign in with')} {capitalize(provider.name)}
                   </Button>
@@ -160,14 +213,33 @@ export default function Login() {
         )}
         {authType === AuthType.AuthOauth && (
           <Flex justify="center" gap={0} vertical>
+            {ssoUnreachable && (
+              <Alert
+                type="error"
+                showIcon
+                message={t('VPN Connection Required')}
+                description={t(
+                  'Unable to reach the SSO server. Please ensure you are connected to the VPN before signing in.',
+                )}
+                css={css`
+                  margin-bottom: 16px;
+                `}
+              />
+            )}
             <Form layout="vertical" requiredMark="optional" form={form}>
               {providers.map((provider: OAuthProvider) => (
-                <Form.Item<LoginForm>>
+                <Form.Item<LoginForm> key={provider.name}>
                   <Button
-                    href={buildProviderLoginUrl(provider.name)}
+                    href={
+                      ssoUnreachable
+                        ? undefined
+                        : buildProviderLoginUrl(provider.name)
+                    }
                     block
                     iconPosition="start"
                     icon={getAuthIconElement(provider.name)}
+                    loading={checkingSso}
+                    disabled={ssoUnreachable}
                   >
                     {t('Sign in with')} {capitalize(provider.name)}
                   </Button>
@@ -179,6 +251,19 @@ export default function Login() {
 
         {(authType === AuthType.AuthDB || authType === AuthType.AuthLDAP) && (
           <Flex justify="center" vertical gap="middle">
+            {ssoUnreachable && (
+              <Alert
+                type="error"
+                showIcon
+                message={t('VPN Connection Required')}
+                description={t(
+                  'Unable to reach the SSO server. Please ensure you are connected to the VPN before signing in.',
+                )}
+                css={css`
+                  margin-bottom: 16px;
+                `}
+              />
+            )}
             <Typography.Text type="secondary">
               {t('Enter your login and password below:')}
             </Typography.Text>
@@ -187,6 +272,7 @@ export default function Login() {
               requiredMark="optional"
               form={form}
               onFinish={onFinish}
+              disabled={ssoUnreachable}
             >
               <Form.Item<LoginForm>
                 label={<StyledLabel>{t('Username:')}</StyledLabel>}
@@ -199,6 +285,7 @@ export default function Login() {
                   autoFocus
                   prefix={<Icons.UserOutlined iconSize="l" />}
                   data-test="username-input"
+                  disabled={ssoUnreachable}
                 />
               </Form.Item>
               <Form.Item<LoginForm>
@@ -211,6 +298,7 @@ export default function Login() {
                 <Input.Password
                   prefix={<Icons.KeyOutlined iconSize="l" />}
                   data-test="password-input"
+                  disabled={ssoUnreachable}
                 />
               </Form.Item>
               <Form.Item label={null}>
@@ -224,6 +312,7 @@ export default function Login() {
                     type="primary"
                     htmlType="submit"
                     loading={loading}
+                    disabled={ssoUnreachable}
                     data-test="login-button"
                   >
                     {t('Sign in')}
@@ -233,6 +322,7 @@ export default function Login() {
                       block
                       type="default"
                       href="/register/"
+                      disabled={ssoUnreachable}
                       data-test="register-button"
                     >
                       {t('Register')}
