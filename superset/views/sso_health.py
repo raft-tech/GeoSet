@@ -21,6 +21,7 @@ This module provides an endpoint to check connectivity to the SSO provider.
 Used by the frontend login page to detect if the user is on VPN.
 """
 import logging
+import os
 
 import requests
 from flask import Blueprint, current_app, jsonify
@@ -43,10 +44,13 @@ def sso_health_check() -> FlaskResponse:
     - reachable: boolean indicating if SSO endpoint is reachable
     - status_code: HTTP status code from SSO endpoint (if any)
     - error: error message (if any)
+    - configured: boolean indicating if SSO health check is configured/enabled
     """
     sso_url = current_app.config.get("SSO_HEALTH_CHECK_URL")
+    is_production = os.environ.get("SUPERSET_ENV") == "production"
 
-    if not sso_url:
+    # Skip SSO check if not in production or URL not configured
+    if not is_production or not sso_url:
         return jsonify({
             "reachable": True,
             "status_code": None,

@@ -91,29 +91,25 @@ export default function Login() {
   const bootstrapData = getBootstrapData();
   const authType: AuthType = bootstrapData.common.conf.AUTH_TYPE;
 
-  // Check SSO connectivity on mount for OAuth/OID auth types
+  // Check SSO connectivity on mount - backend determines if check should run
   useEffect(() => {
-    if (authType === AuthType.AuthOauth || authType === AuthType.AuthOID) {
-      setCheckingSso(true);
-      SupersetClient.get({ endpoint: '/api/v1/sso/health' })
-        .then(({ json }) => {
-          setSsoHealth(json as SsoHealthStatus);
-        })
-        .catch(() => {
-          setSsoHealth({
-            reachable: false,
-            status_code: null,
-            error: 'Failed to check SSO connectivity',
-            configured: true,
-          });
-        })
-        .finally(() => {
-          setCheckingSso(false);
+    setCheckingSso(true);
+    SupersetClient.get({ endpoint: '/api/v1/sso/health' })
+      .then(({ json }) => {
+        setSsoHealth(json as SsoHealthStatus);
+      })
+      .catch(() => {
+        setSsoHealth({
+          reachable: false,
+          status_code: null,
+          error: 'Failed to check SSO connectivity',
+          configured: true,
         });
-    } else {
-      setCheckingSso(false);
-    }
-  }, [authType]);
+      })
+      .finally(() => {
+        setCheckingSso(false);
+      });
+  }, []);
   const nextUrl = useMemo(() => {
     try {
       const params = new URLSearchParams(window.location.search);
@@ -138,6 +134,10 @@ export default function Login() {
   const providers: Provider[] = bootstrapData.common.conf.AUTH_PROVIDERS;
   const authRegistration: boolean =
     bootstrapData.common.conf.AUTH_USER_REGISTRATION;
+
+  // Disable login when SSO is configured but unreachable
+  const ssoUnreachable =
+    !checkingSso && ssoHealth?.configured && !ssoHealth?.reachable;
 
   const onFinish = (values: LoginForm) => {
     setLoading(true);
@@ -176,7 +176,7 @@ export default function Login() {
       <StyledCard title={t('Sign in')} padded>
         {authType === AuthType.AuthOID && (
           <Flex justify="center" vertical gap="middle">
-            {!checkingSso && ssoHealth?.configured && !ssoHealth?.reachable && (
+            {ssoUnreachable && (
               <Alert
                 type="error"
                 showIcon
@@ -193,11 +193,16 @@ export default function Login() {
               {providers.map((provider: OIDProvider) => (
                 <Form.Item<LoginForm> key={provider.name}>
                   <Button
-                    href={buildProviderLoginUrl(provider.name)}
+                    href={
+                      ssoUnreachable
+                        ? undefined
+                        : buildProviderLoginUrl(provider.name)
+                    }
                     block
                     iconPosition="start"
                     icon={getAuthIconElement(provider.name)}
                     loading={checkingSso}
+                    disabled={ssoUnreachable}
                   >
                     {t('Sign in with')} {capitalize(provider.name)}
                   </Button>
@@ -208,7 +213,7 @@ export default function Login() {
         )}
         {authType === AuthType.AuthOauth && (
           <Flex justify="center" gap={0} vertical>
-            {!checkingSso && ssoHealth?.configured && !ssoHealth?.reachable && (
+            {ssoUnreachable && (
               <Alert
                 type="error"
                 showIcon
@@ -225,11 +230,16 @@ export default function Login() {
               {providers.map((provider: OAuthProvider) => (
                 <Form.Item<LoginForm> key={provider.name}>
                   <Button
-                    href={buildProviderLoginUrl(provider.name)}
+                    href={
+                      ssoUnreachable
+                        ? undefined
+                        : buildProviderLoginUrl(provider.name)
+                    }
                     block
                     iconPosition="start"
                     icon={getAuthIconElement(provider.name)}
                     loading={checkingSso}
+                    disabled={ssoUnreachable}
                   >
                     {t('Sign in with')} {capitalize(provider.name)}
                   </Button>
@@ -241,6 +251,19 @@ export default function Login() {
 
         {(authType === AuthType.AuthDB || authType === AuthType.AuthLDAP) && (
           <Flex justify="center" vertical gap="middle">
+            {ssoUnreachable && (
+              <Alert
+                type="error"
+                showIcon
+                message={t('VPN Connection Required')}
+                description={t(
+                  'Unable to reach the SSO server. Please ensure you are connected to the VPN before signing in.',
+                )}
+                css={css`
+                  margin-bottom: 16px;
+                `}
+              />
+            )}
             <Typography.Text type="secondary">
               {t('Enter your login and password below:')}
             </Typography.Text>
@@ -249,6 +272,7 @@ export default function Login() {
               requiredMark="optional"
               form={form}
               onFinish={onFinish}
+              disabled={ssoUnreachable}
             >
               <Form.Item<LoginForm>
                 label={<StyledLabel>{t('Username:')}</StyledLabel>}
@@ -261,6 +285,7 @@ export default function Login() {
                   autoFocus
                   prefix={<Icons.UserOutlined iconSize="l" />}
                   data-test="username-input"
+                  disabled={ssoUnreachable}
                 />
               </Form.Item>
               <Form.Item<LoginForm>
@@ -273,6 +298,7 @@ export default function Login() {
                 <Input.Password
                   prefix={<Icons.KeyOutlined iconSize="l" />}
                   data-test="password-input"
+                  disabled={ssoUnreachable}
                 />
               </Form.Item>
               <Form.Item label={null}>
@@ -286,6 +312,7 @@ export default function Login() {
                     type="primary"
                     htmlType="submit"
                     loading={loading}
+                    disabled={ssoUnreachable}
                     data-test="login-button"
                   >
                     {t('Sign in')}
@@ -295,6 +322,7 @@ export default function Login() {
                       block
                       type="default"
                       href="/register/"
+                      disabled={ssoUnreachable}
                       data-test="register-button"
                     >
                       {t('Register')}
