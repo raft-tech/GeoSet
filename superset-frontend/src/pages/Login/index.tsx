@@ -174,6 +174,18 @@ export default function Login() {
       `}
     >
       <StyledCard title={t('Sign in')} padded>
+        {checkingSso &&
+          (authType === AuthType.AuthOID ||
+            authType === AuthType.AuthOauth) && (
+            <Alert
+              type="info"
+              showIcon
+              message={t('Checking SSO availability...')}
+              css={css`
+                margin-bottom: 16px;
+              `}
+            />
+          )}
         {authType === AuthType.AuthOID && (
           <Flex justify="center" vertical gap="middle">
             {ssoUnreachable && (
@@ -251,19 +263,6 @@ export default function Login() {
 
         {(authType === AuthType.AuthDB || authType === AuthType.AuthLDAP) && (
           <Flex justify="center" vertical gap="middle">
-            {ssoUnreachable && (
-              <Alert
-                type="error"
-                showIcon
-                message={t('VPN Connection Required')}
-                description={t(
-                  'Unable to reach the SSO server. Please ensure you are connected to the VPN before signing in.',
-                )}
-                css={css`
-                  margin-bottom: 16px;
-                `}
-              />
-            )}
             <Typography.Text type="secondary">
               {t('Enter your login and password below:')}
             </Typography.Text>
@@ -272,7 +271,6 @@ export default function Login() {
               requiredMark="optional"
               form={form}
               onFinish={onFinish}
-              disabled={ssoUnreachable}
             >
               <Form.Item<LoginForm>
                 label={<StyledLabel>{t('Username:')}</StyledLabel>}
@@ -285,7 +283,6 @@ export default function Login() {
                   autoFocus
                   prefix={<Icons.UserOutlined iconSize="l" />}
                   data-test="username-input"
-                  disabled={ssoUnreachable}
                 />
               </Form.Item>
               <Form.Item<LoginForm>
@@ -298,7 +295,6 @@ export default function Login() {
                 <Input.Password
                   prefix={<Icons.KeyOutlined iconSize="l" />}
                   data-test="password-input"
-                  disabled={ssoUnreachable}
                 />
               </Form.Item>
               <Form.Item label={null}>
@@ -312,7 +308,6 @@ export default function Login() {
                     type="primary"
                     htmlType="submit"
                     loading={loading}
-                    disabled={ssoUnreachable}
                     data-test="login-button"
                   >
                     {t('Sign in')}
@@ -322,7 +317,6 @@ export default function Login() {
                       block
                       type="default"
                       href="/register/"
-                      disabled={ssoUnreachable}
                       data-test="register-button"
                     >
                       {t('Register')}
