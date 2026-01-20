@@ -25,6 +25,7 @@ import {
   hoverDataColumns,
   minMaxZoomSlider,
   viewport,
+  enableClustering,
 } from '../../utilities/Shared_DeckGL';
 import { dndGeojsonColumn } from '../../utilities/sharedDndControls';
 import JsonEditorControl from '../../components/JsonEditorControl';
@@ -95,6 +96,16 @@ const config: ControlPanelConfig = {
               description: t(
                 'Select the Geospatial data layer type to render: Polygon, Line, Point, or GeoJSON.',
               ),
+            },
+          },
+        ],
+        [
+          {
+            name: enableClustering.name,
+            config: {
+              ...enableClustering.config,
+              visibility: ({ controls }: { controls: any }) =>
+                controls?.geoJsonLayer?.value === 'Point',
             },
           },
         ],

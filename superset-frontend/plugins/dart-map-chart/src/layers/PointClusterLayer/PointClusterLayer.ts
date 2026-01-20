@@ -58,57 +58,84 @@ export type PointClusterLayerProps = {
   pickable?: boolean;
 };
 
-const CLUSTER_RADIUS = 50; // pixels - controls how aggressively points cluster
+const CLUSTER_RADIUS = 40; // pixels - controls how aggressively points cluster
 const MAX_ZOOM = 20; // max zoom level for clustering
 
 type ClusterData = PointFeature<any> | ClusterFeature<any>;
 
-type ClusterState = {
-  data: ClusterData[];
-  index: Supercluster<any, any>;
-  z: number;
-};
+// Store Supercluster index outside of layer to survive layer recreation during cloning
+// Key is layer ID, value is the Supercluster index
+const indexCache = new Map<string, Supercluster<any, any>>();
 
 export default class PointClusterLayer extends CompositeLayer<PointClusterLayerProps> {
-  // Access state with type assertion since deck.gl manages state internally
-  private get clusterState(): ClusterState {
-    return this.state as unknown as ClusterState;
+  initializeState() {
+    // Build or restore the Supercluster index immediately
+    this.ensureIndexExists();
   }
 
-  shouldUpdateState({ changeFlags }: UpdateParameters<this>) {
-    return changeFlags.somethingChanged;
+  shouldUpdateState({
+    changeFlags,
+  }: UpdateParameters<PointClusterLayer>): boolean {
+    // Must include viewportChanged to trigger renderLayers on zoom
+    return !!(
+      changeFlags.dataChanged ||
+      changeFlags.propsChanged ||
+      changeFlags.viewportChanged
+    );
   }
 
-  updateState({ props, changeFlags }: UpdateParameters<this>) {
-    const rebuildIndex = changeFlags.dataChanged;
-
-    if (rebuildIndex) {
-      const index = new Supercluster<any, any>({
-        maxZoom: MAX_ZOOM,
-        radius: CLUSTER_RADIUS,
-      });
-
-      index.load(
-        props.data.map((d: any) => ({
-          type: 'Feature' as const,
-          geometry: {
-            type: 'Point' as const,
-            coordinates: props.getPosition(d),
-          },
-          properties: d,
-        })),
-      );
-
-      this.setState({ index });
+  updateState({ changeFlags }: UpdateParameters<PointClusterLayer>) {
+    // Rebuild index if data changed
+    if (changeFlags.dataChanged) {
+      this.buildClusterIndex();
     }
 
-    const z = Math.floor(this.context.viewport.zoom);
-    if (rebuildIndex || z !== this.clusterState.z) {
-      this.setState({
-        data: this.clusterState.index.getClusters([-180, -85, 180, 85], z),
-        z,
-      });
+    // Ensure index exists (restore from cache if needed)
+    this.ensureIndexExists();
+  }
+
+  // Build a new Supercluster index from current props data
+  buildClusterIndex() {
+    const { id, data, getPosition } = this.props;
+
+    if (!data || data.length === 0) {
+      return;
     }
+
+    const newIndex = new Supercluster<any, any>({
+      maxZoom: MAX_ZOOM,
+      radius: CLUSTER_RADIUS,
+    });
+
+    newIndex.load(
+      data.map((d: any) => ({
+        type: 'Feature' as const,
+        geometry: {
+          type: 'Point' as const,
+          coordinates: getPosition(d),
+        },
+        properties: d,
+      })),
+    );
+
+    // Cache the index globally (survives layer cloning)
+    indexCache.set(id, newIndex);
+  }
+
+  // Ensure we have an index available (build or restore from cache)
+  ensureIndexExists() {
+    const layerId = this.props.id;
+
+    // Check if we already have an index in cache
+    if (!indexCache.has(layerId)) {
+      // No cached index - try to build one
+      this.buildClusterIndex();
+    }
+  }
+
+  // Get the current Supercluster index (from cache)
+  getClusterIndex(): Supercluster<any, any> | null {
+    return indexCache.get(this.props.id) || null;
   }
 
   getPickingInfo({
@@ -121,8 +148,14 @@ export default class PointClusterLayer extends CompositeLayer<PointClusterLayerP
     const pickedObject = (info.object as any)?.properties;
     if (pickedObject) {
       let objects: any[] | undefined;
-      if (pickedObject.cluster && mode !== 'hover' && pickedObject.cluster_id) {
-        objects = this.clusterState.index
+      const index = this.getClusterIndex();
+      if (
+        pickedObject.cluster &&
+        mode !== 'hover' &&
+        pickedObject.cluster_id &&
+        index
+      ) {
+        objects = index
           .getLeaves(pickedObject.cluster_id, 25)
           .map((f: any) => f.properties);
       }
@@ -132,7 +165,29 @@ export default class PointClusterLayer extends CompositeLayer<PointClusterLayerP
   }
 
   renderLayers(): Layer[] {
-    const { data } = this.clusterState;
+    // Ensure index exists before rendering
+    this.ensureIndexExists();
+
+    // Get the Supercluster index from cache
+    const index = this.getClusterIndex();
+
+    // Get current zoom from the viewport context - this is always current
+    const currentZoom = this.context.viewport?.zoom ?? 0;
+    const z = Math.floor(currentZoom);
+
+    // Calculate clusters directly from the current zoom level
+    // This ensures we always render based on the current viewport
+    let clusterData: ClusterData[] = [];
+    let singlePointData: ClusterData[] = [];
+
+    if (index) {
+      const allData = index.getClusters([-180, -85, 180, 85], z);
+      clusterData = allData.filter((d: ClusterData) => d.properties?.cluster);
+      singlePointData = allData.filter(
+        (d: ClusterData) => !d.properties?.cluster,
+      );
+    }
+
     const {
       iconName,
       iconSize = 10,
@@ -149,20 +204,72 @@ export default class PointClusterLayer extends CompositeLayer<PointClusterLayerP
       onClick,
     } = this.props;
 
-    // Separate clusters from single points
-    const clusters = data.filter((d: ClusterData) => d.properties?.cluster);
-    const singlePoints = data.filter(
-      (d: ClusterData) => !d.properties?.cluster,
-    );
-
     const layers: Layer[] = [];
 
-    // 1. Cluster layer (always IconLayer with numbered circles)
-    if (clusters.length > 0) {
+    // 1. Cluster layer (IconLayer with numbered pin markers)
+    layers.push(
+      new IconLayer({
+        id: `${this.props.id}-clusters`,
+        data: clusterData,
+        visible: clusterData.length > 0,
+        pickable,
+        onHover,
+        onClick,
+
+        getPosition: (d: ClusterData) =>
+          d.geometry.coordinates as [number, number],
+
+        getIcon: (d: ClusterData) => {
+          if (!index) {
+            return { url: '', width: 1, height: 1 };
+          }
+          const clusterId = d.properties?.cluster_id;
+          const leaves = index.getLeaves(clusterId, 100);
+          const features = leaves.map((l: any) => l.properties);
+          const dominantColor = getDominantCategoryColor(
+            features as Array<{
+              color?: number[];
+              categoryName?: string;
+              properties?: Record<string, unknown>;
+            }>,
+            categoryColors,
+            defaultColor,
+            dimensionColumn,
+          );
+          const count = d.properties?.point_count || 0;
+          const url = getClusterIconUrl(count, dominantColor);
+          const { width, height } = getClusterIconSize(count);
+
+          return {
+            url,
+            width,
+            height,
+            anchorY: height,
+          };
+        },
+
+        getSize: (d: ClusterData) => {
+          const count = d.properties?.point_count || 0;
+          return getClusterIconSize(count).height;
+        },
+
+        sizeScale: 1,
+        sizeUnits: 'pixels' as const,
+
+        updateTriggers: {
+          getIcon: [categoryColors, defaultColor, dimensionColumn, z],
+          getSize: [z],
+        },
+      }),
+    );
+
+    // 2. Single points layer - IconLayer or ScatterplotLayer depending on iconName
+    if (iconName) {
       layers.push(
         new IconLayer({
-          id: `${this.props.id}-clusters`,
-          data: clusters,
+          id: `${this.props.id}-icons`,
+          data: singlePointData,
+          visible: singlePointData.length > 0,
           pickable,
           onHover,
           onClick,
@@ -171,125 +278,67 @@ export default class PointClusterLayer extends CompositeLayer<PointClusterLayerP
             d.geometry.coordinates as [number, number],
 
           getIcon: (d: ClusterData) => {
-            const clusterId = d.properties?.cluster_id;
-            const leaves = this.clusterState.index.getLeaves(clusterId, 100);
-            const features = leaves.map((l: any) => l.properties);
-            const dominantColor = getDominantCategoryColor(
-              features as Array<{
-                color?: number[];
-                categoryName?: string;
-                properties?: Record<string, unknown>;
-              }>,
-              categoryColors,
-              defaultColor,
-              dimensionColumn,
-            );
-            const count = d.properties?.point_count || 0;
-            const url = getClusterIconUrl(count, dominantColor);
-            const { width, height } = getClusterIconSize(count);
+            const feature = d.properties;
+            const rgba = feature?.color || defaultColor;
+            const url = getColoredSvgUrl(iconName, rgba);
 
             return {
               url,
-              width,
-              height,
-              anchorY: height, // Anchor at bottom tip of pin
+              width: 128,
+              height: 128,
+              anchorY: 128,
             };
           },
 
-          getSize: (d: ClusterData) => {
-            const count = d.properties?.point_count || 0;
-            // Return height since pin is taller than wide
-            return getClusterIconSize(count).height;
-          },
+          getSize: () => iconSize,
 
-          sizeScale: 1,
+          sizeScale: 2,
           sizeUnits: 'pixels' as const,
 
           updateTriggers: {
-            getIcon: [
-              categoryColors,
-              defaultColor,
-              dimensionColumn,
-              this.clusterState.z,
-            ],
-            getSize: [this.clusterState.z],
+            getIcon: [iconName, defaultColor, z],
+            getSize: [z],
           },
         }),
       );
-    }
+    } else {
+      layers.push(
+        new ScatterplotLayer({
+          id: `${this.props.id}-points`,
+          data: singlePointData,
+          visible: singlePointData.length > 0,
+          pickable,
+          onHover,
+          onClick,
 
-    // 2. Single points layer - IconLayer or ScatterplotLayer depending on iconName
-    if (singlePoints.length > 0) {
-      if (iconName) {
-        // Use IconLayer for single points
-        layers.push(
-          new IconLayer({
-            id: `${this.props.id}-icons`,
-            data: singlePoints,
-            pickable,
-            onHover,
-            onClick,
+          getPosition: (d: ClusterData) =>
+            d.geometry.coordinates as [number, number],
+          getFillColor: (d: ClusterData) => {
+            const feature = d.properties;
+            return (feature?.color || defaultColor) as [
+              number,
+              number,
+              number,
+              number,
+            ];
+          },
+          getLineColor: () => strokeColor as [number, number, number, number],
+          getRadius: () => pointRadius,
 
-            getPosition: (d: ClusterData) =>
-              d.geometry.coordinates as [number, number],
+          filled,
+          stroked,
+          lineWidthUnits: 'pixels' as const,
+          getLineWidth: lineWidth,
+          radiusUnits: 'pixels' as const,
+          radiusMinPixels: 1,
+          radiusMaxPixels: 50,
 
-            getIcon: (d: ClusterData) => {
-              const feature = d.properties;
-              const rgba = feature?.color || defaultColor;
-              const url = getColoredSvgUrl(iconName, rgba);
-
-              return {
-                url,
-                width: 128,
-                height: 128,
-                anchorY: 128, // Bottom anchor for markers
-              };
-            },
-
-            getSize: () => iconSize,
-
-            sizeScale: 2,
-            sizeUnits: 'pixels' as const,
-
-            updateTriggers: {
-              getIcon: [iconName, defaultColor],
-            },
-          }),
-        );
-      } else {
-        // Use ScatterplotLayer for single points (colored dots)
-        layers.push(
-          new ScatterplotLayer({
-            id: `${this.props.id}-points`,
-            data: singlePoints,
-            pickable,
-            onHover,
-            onClick,
-
-            getPosition: (d: ClusterData) =>
-              d.geometry.coordinates as [number, number],
-            getFillColor: (d: ClusterData) => {
-              const feature = d.properties;
-              return (feature?.color || defaultColor) as [
-                number,
-                number,
-                number,
-                number,
-              ];
-            },
-            getLineColor: () => strokeColor as [number, number, number, number],
-            getRadius: () => pointRadius,
-
-            filled,
-            stroked,
-            lineWidthUnits: 'pixels' as const,
-            getLineWidth: lineWidth,
-            radiusUnits: 'pixels' as const,
-            radiusMinPixels: 1,
-            radiusMaxPixels: 50,
-          }),
-        );
-      }
+          updateTriggers: {
+            getFillColor: [z],
+            getRadius: [z],
+          },
+        }),
+      );
     }
 
     return layers;

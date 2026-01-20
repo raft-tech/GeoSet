@@ -378,12 +378,14 @@ export function getLayer(
   );
 
   switch (layerType) {
-    // POINTS -- uses PointClusterLayer for automatic clustering (unless metrics are applied)
+    // POINTS -- uses PointClusterLayer for automatic clustering (unless disabled or metrics are applied)
     case 'Point': {
       const iconSize = Number(pointSize) || 5;
+      // Check if clustering is enabled (default to true if not set)
+      const clusteringEnabled = fd.enableClustering !== false;
 
-      // Skip clustering when metrics are applied - each point has a unique color value
-      if (isMetric) {
+      // Skip clustering when metrics are applied (each point has unique color) or when disabled
+      if (isMetric || !clusteringEnabled) {
         if (pointType) {
           let iconName = pointType.replace('-icon', '');
           if (!iconName) iconName = 'circle';
@@ -457,8 +459,9 @@ export function getLayer(
 
       // Use PointClusterLayer - automatically clusters nearby points
       // Renders single points as IconLayer (if iconName) or ScatterplotLayer (if not)
+      // IMPORTANT: Keep ID stable (no data length) so deck.gl preserves layer state across renders
       return new PointClusterLayer({
-        id: `point-layer-${fd.slice_id}-${sortedFeatures.length}`,
+        id: `point-cluster-layer-${fd.slice_id}`,
         data: sortedFeatures,
         getPosition: (f: any) => f.geometry?.coordinates as [number, number],
         categoryColors: categoryColorsMap,
