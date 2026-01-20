@@ -23,9 +23,6 @@ import { kebabCase } from 'lodash';
 import { logging, t } from '@superset-ui/core';
 import { addWarningToast } from '../components/MessageToasts/actions';
 
-const PDF_QUALITY = 0.95;
-const PX_TO_MM = 0.264583; // Convert pixels to mm (96 DPI)
-
 const generateFileStem = (description: string, date = new Date()) =>
   `${kebabCase(description)}-${date.toISOString().replace(/[: ]/g, '-')}`;
 
@@ -67,21 +64,18 @@ export default function downloadAsPdf(
         // eslint-disable-next-line theme-colors/no-literal-colors
         bgcolor: '#ffffff',
         filter,
-        quality: PDF_QUALITY,
+        quality: 1,
         cacheBust: true,
       });
-
-      const pageWidth = width * PX_TO_MM;
-      const pageHeight = height * PX_TO_MM;
 
       // eslint-disable-next-line new-cap
       const pdf = new jsPDF({
         orientation: width > height ? 'landscape' : 'portrait',
-        unit: 'mm',
-        format: [pageWidth, pageHeight],
+        unit: 'px',
+        format: [width, height],
       });
 
-      pdf.addImage(dataUrl, 'JPEG', 0, 0, pageWidth, pageHeight);
+      pdf.addImage(dataUrl, 'JPEG', 0, 0, width, height);
       pdf.save(`${generateFileStem(description)}.pdf`);
     } catch (error) {
       logging.error('Creating PDF failed', error);
