@@ -140,7 +140,8 @@ export const DeckGLContainer = memo(
           }
 
           const { layer, options } = ls;
-          const currZoom = mapRef.current?.getMap()?.getZoom() ?? 0;
+          // Use initial viewport zoom for initial visibility calculation
+          const currZoom = props.viewport?.zoom ?? 0;
 
           // Check zoom-based visibility
           const zoomVisible =
@@ -151,6 +152,7 @@ export const DeckGLContainer = memo(
           const userVisible = options?.userVisible !== false;
           const isVisible = zoomVisible && userVisible;
 
+          // Clone layer with visibility
           try {
             const clonedLayer = layer.clone({ visible: isVisible });
             return {
@@ -321,6 +323,7 @@ export const DeckGLContainer = memo(
       const layers = layerStates
         .map(ls => ls?.layer)
         .filter(Boolean) as Layer[];
+
       return [...layers, ...measureLayers] as Layer[];
     }, [layerStates, measureLayers]);
 
@@ -340,6 +343,7 @@ export const DeckGLContainer = memo(
           const userVisible = options?.userVisible !== false;
           const isVisible = zoomVisible && userVisible;
 
+          // Clone layer with visibility
           try {
             return {
               id: layer.id,
@@ -355,6 +359,18 @@ export const DeckGLContainer = memo(
       setLayerStates(newLayerStates);
     }, [props.layerStates]);
 
+    // Keep a ref to the latest props.layerStates (original layers from parent)
+    const latestLayerStatesRef = useRef(props.layerStates);
+    useEffect(() => {
+      latestLayerStatesRef.current = props.layerStates;
+    }, [props.layerStates]);
+
+    // Keep a ref to current internal layerStates (to check current visibility)
+    const currentLayerStatesRef = useRef(layerStates);
+    useEffect(() => {
+      currentLayerStatesRef.current = layerStates;
+    }, [layerStates]);
+
     const handleMapLoad = useCallback(event => {
       const map = event.target;
 
@@ -366,29 +382,71 @@ export const DeckGLContainer = memo(
 
       const updateLayerVisibility = () => {
         const currZoom = map.getZoom();
-        setLayerStates(prevLayerStates =>
-          prevLayerStates
-            .map(ls => {
-              if (!ls) return null;
-              const { layer, options } = ls;
+        // Use the original props layers for cloning (they have the full data)
+        const propsLayerStates = latestLayerStatesRef.current;
+        // Use the current internal states to check current visibility
+        const internalLayerStates = currentLayerStatesRef.current;
+        if (!propsLayerStates) return;
 
-              // Check zoom-based visibility
-              const zoomVisible =
-                (!options.minZoom || currZoom >= options.minZoom) &&
-                (!options.maxZoom || currZoom <= options.maxZoom);
+        // Build a map of current visibility by layer id
+        const currentVisibilityMap = new Map<string, boolean>();
+        for (const ls of internalLayerStates || []) {
+          if (ls?.layer) {
+            currentVisibilityMap.set(ls.id, ls.layer.props?.visible !== false);
+          }
+        }
 
-              // Respect user-toggled visibility from options (undefined = visible)
-              const userVisible = options.userVisible !== false;
-              const isVisible = zoomVisible && userVisible;
+        // Check if any layer needs visibility update
+        let needsUpdate = false;
 
+        for (const ls of propsLayerStates) {
+          if (!ls?.layer) continue;
+
+          const { layer, options } = ls;
+
+          // Check if layer visibility would change based on zoom
+          const zoomVisible =
+            (!options?.minZoom || currZoom >= options.minZoom) &&
+            (!options?.maxZoom || currZoom <= options.maxZoom);
+          const userVisible = options?.userVisible !== false;
+          const isVisible = zoomVisible && userVisible;
+          const currentVisible = currentVisibilityMap.get(layer.id) ?? true;
+
+          if (currentVisible !== isVisible) {
+            needsUpdate = true;
+            break;
+          }
+        }
+
+        // Only update state if any layer needs visibility change
+        if (!needsUpdate) return;
+
+        const newStates = propsLayerStates
+          .map(ls => {
+            if (!ls) return null;
+            const { layer, options } = ls;
+
+            // Calculate visibility for all layers
+            const zoomVisible =
+              (!options?.minZoom || currZoom >= options.minZoom) &&
+              (!options?.maxZoom || currZoom <= options.maxZoom);
+            const userVisible = options?.userVisible !== false;
+            const isVisible = zoomVisible && userVisible;
+
+            // Clone from original props layer with new visibility
+            try {
               return {
                 id: layer.id,
                 layer: layer.clone({ visible: isVisible }),
                 options,
               };
-            })
-            .filter(Boolean),
-        );
+            } catch {
+              return { id: layer.id, layer, options };
+            }
+          })
+          .filter(Boolean);
+
+        setLayerStates(newStates);
       };
 
       // Calculate initial visibility based on current zoom

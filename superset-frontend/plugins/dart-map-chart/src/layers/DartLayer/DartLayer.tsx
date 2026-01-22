@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -459,9 +460,11 @@ export function getLayer(
 
       // Use PointClusterLayer - automatically clusters nearby points
       // Renders single points as IconLayer (if iconName) or ScatterplotLayer (if not)
-      // IMPORTANT: Keep ID stable (no data length) so deck.gl preserves layer state across renders
+      // IMPORTANT: Keep ID stable so deck.gl preserves layer state across renders
+      // Use slice_id if available, otherwise use 'default' (assumes single chart per page)
+      const layerId = fd.slice_id ?? 'default';
       return new PointClusterLayer({
-        id: `point-cluster-layer-${fd.slice_id}`,
+        id: `point-cluster-layer-${layerId}`,
         data: sortedFeatures,
         getPosition: (f: any) => f.geometry?.coordinates as [number, number],
         categoryColors: categoryColorsMap,

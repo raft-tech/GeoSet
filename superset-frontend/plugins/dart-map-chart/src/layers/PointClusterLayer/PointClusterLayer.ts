@@ -64,8 +64,11 @@ const MAX_ZOOM = 20; // max zoom level for clustering
 type ClusterData = PointFeature<any> | ClusterFeature<any>;
 
 // Store Supercluster index outside of layer to survive layer recreation during cloning
-// Key is layer ID, value is the Supercluster index
-const indexCache = new Map<string, Supercluster<any, any>>();
+// Key is layer ID, value is { index, dataLength } so we can detect stale caches
+const indexCache = new Map<
+  string,
+  { index: Supercluster<any, any>; dataLength: number }
+>();
 
 export default class PointClusterLayer extends CompositeLayer<PointClusterLayerProps> {
   initializeState() {
@@ -102,40 +105,60 @@ export default class PointClusterLayer extends CompositeLayer<PointClusterLayerP
       return;
     }
 
+    const features = data.map((d: any) => {
+      const coords = getPosition(d);
+      return {
+        type: 'Feature' as const,
+        geometry: {
+          type: 'Point' as const,
+          coordinates: coords,
+        },
+        properties: d,
+      };
+    });
+
+    // Filter out invalid features (null/undefined coordinates)
+    const validFeatures = features.filter(
+      (f: any) =>
+        f.geometry.coordinates &&
+        f.geometry.coordinates.length === 2 &&
+        !Number.isNaN(f.geometry.coordinates[0]) &&
+        !Number.isNaN(f.geometry.coordinates[1]),
+    );
+
     const newIndex = new Supercluster<any, any>({
       maxZoom: MAX_ZOOM,
       radius: CLUSTER_RADIUS,
     });
 
-    newIndex.load(
-      data.map((d: any) => ({
-        type: 'Feature' as const,
-        geometry: {
-          type: 'Point' as const,
-          coordinates: getPosition(d),
-        },
-        properties: d,
-      })),
-    );
+    newIndex.load(validFeatures);
 
     // Cache the index globally (survives layer cloning)
-    indexCache.set(id, newIndex);
+    // Store dataLength from props.data (not validFeatures) for proper comparison in ensureIndexExists
+    indexCache.set(id, { index: newIndex, dataLength: data.length });
   }
 
   // Ensure we have an index available (build or restore from cache)
   ensureIndexExists() {
     const layerId = this.props.id;
+    const currentDataLength = this.props.data?.length ?? 0;
+    const cached = indexCache.get(layerId);
 
-    // Check if we already have an index in cache
-    if (!indexCache.has(layerId)) {
-      // No cached index - try to build one
+    // Don't rebuild if we have no data (likely a cloned layer) but cache exists
+    if (currentDataLength === 0 && cached) {
+      return;
+    }
+
+    // Rebuild if no cache OR if data length changed (stale cache)
+    if (!cached || cached.dataLength !== currentDataLength) {
       this.buildClusterIndex();
     }
   }
 
   // Get the current Supercluster index (from cache)
   getClusterIndex(): Supercluster<any, any> | null {
-    return indexCache.get(this.props.id) || null;
+    const cached = indexCache.get(this.props.id);
+    return cached?.index || null;
   }
 
   getPickingInfo({
@@ -165,10 +188,9 @@ export default class PointClusterLayer extends CompositeLayer<PointClusterLayerP
   }
 
   renderLayers(): Layer[] {
-    // Ensure index exists before rendering
-    this.ensureIndexExists();
-
     // Get the Supercluster index from cache
+    // IMPORTANT: Don't call ensureIndexExists here as cloned layers may have undefined data
+    // The index should have been built when the layer was first created with real data
     const index = this.getClusterIndex();
 
     // Get current zoom from the viewport context - this is always current
@@ -186,6 +208,9 @@ export default class PointClusterLayer extends CompositeLayer<PointClusterLayerP
       singlePointData = allData.filter(
         (d: ClusterData) => !d.properties?.cluster,
       );
+    } else {
+      // No index available - return empty layers
+      return [];
     }
 
     const {
@@ -206,10 +231,17 @@ export default class PointClusterLayer extends CompositeLayer<PointClusterLayerP
 
     const layers: Layer[] = [];
 
+    // If parent layer is not visible, return empty array
+    if (this.props.visible === false) {
+      return layers;
+    }
+
     // 1. Cluster layer (IconLayer with numbered pin markers)
+    // Use zoom level in the layer ID to force recreation when zoom changes
+    // This fixes rendering issues at certain zoom levels
     layers.push(
       new IconLayer({
-        id: `${this.props.id}-clusters`,
+        id: `${this.props.id}-clusters-z${z}`,
         data: clusterData,
         visible: clusterData.length > 0,
         pickable,
@@ -255,10 +287,28 @@ export default class PointClusterLayer extends CompositeLayer<PointClusterLayerP
 
         sizeScale: 1,
         sizeUnits: 'pixels' as const,
+        billboard: true,
+        sizeMinPixels: 1,
+        sizeMaxPixels: 500,
 
         updateTriggers: {
           getIcon: [categoryColors, defaultColor, dimensionColumn, z],
           getSize: [z],
+          getPosition: [z],
+        },
+
+        // Force data update when zoom changes to ensure proper rendering
+        dataComparator: (newData, oldData) => {
+          const newArr = newData as ClusterData[];
+          const oldArr = oldData as ClusterData[];
+          if (newArr.length !== oldArr.length) return false;
+          if (
+            newArr[0]?.properties?.cluster_id !==
+            oldArr[0]?.properties?.cluster_id
+          ) {
+            return false;
+          }
+          return true;
         },
       }),
     );
@@ -267,7 +317,7 @@ export default class PointClusterLayer extends CompositeLayer<PointClusterLayerP
     if (iconName) {
       layers.push(
         new IconLayer({
-          id: `${this.props.id}-icons`,
+          id: `${this.props.id}-icons-z${z}`,
           data: singlePointData,
           visible: singlePointData.length > 0,
           pickable,
@@ -304,7 +354,7 @@ export default class PointClusterLayer extends CompositeLayer<PointClusterLayerP
     } else {
       layers.push(
         new ScatterplotLayer({
-          id: `${this.props.id}-points`,
+          id: `${this.props.id}-points-z${z}`,
           data: singlePointData,
           visible: singlePointData.length > 0,
           pickable,

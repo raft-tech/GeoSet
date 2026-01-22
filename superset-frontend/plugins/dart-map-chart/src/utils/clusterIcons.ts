@@ -21,10 +21,36 @@
 const clusterIconCache = new Map<string, string>();
 
 /**
- * Scale factor: 1.0x for 1 item, up to 2.0x for 100+ items
+ * Scale factor: 1.0x for 1 item, up to 1.4x for 100+ items
+ * Uses logarithmic scaling for a more gradual size increase
  */
 export function getClusterScale(count: number): number {
-  return Math.min(100, count) / 100 + 1;
+  // Log scale gives more gradual growth: 1.0 at count=1, ~1.2 at 10, ~1.4 at 100+
+  const logScale = Math.log10(Math.max(1, count)) / 2;
+  return 1 + Math.min(0.4, logScale);
+}
+
+/**
+ * Format cluster count for display.
+ * - 1-9: show exact number
+ * - 10-99: show rounded to nearest 10 with + (e.g., "10+", "20+")
+ * - 100-999: show rounded to nearest 100 with + (e.g., "100+", "200+")
+ * - 1000+: show "1k+", "2k+", etc.
+ */
+export function formatClusterCount(count: number): string {
+  if (count < 10) {
+    return String(count);
+  }
+  if (count < 100) {
+    const rounded = Math.floor(count / 10) * 10;
+    return `${rounded}+`;
+  }
+  if (count < 1000) {
+    const rounded = Math.floor(count / 100) * 100;
+    return `${rounded}+`;
+  }
+  const rounded = Math.floor(count / 1000);
+  return `${rounded}k+`;
 }
 
 /**
@@ -33,7 +59,7 @@ export function getClusterScale(count: number): number {
 export function getClusterSvg(
   count: number,
   rgba: [number, number, number, number],
-  baseSize = 48,
+  baseSize = 36,
 ): string {
   const [r, g, b, a] = rgba;
   const scale = getClusterScale(count);
@@ -41,7 +67,18 @@ export function getClusterSvg(
   const height = Math.round(width * 1.4); // Pin is taller than wide
   const circleRadius = width / 2 - 4;
   const circleCenterY = circleRadius + 4; // Circle center position from top
-  const fontSize = count >= 100 ? 12 : count >= 10 ? 14 : 16;
+
+  // Format the count for display (e.g., "10+", "20+", "100+", "1k+")
+  const displayCount = formatClusterCount(count);
+
+  // Adjust font size based on display string length and icon size
+  const baseFontSize = Math.max(10, Math.round(width * 0.35));
+  let fontSize = baseFontSize;
+  if (displayCount.length >= 4) {
+    fontSize = Math.round(baseFontSize * 0.7);
+  } else if (displayCount.length >= 3) {
+    fontSize = Math.round(baseFontSize * 0.85);
+  }
 
   // Create pin/teardrop shape: circle at top with pointed bottom
   // The path creates a rounded top that tapers to a point at the bottom
@@ -65,7 +102,7 @@ export function getClusterSvg(
           fill="rgb(${r},${g},${b})" fill-opacity="${a / 255}"
           stroke="white" stroke-width="2"
           filter="url(#shadow-${count})"/>
-    <text x="${cx}" y="${circleCenterY}" text-anchor="middle" dominant-baseline="central" fill="white" font-family="system-ui, sans-serif" font-size="${fontSize}" font-weight="bold">${count}</text>
+    <text x="${cx}" y="${circleCenterY}" text-anchor="middle" dominant-baseline="central" fill="white" font-family="system-ui, sans-serif" font-size="${fontSize}" font-weight="bold">${displayCount}</text>
   </svg>`;
 }
 
@@ -74,7 +111,7 @@ export function getClusterSvg(
  */
 export function getClusterIconSize(
   count: number,
-  baseSize = 48,
+  baseSize = 36,
 ): { width: number; height: number } {
   const scale = getClusterScale(count);
   const width = Math.round(baseSize * scale);
@@ -88,7 +125,7 @@ export function getClusterIconSize(
 export function getClusterIconUrl(
   count: number,
   rgba: [number, number, number, number],
-  baseSize = 48,
+  baseSize = 36,
 ): string {
   const scale = getClusterScale(count);
   const size = Math.round(baseSize * scale);
@@ -129,7 +166,7 @@ export function getDominantCategoryColor(
 
   for (const f of features) {
     // Try categoryName first, then fall back to dimension column in properties
-    let rawCat: unknown =
+    const rawCat: unknown =
       f.categoryName ??
       (dimensionColumn ? f.properties?.[dimensionColumn] : undefined) ??
       'unknown';
