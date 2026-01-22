@@ -43,6 +43,9 @@ export type PointClusterLayerProps = {
   defaultColor?: number[];
   // Dimension column name for category lookup in feature.properties
   dimensionColumn?: string;
+  // Set of enabled category names (lowercase) - features not in this set are excluded from clustering
+  // If not provided, all features are included
+  enabledCategories?: Set<string>;
   // IconLayer-specific (optional - if not provided, uses ScatterplotLayer for single points)
   iconName?: string;
   iconSize?: number;
@@ -67,7 +70,11 @@ type ClusterData = PointFeature<any> | ClusterFeature<any>;
 // Key is layer ID, value is { index, dataLength } so we can detect stale caches
 const indexCache = new Map<
   string,
-  { index: Supercluster<any, any>; dataLength: number }
+  {
+    index: Supercluster<any, any>;
+    dataLength: number;
+    enabledCategoriesKey: string;
+  }
 >();
 
 export default class PointClusterLayer extends CompositeLayer<PointClusterLayerProps> {
@@ -97,9 +104,18 @@ export default class PointClusterLayer extends CompositeLayer<PointClusterLayerP
     this.ensureIndexExists();
   }
 
+  // Get a stable string key from enabledCategories for cache comparison
+  getEnabledCategoriesKey(): string {
+    const { enabledCategories } = this.props;
+    if (!enabledCategories) return 'all';
+    // Sort for consistent key regardless of iteration order
+    return Array.from(enabledCategories).sort().join('|');
+  }
+
   // Build a new Supercluster index from current props data
   buildClusterIndex() {
-    const { id, data, getPosition } = this.props;
+    const { id, data, getPosition, enabledCategories, dimensionColumn } =
+      this.props;
 
     if (!data || data.length === 0) {
       return;
@@ -117,14 +133,39 @@ export default class PointClusterLayer extends CompositeLayer<PointClusterLayerP
       };
     });
 
-    // Filter out invalid features (null/undefined coordinates)
-    const validFeatures = features.filter(
-      (f: any) =>
+    // Filter out invalid features and features with disabled categories
+    const validFeatures = features.filter((f: any) => {
+      // Check for valid coordinates
+      const hasValidCoords =
         f.geometry.coordinates &&
         f.geometry.coordinates.length === 2 &&
         !Number.isNaN(f.geometry.coordinates[0]) &&
-        !Number.isNaN(f.geometry.coordinates[1]),
-    );
+        !Number.isNaN(f.geometry.coordinates[1]);
+
+      if (!hasValidCoords) return false;
+
+      // If enabledCategories is provided, filter by category
+      if (enabledCategories) {
+        const categoryRaw =
+          f.properties?.categoryName ??
+          (dimensionColumn
+            ? f.properties?.properties?.[dimensionColumn]
+            : null);
+
+        if (categoryRaw != null) {
+          const categoryKey =
+            typeof categoryRaw === 'string'
+              ? categoryRaw.trim().toLowerCase()
+              : String(categoryRaw).trim().toLowerCase();
+
+          if (!enabledCategories.has(categoryKey)) {
+            return false;
+          }
+        }
+      }
+
+      return true;
+    });
 
     const newIndex = new Supercluster<any, any>({
       maxZoom: MAX_ZOOM,
@@ -134,8 +175,12 @@ export default class PointClusterLayer extends CompositeLayer<PointClusterLayerP
     newIndex.load(validFeatures);
 
     // Cache the index globally (survives layer cloning)
-    // Store dataLength from props.data (not validFeatures) for proper comparison in ensureIndexExists
-    indexCache.set(id, { index: newIndex, dataLength: data.length });
+    // Store dataLength and enabledCategoriesKey to detect when rebuild is needed
+    indexCache.set(id, {
+      index: newIndex,
+      dataLength: data.length,
+      enabledCategoriesKey: this.getEnabledCategoriesKey(),
+    });
   }
 
   // Ensure we have an index available (build or restore from cache)
@@ -149,8 +194,14 @@ export default class PointClusterLayer extends CompositeLayer<PointClusterLayerP
       return;
     }
 
-    // Rebuild if no cache OR if data length changed (stale cache)
-    if (!cached || cached.dataLength !== currentDataLength) {
+    const currentCategoriesKey = this.getEnabledCategoriesKey();
+
+    // Rebuild if no cache OR if data length changed OR if enabled categories changed
+    if (
+      !cached ||
+      cached.dataLength !== currentDataLength ||
+      cached.enabledCategoriesKey !== currentCategoriesKey
+    ) {
       this.buildClusterIndex();
     }
   }

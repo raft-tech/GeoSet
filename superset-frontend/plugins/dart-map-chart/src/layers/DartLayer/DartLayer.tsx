@@ -463,6 +463,14 @@ export function getLayer(
       // IMPORTANT: Keep ID stable so deck.gl preserves layer state across renders
       // Use slice_id if available, otherwise use 'default' (assumes single chart per page)
       const layerId = fd.slice_id ?? 'default';
+
+      // Build set of enabled categories for cluster filtering
+      const enabledCategories = new Set<string>(
+        Object.entries(categories)
+          .filter(([, cat]) => cat.enabled !== false)
+          .map(([key]) => key.toLowerCase()),
+      );
+
       return new PointClusterLayer({
         id: `point-cluster-layer-${layerId}`,
         data: sortedFeatures,
@@ -471,6 +479,8 @@ export function getLayer(
         defaultColor: fillColorArray,
         // Dimension column for category lookup in cluster color
         dimensionColumn: dimension as string | undefined,
+        // Set of enabled categories for filtering clusters
+        enabledCategories,
         // IconLayer props (only used if iconName is set)
         iconName,
         iconSize,
