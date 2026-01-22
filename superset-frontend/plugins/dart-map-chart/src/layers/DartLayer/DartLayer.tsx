@@ -91,6 +91,94 @@ const LimitWarning = styled.div`
   }
 `;
 
+interface ClickedFeatureInfo {
+  properties: Record<string, any>;
+}
+
+interface ClickPopupProps {
+  feature: ClickedFeatureInfo;
+  onClose: () => void;
+}
+
+function ClickPopupBox({ feature, onClose }: ClickPopupProps) {
+  const props = feature.properties || {};
+  const entries = Object.entries(props).filter(
+    ([key]) =>
+      !['fillColor', 'strokeColor', 'strokeWidth'].includes(key) &&
+      !key.startsWith('color_'),
+  );
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        top: 10,
+        right: 10,
+        width: 280,
+        maxHeight: 400,
+        background: 'white',
+        border: '2px solid black',
+        borderRadius: 4,
+        zIndex: 1000,
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '8px 12px',
+          borderBottom: '1px solid #eee',
+          background: '#fafafa',
+        }}
+      >
+        <span style={{ fontWeight: 600, fontSize: 13 }}>Feature Info</span>
+        <button
+          type="button"
+          onClick={onClose}
+          style={{
+            background: 'none',
+            border: 'none',
+            fontSize: 18,
+            cursor: 'pointer',
+            padding: 0,
+            lineHeight: 1,
+          }}
+        >
+          ×
+        </button>
+      </div>
+      <div style={{ padding: 12, overflowY: 'auto', fontSize: 12 }}>
+        {entries.length === 0 ? (
+          <div>No properties available</div>
+        ) : (
+          entries.map(([key, value]) => (
+            <div
+              key={key}
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                padding: '4px 0',
+                borderBottom: '1px solid #f0f0f0',
+              }}
+            >
+              <span style={{ fontWeight: 500, color: '#666', marginRight: 8 }}>
+                {key}:
+              </span>
+              <span style={{ textAlign: 'right', wordBreak: 'break-word' }}>
+                {String(value ?? '')}
+              </span>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
 const propertyMap = {
   fillColor: 'fillColor',
   color: 'fillColor',
@@ -251,6 +339,7 @@ export function getLayer(
     strokeColorMapping?: {};
   } = {},
   hoverColumnNames?: string[],
+  onFeatureClick?: (info: any) => void,
 ) {
   const {
     filled,
@@ -367,6 +456,7 @@ export function getLayer(
   const baseLayerProps = {
     ...commonLayerProps(fd, setTooltip, tooltipContentGenerator),
     pickable: true,
+    onClick: onFeatureClick,
   };
 
   // validate which layer type to render
@@ -635,6 +725,20 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
     if (current) {
       current.setTooltip(tooltip);
     }
+  }, []);
+
+  // State for clicked feature popup
+  const [clickedFeature, setClickedFeature] =
+    useState<ClickedFeatureInfo | null>(null);
+
+  const handleFeatureClick = useCallback((info: any) => {
+    if (info?.object?.properties) {
+      setClickedFeature({ properties: info.object.properties });
+    }
+  }, []);
+
+  const handleClosePopup = useCallback(() => {
+    setClickedFeature(null);
   }, []);
 
   // Fetch Mapbox API key from backend and update when available
@@ -957,6 +1061,7 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
         categories,
         visualConfig,
         hoverColumnNames,
+        handleFeatureClick,
       ),
     [
       formData,
@@ -966,6 +1071,7 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
       categories,
       visualConfig,
       hoverColumnNames,
+      handleFeatureClick,
     ],
   );
 
@@ -1069,6 +1175,9 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
         width={width}
         height={mapHeight}
       />
+      {clickedFeature && (
+        <ClickPopupBox feature={clickedFeature} onClose={handleClosePopup} />
+      )}
       {limitReached && (
         <LimitWarning>
           {t(
