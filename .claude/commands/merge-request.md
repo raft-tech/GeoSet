@@ -2,6 +2,8 @@
 
 Use the gh CLI tool to create a merge request for the current branch. Each merge request should have a concise title and a description of what was changed within the body.
 
+**Important:** Always use `--repo raft-tech/GeoSet` when running `gh pr` commands to ensure the PR is created against the correct repository.
+
 Additionally, each merge request should be given a score indicating how focused the changes are. The score should range between 1 (unfocused) and 10 (focused). A merge request that changes many different, unrelated parts of the code is a 1. A merge request that focuses on one change is a 10.
 
 All merge requests should set the target branch to `main`.
