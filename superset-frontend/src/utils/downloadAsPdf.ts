@@ -17,58 +17,65 @@
  * under the License.
  */
 import { SyntheticEvent } from 'react';
-import domToPdf from 'dom-to-pdf';
+import domToImage from 'dom-to-image-more';
+import { jsPDF } from 'jspdf';
 import { kebabCase } from 'lodash';
-import { logging, t } from '@superset-ui/core';
-import { addWarningToast } from 'src/components/MessageToasts/actions';
+import { logging } from '@superset-ui/core';
 
-/**
- * generate a consistent file stem from a description and date
- *
- * @param description title or description of content of file
- * @param date date when file was generated
- */
 const generateFileStem = (description: string, date = new Date()) =>
   `${kebabCase(description)}-${date.toISOString().replace(/[: ]/g, '-')}`;
 
 /**
- * Create an event handler for turning an element into an image
- *
- * @param selector css selector of the parent element which should be turned into image
- * @param description name or a short description of what is being printed.
- *   Value will be normalized, and a date as well as a file extension will be added.
- * @param isExactSelector if false, searches for the closest ancestor that matches selector.
- * @returns event handler
+ * Create an event handler for downloading an element as PDF
  */
 export default function downloadAsPdf(
   selector: string,
   description: string,
   isExactSelector = false,
 ) {
-  return (event: SyntheticEvent) => {
-    const elementToPrint = isExactSelector
+  return async (event: SyntheticEvent) => {
+    const element = isExactSelector
       ? document.querySelector(selector)
       : event.currentTarget.closest(selector);
 
-    if (!elementToPrint) {
-      return addWarningToast(
-        t('PDF download failed, please refresh and try again.'),
-      );
+    if (!element) {
+      throw new Error('Element not found');
     }
 
-    const options = {
-      margin: 10,
-      filename: `${generateFileStem(description)}.pdf`,
-      image: { type: 'jpeg', quality: 1 },
-      html2canvas: { scale: 2 },
-      excludeClassNames: ['header-controls'],
-    };
-    return domToPdf(elementToPrint, options)
-      .then(() => {
-        // nothing to be done
-      })
-      .catch((e: Error) => {
-        logging.error('PDF generation failed', e);
+    const el = element as HTMLElement;
+    const width = el.offsetWidth || el.scrollWidth;
+    const height = el.offsetHeight || el.scrollHeight;
+
+    if (width === 0 || height === 0) {
+      throw new Error('Element has no dimensions');
+    }
+
+    try {
+      const filter = (node: Element) =>
+        typeof node.className === 'string'
+          ? !node.className.includes('mapboxgl-control-container') &&
+            !node.className.includes('header-controls')
+          : true;
+
+      const dataUrl = await domToImage.toJpeg(element, {
+        // eslint-disable-next-line theme-colors/no-literal-colors
+        bgcolor: '#ffffff',
+        filter,
+        quality: 1,
+        cacheBust: true,
       });
+
+      // eslint-disable-next-line new-cap
+      const pdf = new jsPDF({
+        orientation: width > height ? 'landscape' : 'portrait',
+        unit: 'px',
+        format: [width, height],
+      });
+      pdf.addImage(dataUrl, 'JPEG', 0, 0, width, height);
+      pdf.save(`${generateFileStem(description)}.pdf`);
+    } catch (error) {
+      logging.error('Creating PDF failed', error);
+      throw error;
+    }
   };
 }
