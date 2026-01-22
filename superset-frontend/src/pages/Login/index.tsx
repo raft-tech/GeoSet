@@ -31,13 +31,7 @@ import {
 import { useState, useMemo, useEffect } from 'react';
 import { capitalize } from 'lodash/fp';
 import getBootstrapData from 'src/utils/getBootstrapData';
-
-type SsoHealthStatus = {
-  reachable: boolean;
-  status_code: number | null;
-  error: string | null;
-  configured: boolean;
-};
+import { checkSsoHealth, SsoHealthStatus } from './ssoCheck';
 
 type OAuthProvider = {
   name: string;
@@ -91,25 +85,13 @@ export default function Login() {
   const bootstrapData = getBootstrapData();
   const authType: AuthType = bootstrapData.common.conf.AUTH_TYPE;
 
-  // Check SSO connectivity on mount - backend determines if check should run
+  // Check SSO connectivity on mount
   useEffect(() => {
-    setCheckingSso(true);
-    SupersetClient.get({ endpoint: '/api/v1/sso/health' })
-      .then(({ json }) => {
-        setSsoHealth(json as SsoHealthStatus);
-      })
-      .catch(() => {
-        setSsoHealth({
-          reachable: false,
-          status_code: null,
-          error: 'Failed to check SSO connectivity',
-          configured: true,
-        });
-      })
-      .finally(() => {
-        setCheckingSso(false);
-      });
+    checkSsoHealth()
+      .then(setSsoHealth)
+      .finally(() => setCheckingSso(false));
   }, []);
+
   const nextUrl = useMemo(() => {
     try {
       const params = new URLSearchParams(window.location.search);
@@ -138,6 +120,27 @@ export default function Login() {
   // Disable login when SSO is configured but unreachable
   const ssoUnreachable =
     !checkingSso && ssoHealth?.configured && !ssoHealth?.reachable;
+
+  const vpnAlert = ssoUnreachable && (
+    <Alert
+      type="error"
+      showIcon
+      message={t('VPN Connection Required')}
+      description={
+        <>
+          {t(
+            'Unable to reach the SSO server. Please ensure you are connected to the VPN. If still unable to sign in, contact',
+          )}{' '}
+          <a href="mailto:morgan.vlasse@acf.hhs.gov?subject=DART%20SSO%20Sign-in%20Issue">
+            morgan.vlasse@acf.hhs.gov
+          </a>
+        </>
+      }
+      css={css`
+        margin-bottom: 16px;
+      `}
+    />
+  );
 
   const onFinish = (values: LoginForm) => {
     setLoading(true);
@@ -174,35 +177,11 @@ export default function Login() {
       `}
     >
       <StyledCard title={t('Sign in')} padded>
-        {checkingSso &&
-          (authType === AuthType.AuthOID ||
-            authType === AuthType.AuthOauth) && (
-            <Alert
-              type="info"
-              showIcon
-              message={t('Checking SSO availability...')}
-              css={css`
-                margin-bottom: 16px;
-              `}
-            />
-          )}
         {authType === AuthType.AuthOID && (
           <Flex justify="center" vertical gap="middle">
-            {ssoUnreachable && (
-              <Alert
-                type="error"
-                showIcon
-                message={t('VPN Connection Required')}
-                description={t(
-                  'Unable to reach the SSO server. Please ensure you are connected to the VPN before signing in.',
-                )}
-                css={css`
-                  margin-bottom: 16px;
-                `}
-              />
-            )}
+            {vpnAlert}
             <Form layout="vertical" requiredMark="optional" form={form}>
-              {providers.map((provider: OIDProvider) => (
+              {providers?.map((provider: OIDProvider) => (
                 <Form.Item<LoginForm> key={provider.name}>
                   <Button
                     href={
@@ -225,19 +204,7 @@ export default function Login() {
         )}
         {authType === AuthType.AuthOauth && (
           <Flex justify="center" gap={0} vertical>
-            {ssoUnreachable && (
-              <Alert
-                type="error"
-                showIcon
-                message={t('VPN Connection Required')}
-                description={t(
-                  'Unable to reach the SSO server. Please ensure you are connected to the VPN before signing in.',
-                )}
-                css={css`
-                  margin-bottom: 16px;
-                `}
-              />
-            )}
+            {vpnAlert}
             <Form layout="vertical" requiredMark="optional" form={form}>
               {providers.map((provider: OAuthProvider) => (
                 <Form.Item<LoginForm> key={provider.name}>

@@ -15,16 +15,13 @@
 # specific language governing permissions and limitations
 # under the License.
 """
-SSO Health Check endpoint.
+SSO failure logging endpoint.
 
-This module provides an endpoint to check connectivity to the SSO provider.
-Used by the frontend login page to detect if the user is on VPN.
+This module provides an endpoint to log SSO connection failures reported by the frontend.
 """
 import logging
-import os
 
-import requests
-from flask import Blueprint, current_app, jsonify
+from flask import Blueprint, jsonify, request
 
 from superset import talisman
 from superset.superset_typing import FlaskResponse
@@ -34,63 +31,29 @@ logger = logging.getLogger(__name__)
 sso_health_blueprint = Blueprint("sso_health", __name__)
 
 
-@sso_health_blueprint.route("/api/v1/sso/health")
+@sso_health_blueprint.route("/api/v1/sso/failure", methods=["POST"])
 @talisman(force_https=False)
-def sso_health_check() -> FlaskResponse:
+def sso_failure() -> FlaskResponse:
     """
-    Check connectivity to the SSO provider.
+    Log SSO connection failure from frontend.
 
-    Returns a JSON response with:
-    - reachable: boolean indicating if SSO endpoint is reachable
-    - status_code: HTTP status code from SSO endpoint (if any)
-    - error: error message (if any)
-    - configured: boolean indicating if SSO health check is configured/enabled
+    Logs the client IP address, timestamp, and user timezone when SSO is unreachable.
     """
-    sso_url = current_app.config.get("SSO_HEALTH_CHECK_URL")
-    is_production = os.environ.get("SUPERSET_ENV") == "production"
+    client_ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+    data = request.get_json() or {}
+    user_timezone = data.get("timezone", "Unknown")
+    local_time = data.get("localTime", "Unknown")
 
-    # Skip SSO check if not in production or URL not configured
-    if not is_production or not sso_url:
-        return jsonify({
-            "reachable": True,
-            "status_code": None,
-            "error": "SSO_HEALTH_CHECK_URL not configured",
-            "configured": False,
-        })
+    logger.warning(
+        "SSO failure reported - IP: %s, Time: %s (%s)",
+        client_ip,
+        local_time,
+        user_timezone,
+    )
 
-    try:
-        response = requests.head(
-            sso_url,
-            timeout=5,
-            allow_redirects=True,
-        )
-        return jsonify({
-            "reachable": response.status_code < 400,
-            "status_code": response.status_code,
-            "error": None,
-            "configured": True,
-        })
-    except requests.exceptions.Timeout:
-        logger.warning("SSO health check timed out for URL: %s", sso_url)
-        return jsonify({
-            "reachable": False,
-            "status_code": None,
-            "error": "Connection timed out - you may not be connected to VPN",
-            "configured": True,
-        })
-    except requests.exceptions.ConnectionError as e:
-        logger.warning("SSO health check connection error: %s", str(e))
-        return jsonify({
-            "reachable": False,
-            "status_code": None,
-            "error": "Unable to connect - you may not be connected to VPN",
-            "configured": True,
-        })
-    except requests.exceptions.RequestException as e:
-        logger.error("SSO health check failed: %s", str(e))
-        return jsonify({
-            "reachable": False,
-            "status_code": None,
-            "error": str(e),
-            "configured": True,
-        })
+    return jsonify({
+        "logged": True,
+        "ip": client_ip,
+        "local_time": local_time,
+        "user_timezone": user_timezone,
+    })
