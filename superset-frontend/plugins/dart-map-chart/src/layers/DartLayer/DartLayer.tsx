@@ -382,8 +382,8 @@ export function getLayer(
     // POINTS -- uses PointClusterLayer for automatic clustering (unless disabled or metrics are applied)
     case 'Point': {
       const iconSize = Number(pointSize) || 5;
-      // Check if clustering is enabled (default to true if not set)
-      const clusteringEnabled = fd.enableClustering !== false;
+      // Check if clustering is enabled (default to false if not set)
+      const clusteringEnabled = fd.enableClustering === true;
 
       // Skip clustering when metrics are applied (each point has unique color) or when disabled
       if (isMetric || !clusteringEnabled) {

@@ -122,7 +122,7 @@ export const enableClustering = {
     type: 'CheckboxControl',
     label: t('Enable Clustering'),
     renderTrigger: true,
-    default: true,
+    default: false,
     description: t(
       'When enabled, nearby points will be grouped into clusters. Disable for sparse data or when individual points need to remain visible.',
     ),
