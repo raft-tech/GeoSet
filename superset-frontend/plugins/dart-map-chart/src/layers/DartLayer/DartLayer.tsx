@@ -70,6 +70,7 @@ import {
 import { handleSchemaCheck } from '../../utils/migrationApi';
 import MeasureOverlay, { MeasureState } from '../../components/MeasureOverlay';
 import { Coordinate } from '../../utils/measureDistance';
+import ClickPopupBox, { ClickedFeatureInfo } from '../../components/ClickPopupBox';
 
 const LimitWarning = styled.div`
   background-color: ${({ theme }) => theme.colorWarningBg};
@@ -90,99 +91,6 @@ const LimitWarning = styled.div`
     font-size: 16px;
   }
 `;
-
-interface ClickedFeatureInfo {
-  properties: Record<string, any>;
-}
-
-interface ClickPopupProps {
-  feature: ClickedFeatureInfo;
-  onClose: () => void;
-  hoverColumnNames?: string[];
-}
-
-function ClickPopupBox({
-  feature,
-  onClose,
-  hoverColumnNames,
-}: ClickPopupProps) {
-  const props = feature.properties || {};
-
-  // Only show columns specified in hoverColumnNames
-  const entries = Object.entries(props).filter(([key]) =>
-    hoverColumnNames?.includes(key),
-  );
-
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        top: 10,
-        right: 10,
-        width: 280,
-        maxHeight: 400,
-        background: 'white',
-        border: '2px solid black',
-        borderRadius: 4,
-        zIndex: 1000,
-        overflow: 'hidden',
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '8px 12px',
-          borderBottom: '1px solid #eee',
-          background: '#fafafa',
-        }}
-      >
-        <span style={{ fontWeight: 600, fontSize: 13 }}>Feature Info</span>
-        <button
-          type="button"
-          onClick={onClose}
-          style={{
-            background: 'none',
-            border: 'none',
-            fontSize: 18,
-            cursor: 'pointer',
-            padding: 0,
-            lineHeight: 1,
-          }}
-        >
-          ×
-        </button>
-      </div>
-      <div style={{ padding: 12, overflowY: 'auto', fontSize: 12 }}>
-        {entries.length === 0 ? (
-          <div>No properties available</div>
-        ) : (
-          entries.map(([key, value]) => (
-            <div
-              key={key}
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                padding: '4px 0',
-                borderBottom: '1px solid #f0f0f0',
-              }}
-            >
-              <span style={{ fontWeight: 500, color: '#666', marginRight: 8 }}>
-                {key}:
-              </span>
-              <span style={{ textAlign: 'right', wordBreak: 'break-word' }}>
-                {String(value ?? '')}
-              </span>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
-  );
-}
 
 const propertyMap = {
   fillColor: 'fillColor',

@@ -50,6 +50,7 @@ import { CategoryState, MetricLegend, RGBAColor } from '../utils/colors';
 import { getGeometryType } from '../utils';
 import { fetchMapboxApiKey, getCachedMapboxApiKey } from '../utils/mapboxApi';
 import { multiChartMigration } from '../utils/migrationApi';
+import ClickPopupBox, { ClickedFeatureInfo } from '../components/ClickPopupBox';
 
 // Utility to convert snake_case or camelCase to Title Case
 const toTitleCase = (str: string) =>
@@ -91,7 +92,12 @@ type SubsliceLayerEntry = {
   legendGroup: LegendGroup;
   features: JsonObject[];
   autozoom: boolean;
+  hoverColumnNames?: string[];
 };
+
+interface ClickedFeatureWithColumns extends ClickedFeatureInfo {
+  hoverColumnNames?: string[];
+}
 
 const DeckMulti = (props: DeckMultiProps) => {
   const containerRef = useRef<DeckGLContainerHandle>(null);
@@ -103,6 +109,25 @@ const DeckMulti = (props: DeckMultiProps) => {
   const [layerVisibility, setLayerVisibility] = useState<
     Record<string, boolean>
   >({});
+  const [clickedFeature, setClickedFeature] =
+    useState<ClickedFeatureWithColumns | null>(null);
+
+  const handleFeatureClick = useCallback(
+    (info: any, hoverColumnNames?: string[]) => {
+      if (info?.object?.properties) {
+        setClickedFeature({
+          properties: info.object.properties,
+          hoverColumnNames,
+        });
+      }
+    },
+    [],
+  );
+
+  const handleClosePopup = useCallback(() => {
+    setClickedFeature(null);
+  }, []);
+
   const setTooltip = useCallback((tooltip: TooltipProps['tooltip']) => {
     const { current } = containerRef;
     if (current) {
@@ -244,6 +269,7 @@ const DeckMulti = (props: DeckMultiProps) => {
                 // Use transformProps to process data (same logic as standalone chart)
                 const transformedProps = transformDartMapLayerProps(chartProps);
 
+                const sliceHoverColumnNames = transformedProps.hoverColumnNames;
                 const newLayer = getDartMapLayer(
                   transformedProps.formData as any,
                   transformedProps.payload,
@@ -251,7 +277,8 @@ const DeckMulti = (props: DeckMultiProps) => {
                   setTooltip,
                   transformedProps.categories || {},
                   transformedProps.visualConfig,
-                  transformedProps.hoverColumnNames,
+                  sliceHoverColumnNames,
+                  (info: any) => handleFeatureClick(info, sliceHoverColumnNames),
                 );
 
                 if (!newLayer) {
@@ -404,7 +431,7 @@ const DeckMulti = (props: DeckMultiProps) => {
         setSubSlicesLayers(validLayers);
       });
     },
-    [props.onAddFilter, setTooltip],
+    [props.onAddFilter, setTooltip, handleFeatureClick],
   );
 
   const prevSlicesData = usePrevious(slicesData);
@@ -648,6 +675,13 @@ const DeckMulti = (props: DeckMultiProps) => {
         isRulerActive={measureState.isActive}
         position="top-right"
       />
+      {clickedFeature && (
+        <ClickPopupBox
+          feature={clickedFeature}
+          onClose={handleClosePopup}
+          hoverColumnNames={clickedFeature.hoverColumnNames}
+        />
+      )}
     </div>
   );
 };
