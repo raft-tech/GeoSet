@@ -36,10 +36,8 @@ export type MultiLegendProps = {
   legendsBySlice: Record<string, LegendGroup>;
   layerVisibility?: Record<string, boolean>;
   onToggleLayerVisibility?: (sliceId: string) => void;
-  // Toggle a single category within a slice (click)
+  // Toggle a single category within a slice
   onToggleCategory?: (sliceId: string, categoryLabel: string) => void;
-  // Show only a single category within a slice (double-click)
-  onShowSingleCategory?: (sliceId: string, categoryLabel: string) => void;
 };
 
 // Control margin for legend positioning
@@ -165,17 +163,12 @@ const Content = styled.div`
   padding-left: 20px;
 `;
 
-const CategoryRow = styled.div<{ $clickable?: boolean; $disabled?: boolean }>`
+const CategoryRow = styled.div<{ $disabled?: boolean }>`
   display: flex;
   align-items: center;
   margin-bottom: 6px;
   gap: 8px;
-  cursor: ${({ $clickable }) => ($clickable ? 'pointer' : 'default')};
   opacity: ${({ $disabled }) => ($disabled ? 0.5 : 1)};
-
-  &:hover {
-    ${({ $clickable }) => $clickable && 'opacity: 0.8;'}
-  }
 `;
 
 const GradientBar = styled.div<{ gradient: string }>`
@@ -208,7 +201,6 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
   layerVisibility = {},
   onToggleLayerVisibility,
   onToggleCategory,
-  onShowSingleCategory,
 }) => {
   const sliceIds = Object.keys(legendsBySlice);
 
@@ -320,21 +312,16 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
                               ];
 
                           return (
-                            <CategoryRow
-                              key={i}
-                              $clickable={hasToggle}
-                              $disabled={!isEnabled}
-                              onClick={
-                                hasToggle
-                                  ? () => onToggleCategory(id, cat.label)
-                                  : undefined
-                              }
-                              onDoubleClick={
-                                onShowSingleCategory
-                                  ? () => onShowSingleCategory(id, cat.label)
-                                  : undefined
-                              }
-                            >
+                            <CategoryRow key={i} $disabled={!isEnabled}>
+                              {hasToggle && (
+                                <VisibilityCheckbox
+                                  type="checkbox"
+                                  checked={isEnabled}
+                                  onChange={() =>
+                                    onToggleCategory(id, cat.label)
+                                  }
+                                />
+                              )}
                               <Swatch
                                 fill={displayFillColor}
                                 stroke={cat.strokeColor}
