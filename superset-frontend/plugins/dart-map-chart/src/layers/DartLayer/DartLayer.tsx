@@ -1093,6 +1093,7 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
           feature={clickedFeature}
           onClose={handleClosePopup}
           hoverColumnNames={hoverColumnNames}
+          position="left"
         />
       )}
       {limitReached && (

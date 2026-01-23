@@ -680,6 +680,7 @@ const DeckMulti = (props: DeckMultiProps) => {
           feature={clickedFeature}
           onClose={handleClosePopup}
           hoverColumnNames={clickedFeature.hoverColumnNames}
+          position="right"
         />
       )}
     </div>

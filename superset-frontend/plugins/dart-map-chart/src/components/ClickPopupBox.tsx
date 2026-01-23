@@ -18,11 +18,14 @@
  */
 import { styled } from '@superset-ui/core';
 
-const StyledPopup = styled.div`
-  ${({ theme }) => `
+// MapControls: top 12px + height 32px + padding 12px = 56px from top
+const MAP_CONTROLS_OFFSET = 56;
+
+const StyledPopup = styled.div<{ $position: 'left' | 'right' }>`
+  ${({ theme, $position }) => `
     position: absolute;
-    top: ${theme.sizeUnit * 3}px;
-    right: ${theme.sizeUnit * 3}px;
+    top: ${MAP_CONTROLS_OFFSET}px;
+    ${$position === 'left' ? `left: ${theme.sizeUnit * 3}px;` : `right: ${theme.sizeUnit * 3}px;`}
     width: 280px;
     max-height: 400px;
     background: ${theme.colorBgElevated};
@@ -123,12 +126,14 @@ export interface ClickPopupBoxProps {
   feature: ClickedFeatureInfo;
   onClose: () => void;
   hoverColumnNames?: string[];
+  position?: 'left' | 'right';
 }
 
 export default function ClickPopupBox({
   feature,
   onClose,
   hoverColumnNames,
+  position = 'right',
 }: ClickPopupBoxProps) {
   const props = feature.properties || {};
 
@@ -138,7 +143,7 @@ export default function ClickPopupBox({
   );
 
   return (
-    <StyledPopup>
+    <StyledPopup $position={position}>
       <PopupHeader>
         <PopupTitle>Feature Info</PopupTitle>
         <CloseButton type="button" onClick={onClose}>
