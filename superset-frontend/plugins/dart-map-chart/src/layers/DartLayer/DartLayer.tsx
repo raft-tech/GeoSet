@@ -104,7 +104,7 @@ function ClickPopupBox({ feature, onClose }: ClickPopupProps) {
   const props = feature.properties || {};
   const entries = Object.entries(props).filter(
     ([key]) =>
-      !['fillColor', 'strokeColor', 'strokeWidth'].includes(key) &&
+      !['fillColor', 'strokeColor', 'strokeWidth', 'geojson'].includes(key) &&
       !key.startsWith('color_'),
   );
 
