@@ -38,7 +38,6 @@ export type PointClusterLayerProps = {
   id: string;
   data: any[];
   getPosition: (d: any) => [number, number];
-  getColor?: (d: any) => [number, number, number, number];
   categoryColors?: Record<string, number[]>;
   defaultColor?: number[];
   // Dimension column name for category lookup in feature.properties
@@ -288,8 +287,8 @@ export default class PointClusterLayer extends CompositeLayer<PointClusterLayerP
     }
 
     // 1. Cluster layer (IconLayer with numbered pin markers)
-    // Use zoom level in the layer ID to force recreation when zoom changes
-    // This fixes rendering issues at certain zoom levels
+    // Use stable IDs so deck.gl can reuse layers across zoom changes
+    // updateTriggers handle re-computation of accessors when zoom changes
     layers.push(
       new IconLayer({
         id: `${this.props.id}-clusters-z${z}`,
@@ -342,26 +341,6 @@ export default class PointClusterLayer extends CompositeLayer<PointClusterLayerP
         billboard: true,
         sizeMinPixels: 1,
         sizeMaxPixels: 500,
-
-        updateTriggers: {
-          getIcon: [categoryColors, defaultColor, dimensionColumn, z],
-          getSize: [z],
-          getPosition: [z],
-        },
-
-        // Force data update when zoom changes to ensure proper rendering
-        dataComparator: (newData, oldData) => {
-          const newArr = newData as ClusterData[];
-          const oldArr = oldData as ClusterData[];
-          if (newArr.length !== oldArr.length) return false;
-          if (
-            newArr[0]?.properties?.cluster_id !==
-            oldArr[0]?.properties?.cluster_id
-          ) {
-            return false;
-          }
-          return true;
-        },
       }),
     );
 
@@ -396,11 +375,6 @@ export default class PointClusterLayer extends CompositeLayer<PointClusterLayerP
 
           sizeScale: 2,
           sizeUnits: 'pixels' as const,
-
-          updateTriggers: {
-            getIcon: [iconName, defaultColor, z],
-            getSize: [z],
-          },
         }),
       );
     } else {
@@ -434,11 +408,6 @@ export default class PointClusterLayer extends CompositeLayer<PointClusterLayerP
           radiusUnits: 'pixels' as const,
           radiusMinPixels: 1,
           radiusMaxPixels: 50,
-
-          updateTriggers: {
-            getFillColor: [z],
-            getRadius: [z],
-          },
         }),
       );
     }
