@@ -10,6 +10,7 @@ export type CategoryEntry = {
   label: string;
   fillColor: RGBAColor;
   strokeColor: RGBAColor;
+  enabled?: boolean; // Whether category is visible (default true)
 };
 
 export type MetricEntry = {
@@ -35,6 +36,10 @@ export type MultiLegendProps = {
   legendsBySlice: Record<string, LegendGroup>;
   layerVisibility?: Record<string, boolean>;
   onToggleLayerVisibility?: (sliceId: string) => void;
+  // Toggle a single category within a slice (click)
+  onToggleCategory?: (sliceId: string, categoryLabel: string) => void;
+  // Show only a single category within a slice (double-click)
+  onShowSingleCategory?: (sliceId: string, categoryLabel: string) => void;
 };
 
 // Control margin for legend positioning
@@ -160,11 +165,17 @@ const Content = styled.div`
   padding-left: 20px;
 `;
 
-const CategoryRow = styled.div`
+const CategoryRow = styled.div<{ $clickable?: boolean; $disabled?: boolean }>`
   display: flex;
   align-items: center;
   margin-bottom: 6px;
   gap: 8px;
+  cursor: ${({ $clickable }) => ($clickable ? 'pointer' : 'default')};
+  opacity: ${({ $disabled }) => ($disabled ? 0.5 : 1)};
+
+  &:hover {
+    ${({ $clickable }) => $clickable && 'opacity: 0.8;'}
+  }
 `;
 
 const GradientBar = styled.div<{ gradient: string }>`
@@ -196,6 +207,8 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
   legendsBySlice,
   layerVisibility = {},
   onToggleLayerVisibility,
+  onToggleCategory,
+  onShowSingleCategory,
 }) => {
   const sliceIds = Object.keys(legendsBySlice);
 
@@ -292,17 +305,46 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
                     {/* CATEGORIES */}
                     {group.categories && group.categories.length > 0 && (
                       <>
-                        {group.categories.map((cat, i) => (
-                          <CategoryRow key={i}>
-                            <Swatch
-                              fill={cat.fillColor}
-                              stroke={cat.strokeColor}
-                              icon={group.icon}
-                              geometryType={group.geometryType}
-                            />
-                            <div>{cat.label}</div>
-                          </CategoryRow>
-                        ))}
+                        {group.categories.map((cat, i) => {
+                          const isEnabled = cat.enabled !== false;
+                          const hasToggle = !!onToggleCategory;
+
+                          // Apply opacity to color when disabled
+                          const displayFillColor: RGBAColor = isEnabled
+                            ? cat.fillColor
+                            : [
+                                cat.fillColor[0],
+                                cat.fillColor[1],
+                                cat.fillColor[2],
+                                100,
+                              ];
+
+                          return (
+                            <CategoryRow
+                              key={i}
+                              $clickable={hasToggle}
+                              $disabled={!isEnabled}
+                              onClick={
+                                hasToggle
+                                  ? () => onToggleCategory(id, cat.label)
+                                  : undefined
+                              }
+                              onDoubleClick={
+                                onShowSingleCategory
+                                  ? () => onShowSingleCategory(id, cat.label)
+                                  : undefined
+                              }
+                            >
+                              <Swatch
+                                fill={displayFillColor}
+                                stroke={cat.strokeColor}
+                                icon={group.icon}
+                                geometryType={group.geometryType}
+                              />
+                              <div>{cat.label}</div>
+                            </CategoryRow>
+                          );
+                        })}
                       </>
                     )}
 

@@ -112,6 +112,10 @@ const DeckMulti = (props: DeckMultiProps) => {
   >({});
   const [clickedFeature, setClickedFeature] =
     useState<ClickedFeatureWithColumns | null>(null);
+  // Track disabled categories per slice: { sliceId: { categoryLabel: false } }
+  const [categoryVisibility, setCategoryVisibility] = useState<
+    Record<string, Record<string, boolean>>
+  >({});
 
   // Don't show popup when measurement mode is active (uses ref to avoid dependency issues)
   const handleFeatureClick = useCallback(
@@ -130,7 +134,6 @@ const DeckMulti = (props: DeckMultiProps) => {
   const handleClosePopup = useCallback(() => {
     setClickedFeature(null);
   }, []);
-
   const setTooltip = useCallback((tooltip: TooltipProps['tooltip']) => {
     const { current } = containerRef;
     if (current) {
@@ -486,6 +489,65 @@ const DeckMulti = (props: DeckMultiProps) => {
     }));
   }, []);
 
+  // Toggle a single category within a slice
+  const handleToggleCategory = useCallback(
+    (sliceId: string, categoryLabel: string) => {
+      setCategoryVisibility(prev => {
+        const sliceCategories = prev[sliceId] || {};
+        const isCurrentlyEnabled = sliceCategories[categoryLabel] !== false;
+        return {
+          ...prev,
+          [sliceId]: {
+            ...sliceCategories,
+            [categoryLabel]: !isCurrentlyEnabled,
+          },
+        };
+      });
+    },
+    [],
+  );
+
+  // Show only a single category within a slice (double-click)
+  const handleShowSingleCategory = useCallback(
+    (sliceId: string, categoryLabel: string) => {
+      // Find all categories for this slice
+      const sliceEntry = subSlicesLayers.find(
+        e => String(e.sliceId) === sliceId,
+      );
+      if (!sliceEntry?.legendGroup.categories) return;
+
+      const allCategories = sliceEntry.legendGroup.categories;
+
+      // Check if this category is the only one enabled
+      const currentVisibility = categoryVisibility[sliceId] || {};
+      const enabledCategories = allCategories.filter(
+        cat => currentVisibility[cat.label] !== false,
+      );
+      const isOnlyOneEnabled =
+        enabledCategories.length === 1 &&
+        enabledCategories[0].label === categoryLabel;
+
+      if (isOnlyOneEnabled) {
+        // Re-enable all categories
+        setCategoryVisibility(prev => ({
+          ...prev,
+          [sliceId]: {},
+        }));
+      } else {
+        // Disable all except clicked category
+        const newSliceVisibility: Record<string, boolean> = {};
+        allCategories.forEach(cat => {
+          newSliceVisibility[cat.label] = cat.label === categoryLabel;
+        });
+        setCategoryVisibility(prev => ({
+          ...prev,
+          [sliceId]: newSliceVisibility,
+        }));
+      }
+    },
+    [subSlicesLayers, categoryVisibility],
+  );
+
   // Sort layers based on config order
   const sortedLayers = useMemo(() => {
     const sliceIdOrder = normalizedDeckSlices.map(c => c.sliceId);
@@ -507,9 +569,36 @@ const DeckMulti = (props: DeckMultiProps) => {
     };
   });
 
-  // Build legendsBySlice for MultiLegend component
-  const legendsBySlice: Record<string, LegendGroup> = Object.fromEntries(
-    sortedLayers.map(entry => [String(entry.sliceId), entry.legendGroup]),
+  // Build legendsBySlice for MultiLegend component, with category enabled state applied
+  const legendsBySlice: Record<string, LegendGroup> = useMemo(
+    () =>
+      Object.fromEntries(
+        sortedLayers.map(entry => {
+          const sliceId = String(entry.sliceId);
+          const group = entry.legendGroup;
+
+          // If no categories, return as-is
+          if (!group.categories) {
+            return [sliceId, group];
+          }
+
+          // Apply category visibility state
+          const sliceCatVisibility = categoryVisibility[sliceId] || {};
+          const updatedCategories = group.categories.map(cat => ({
+            ...cat,
+            enabled: sliceCatVisibility[cat.label] !== false,
+          }));
+
+          return [
+            sliceId,
+            {
+              ...group,
+              categories: updatedCategories,
+            },
+          ];
+        }),
+      ),
+    [sortedLayers, categoryVisibility],
   );
 
   // Calculate autozoom viewport from layers with autozoom enabled
@@ -676,6 +765,8 @@ const DeckMulti = (props: DeckMultiProps) => {
         legendsBySlice={legendsBySlice}
         layerVisibility={layerVisibility}
         onToggleLayerVisibility={handleToggleLayerVisibility}
+        onToggleCategory={handleToggleCategory}
+        onShowSingleCategory={handleShowSingleCategory}
       />
       <MapControls
         onZoomIn={handleZoomIn}
