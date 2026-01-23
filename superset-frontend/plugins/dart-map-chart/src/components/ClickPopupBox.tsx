@@ -59,7 +59,7 @@ const CloseButton = styled.button`
   ${({ theme }) => `
     background: none;
     border: none;
-    font-size: 18px;
+    font-size: 16px;
     cursor: pointer;
     padding: 0;
     line-height: 1;
@@ -142,7 +142,7 @@ export default function ClickPopupBox({
       <PopupHeader>
         <PopupTitle>Feature Info</PopupTitle>
         <CloseButton type="button" onClick={onClose}>
-          ×
+          ✕
         </CloseButton>
       </PopupHeader>
       <PopupContent>
