@@ -27,7 +27,7 @@ const StyledPopup = styled.div<{ $position: 'left' | 'right' }>`
     top: ${MAP_CONTROLS_OFFSET}px;
     ${$position === 'left' ? `left: ${theme.sizeUnit * 3}px;` : `right: ${theme.sizeUnit * 3}px;`}
     width: 280px;
-    max-height: 400px;
+    max-height: calc(100% - ${MAP_CONTROLS_OFFSET}px - 12px);
     background: ${theme.colorBgElevated};
     box-shadow: 0 0 ${theme.sizeUnit}px ${theme.colorBorderSecondary};
     border-radius: 6px;
