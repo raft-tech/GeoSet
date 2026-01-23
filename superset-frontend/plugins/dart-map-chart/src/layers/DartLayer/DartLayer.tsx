@@ -98,14 +98,19 @@ interface ClickedFeatureInfo {
 interface ClickPopupProps {
   feature: ClickedFeatureInfo;
   onClose: () => void;
+  hoverColumnNames?: string[];
 }
 
-function ClickPopupBox({ feature, onClose }: ClickPopupProps) {
+function ClickPopupBox({
+  feature,
+  onClose,
+  hoverColumnNames,
+}: ClickPopupProps) {
   const props = feature.properties || {};
-  const entries = Object.entries(props).filter(
-    ([key]) =>
-      !['fillColor', 'strokeColor', 'strokeWidth', 'geojson'].includes(key) &&
-      !key.startsWith('color_'),
+
+  // Only show columns specified in hoverColumnNames
+  const entries = Object.entries(props).filter(([key]) =>
+    hoverColumnNames?.includes(key),
   );
 
   return (
@@ -1176,7 +1181,11 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
         height={mapHeight}
       />
       {clickedFeature && (
-        <ClickPopupBox feature={clickedFeature} onClose={handleClosePopup} />
+        <ClickPopupBox
+          feature={clickedFeature}
+          onClose={handleClosePopup}
+          hoverColumnNames={hoverColumnNames}
+        />
       )}
       {limitReached && (
         <LimitWarning>
