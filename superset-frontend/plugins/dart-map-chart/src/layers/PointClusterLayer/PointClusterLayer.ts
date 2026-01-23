@@ -333,7 +333,8 @@ export default class PointClusterLayer extends CompositeLayer<PointClusterLayerP
 
         getSize: (d: ClusterData) => {
           const count = d.properties?.point_count || 0;
-          return getClusterIconSize(count).height;
+          // Return half the icon height since we generate 2x resolution icons
+          return getClusterIconSize(count).height / 2;
         },
 
         sizeScale: 1,

@@ -53,13 +53,16 @@ export function formatClusterCount(count: number): string {
   return `${rounded}k+`;
 }
 
+// Higher resolution base size for crisp icons on retina displays
+const DEFAULT_BASE_SIZE = 72;
+
 /**
  * Generate cluster marker SVG with count and color (pin/teardrop shape)
  */
 export function getClusterSvg(
   count: number,
   rgba: [number, number, number, number],
-  baseSize = 36,
+  baseSize = DEFAULT_BASE_SIZE,
 ): string {
   const [r, g, b, a] = rgba;
   const scale = getClusterScale(count);
@@ -111,7 +114,7 @@ export function getClusterSvg(
  */
 export function getClusterIconSize(
   count: number,
-  baseSize = 36,
+  baseSize = DEFAULT_BASE_SIZE,
 ): { width: number; height: number } {
   const scale = getClusterScale(count);
   const width = Math.round(baseSize * scale);
@@ -125,7 +128,7 @@ export function getClusterIconSize(
 export function getClusterIconUrl(
   count: number,
   rgba: [number, number, number, number],
-  baseSize = 36,
+  baseSize = DEFAULT_BASE_SIZE,
 ): string {
   const scale = getClusterScale(count);
   const size = Math.round(baseSize * scale);
