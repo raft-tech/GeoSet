@@ -126,9 +126,6 @@ const DeckMulti = (props: DeckMultiProps) => {
           hoverColumnNames,
           featureInfoColumnNames,
         });
-      } else {
-        // Clicked on empty map space, close the popup
-        setClickedFeature(null);
       }
     },
     [],
