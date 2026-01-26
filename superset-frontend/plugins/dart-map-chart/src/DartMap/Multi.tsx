@@ -126,6 +126,9 @@ const DeckMulti = (props: DeckMultiProps) => {
           hoverColumnNames,
           featureInfoColumnNames,
         });
+      } else {
+        // Clicked on empty map space, close the popup
+        setClickedFeature(null);
       }
     },
     [],
@@ -675,6 +678,7 @@ const DeckMulti = (props: DeckMultiProps) => {
         onMeasureDragStart={handleMeasureDragStart}
         onMeasureDrag={handleMeasureDrag}
         onMeasureDragEnd={handleMeasureDragEnd}
+        onEmptyClick={handleClosePopup}
       />
       <MultiLegend
         legendsBySlice={legendsBySlice}

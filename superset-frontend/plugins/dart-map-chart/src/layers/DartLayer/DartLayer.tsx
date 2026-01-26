@@ -649,6 +649,9 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
   const handleFeatureClick = useCallback((info: any) => {
     if (info?.object?.properties) {
       setClickedFeature({ properties: info.object.properties });
+    } else {
+      // Clicked on empty map space, close the popup
+      setClickedFeature(null);
     }
   }, []);
 
@@ -1064,6 +1067,7 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
         onMeasureDragStart={handleMeasureDragStart}
         onMeasureDrag={handleMeasureDrag}
         onMeasureDragEnd={handleMeasureDragEnd}
+        onEmptyClick={handleClosePopup}
       />
       <Legend
         forceCategorical
