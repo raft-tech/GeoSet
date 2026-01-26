@@ -97,7 +97,6 @@ type SubsliceLayerEntry = {
 };
 
 interface ClickedFeatureWithColumns extends ClickedFeatureInfo {
-  hoverColumnNames?: string[];
   featureInfoColumnNames?: string[];
 }
 
@@ -115,15 +114,10 @@ const DeckMulti = (props: DeckMultiProps) => {
     useState<ClickedFeatureWithColumns | null>(null);
 
   const handleFeatureClick = useCallback(
-    (
-      info: any,
-      hoverColumnNames?: string[],
-      featureInfoColumnNames?: string[],
-    ) => {
+    (info: any, featureInfoColumnNames?: string[]) => {
       if (info?.object?.properties) {
         setClickedFeature({
           properties: info.object.properties,
-          hoverColumnNames,
           featureInfoColumnNames,
         });
       }
@@ -288,11 +282,7 @@ const DeckMulti = (props: DeckMultiProps) => {
                   transformedProps.visualConfig,
                   sliceHoverColumnNames,
                   (info: any) =>
-                    handleFeatureClick(
-                      info,
-                      sliceHoverColumnNames,
-                      sliceFeatureInfoColumnNames,
-                    ),
+                    handleFeatureClick(info, sliceFeatureInfoColumnNames),
                 );
 
                 if (!newLayer) {
