@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+import { useEffect, useRef } from 'react';
 import { styled } from '@superset-ui/core';
 
 // MapControls: top 12px + height 32px + padding 12px = 56px from top
@@ -128,6 +129,7 @@ export default function ClickPopupBox({
   featureInfoColumnNames,
   position = 'right',
 }: ClickPopupBoxProps) {
+  const popupRef = useRef<HTMLDivElement>(null);
   const props = feature.properties || {};
 
   // Only show columns specified in featureInfoColumnNames
@@ -135,13 +137,31 @@ export default function ClickPopupBox({
     featureInfoColumnNames?.includes(key),
   );
 
+  // Handle click outside to close popup
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        popupRef.current &&
+        !popupRef.current.contains(event.target as Node)
+      ) {
+        onClose();
+      }
+    };
+
+    // Use mousedown to catch clicks before they propagate
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [onClose]);
+
   // Don't render if no columns are configured or no matching properties
   if (entries.length === 0) {
     return null;
   }
 
   return (
-    <StyledPopup $position={position}>
+    <StyledPopup ref={popupRef} $position={position}>
       <PopupHeader>
         <PopupTitle>Feature Info</PopupTitle>
         <CloseButton type="button" onClick={onClose}>
