@@ -111,13 +111,6 @@ const PropertyValue = styled.span`
   `}
 `;
 
-const EmptyMessage = styled.div`
-  ${({ theme }) => `
-    color: ${theme.colorTextSecondary};
-    font-style: italic;
-  `}
-`;
-
 export interface ClickedFeatureInfo {
   properties: Record<string, any>;
 }
@@ -125,22 +118,27 @@ export interface ClickedFeatureInfo {
 export interface ClickPopupBoxProps {
   feature: ClickedFeatureInfo;
   onClose: () => void;
-  hoverColumnNames?: string[];
+  featureInfoColumnNames?: string[];
   position?: 'left' | 'right';
 }
 
 export default function ClickPopupBox({
   feature,
   onClose,
-  hoverColumnNames,
+  featureInfoColumnNames,
   position = 'right',
 }: ClickPopupBoxProps) {
   const props = feature.properties || {};
 
-  // Only show columns specified in hoverColumnNames
+  // Only show columns specified in featureInfoColumnNames
   const entries = Object.entries(props).filter(([key]) =>
-    hoverColumnNames?.includes(key),
+    featureInfoColumnNames?.includes(key),
   );
+
+  // Don't render if no columns are configured or no matching properties
+  if (entries.length === 0) {
+    return null;
+  }
 
   return (
     <StyledPopup $position={position}>
@@ -151,16 +149,12 @@ export default function ClickPopupBox({
         </CloseButton>
       </PopupHeader>
       <PopupContent>
-        {entries.length === 0 ? (
-          <EmptyMessage>No properties available</EmptyMessage>
-        ) : (
-          entries.map(([key, value]) => (
-            <PropertyRow key={key}>
-              <PropertyKey>{key}:</PropertyKey>
-              <PropertyValue>{String(value ?? '')}</PropertyValue>
-            </PropertyRow>
-          ))
-        )}
+        {entries.map(([key, value]) => (
+          <PropertyRow key={key}>
+            <PropertyKey>{key}:</PropertyKey>
+            <PropertyValue>{String(value ?? '')}</PropertyValue>
+          </PropertyRow>
+        ))}
       </PopupContent>
     </StyledPopup>
   );

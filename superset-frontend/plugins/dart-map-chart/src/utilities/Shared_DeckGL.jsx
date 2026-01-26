@@ -139,6 +139,18 @@ export const hoverDataColumns = {
   },
 };
 
+export const featureInfoColumns = {
+  name: 'featureInfoColumns',
+  config: {
+    ...sharedControls.groupby,
+    label: t('Feature Info Columns'),
+    default: [],
+    description: t(
+      'Select columns to display in the Feature Info popup when clicking on a map feature.',
+    ),
+  },
+};
+
 export const jsDataMutator = {
   name: 'js_data_mutator',
   config: jsFunctionControl(

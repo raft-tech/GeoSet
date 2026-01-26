@@ -47,6 +47,24 @@ export default function buildQuery(formData: QueryFormData) {
     });
   }
 
+  // Add columns for Feature Info popup
+  if (
+    formData.featureInfoColumns &&
+    Array.isArray(formData.featureInfoColumns)
+  ) {
+    formData.featureInfoColumns.forEach((col: any) => {
+      // Avoid duplicates if column is already added via hoverDataColumns
+      const colName = col.column_name || col.label || col;
+      const alreadyAdded = columns.some((c: any) => {
+        const existingName = c.column_name || c.label || c;
+        return existingName === colName;
+      });
+      if (!alreadyAdded) {
+        columns.push(col);
+      }
+    });
+  }
+
   // Handle metric config properly
   const metricConfig = colorByValue.valueColumn;
   if (metricConfig) {

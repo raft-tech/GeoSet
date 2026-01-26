@@ -93,10 +93,12 @@ type SubsliceLayerEntry = {
   features: JsonObject[];
   autozoom: boolean;
   hoverColumnNames?: string[];
+  featureInfoColumnNames?: string[];
 };
 
 interface ClickedFeatureWithColumns extends ClickedFeatureInfo {
   hoverColumnNames?: string[];
+  featureInfoColumnNames?: string[];
 }
 
 const DeckMulti = (props: DeckMultiProps) => {
@@ -113,11 +115,16 @@ const DeckMulti = (props: DeckMultiProps) => {
     useState<ClickedFeatureWithColumns | null>(null);
 
   const handleFeatureClick = useCallback(
-    (info: any, hoverColumnNames?: string[]) => {
+    (
+      info: any,
+      hoverColumnNames?: string[],
+      featureInfoColumnNames?: string[],
+    ) => {
       if (info?.object?.properties) {
         setClickedFeature({
           properties: info.object.properties,
           hoverColumnNames,
+          featureInfoColumnNames,
         });
       }
     },
@@ -270,6 +277,8 @@ const DeckMulti = (props: DeckMultiProps) => {
                 const transformedProps = transformDartMapLayerProps(chartProps);
 
                 const sliceHoverColumnNames = transformedProps.hoverColumnNames;
+                const sliceFeatureInfoColumnNames =
+                  transformedProps.featureInfoColumnNames;
                 const newLayer = getDartMapLayer(
                   transformedProps.formData as any,
                   transformedProps.payload,
@@ -278,7 +287,12 @@ const DeckMulti = (props: DeckMultiProps) => {
                   transformedProps.categories || {},
                   transformedProps.visualConfig,
                   sliceHoverColumnNames,
-                  (info: any) => handleFeatureClick(info, sliceHoverColumnNames),
+                  (info: any) =>
+                    handleFeatureClick(
+                      info,
+                      sliceHoverColumnNames,
+                      sliceFeatureInfoColumnNames,
+                    ),
                 );
 
                 if (!newLayer) {
@@ -679,7 +693,7 @@ const DeckMulti = (props: DeckMultiProps) => {
         <ClickPopupBox
           feature={clickedFeature}
           onClose={handleClosePopup}
-          hoverColumnNames={clickedFeature.hoverColumnNames}
+          featureInfoColumnNames={clickedFeature.featureInfoColumnNames}
           position="right"
         />
       )}

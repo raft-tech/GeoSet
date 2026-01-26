@@ -599,6 +599,7 @@ export type DeckGLGeoJsonProps = {
   mapboxApiKey: string;
   mapStyle: string;
   hoverColumnNames?: string[];
+  featureInfoColumnNames?: string[];
   limitReached?: boolean;
   visualConfig?: {
     dimension?: string;
@@ -629,6 +630,7 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
     mapStyle,
     visualConfig: propVisualConfig,
     hoverColumnNames,
+    featureInfoColumnNames,
     limitReached,
   } = props;
 
@@ -1092,7 +1094,7 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
         <ClickPopupBox
           feature={clickedFeature}
           onClose={handleClosePopup}
-          hoverColumnNames={hoverColumnNames}
+          featureInfoColumnNames={featureInfoColumnNames}
           position="left"
         />
       )}
