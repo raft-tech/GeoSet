@@ -92,8 +92,6 @@ type SubsliceLayerEntry = {
   legendGroup: LegendGroup;
   features: JsonObject[];
   autozoom: boolean;
-  hoverColumnNames?: string[];
-  featureInfoColumnNames?: string[];
 };
 
 interface ClickedFeatureWithColumns extends ClickedFeatureInfo {
