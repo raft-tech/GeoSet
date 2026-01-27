@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 /* eslint-disable react-hooks/rules-of-hooks */
 import { styled } from '@superset-ui/core';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import MapIcon from '@material-ui/icons/MapTwoTone';
 import { RGBAColor } from '../utils/colors';
 import { Swatch } from '../utils/legendSwatch';
@@ -163,12 +163,11 @@ const Content = styled.div`
   padding-left: 20px;
 `;
 
-const CategoryRow = styled.div<{ $disabled?: boolean }>`
+const CategoryRow = styled.div`
   display: flex;
   align-items: center;
   margin-bottom: 6px;
   gap: 8px;
-  opacity: ${({ $disabled }) => ($disabled ? 0.5 : 1)};
 `;
 
 const GradientBar = styled.div<{ gradient: string }>`
@@ -195,6 +194,30 @@ const VisibilityCheckbox = styled.input`
   margin: 0 !important;
   flex-shrink: 0;
 `;
+
+// Checkbox that supports indeterminate state (shows minus sign when some but not all are selected)
+const IndeterminateCheckbox: React.FC<{
+  checked: boolean;
+  indeterminate: boolean;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}> = ({ checked, indeterminate, onChange }) => {
+  const ref = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (ref.current) {
+      ref.current.indeterminate = indeterminate;
+    }
+  }, [indeterminate]);
+
+  return (
+    <VisibilityCheckbox
+      ref={ref}
+      type="checkbox"
+      checked={checked}
+      onChange={onChange}
+    />
+  );
+};
 
 export const MultiLegend: React.FC<MultiLegendProps> = ({
   legendsBySlice,
@@ -254,14 +277,24 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
 
             const isVisible = layerVisibility[id] !== false; // default to visible
 
+            // Calculate indeterminate state for categorical layers
+            const categories = group.categories || [];
+            const enabledCount = categories.filter(
+              cat => cat.enabled !== false,
+            ).length;
+            const isIndeterminate =
+              categories.length > 0 &&
+              enabledCount > 0 &&
+              enabledCount < categories.length;
+
             return (
               <Group key={id}>
                 {/* Header */}
                 <Header>
                   {sliceIds.length > 1 && (
-                    <VisibilityCheckbox
-                      type="checkbox"
+                    <IndeterminateCheckbox
                       checked={isVisible}
+                      indeterminate={isIndeterminate}
                       onChange={e => {
                         e.stopPropagation();
                         onToggleLayerVisibility?.(id);
@@ -312,7 +345,7 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
                               ];
 
                           return (
-                            <CategoryRow key={i} $disabled={!isEnabled}>
+                            <CategoryRow key={i}>
                               {hasToggle && (
                                 <VisibilityCheckbox
                                   type="checkbox"

@@ -502,36 +502,49 @@ const DeckMulti = (props: DeckMultiProps) => {
   // Toggle layer visibility callback
   const handleToggleLayerVisibility = useCallback(
     (sliceId: string) => {
-      setLayerVisibility(prev => {
-        const isCurrentlyVisible = prev[sliceId] !== false;
+      const entry = subSlicesLayers.find(e => String(e.sliceId) === sliceId);
+      const isCurrentlyVisible = layerVisibility[sliceId] !== false;
 
-        // If trying to turn ON, check if any category is enabled
-        if (!isCurrentlyVisible) {
-          const entry = subSlicesLayers.find(
-            e => String(e.sliceId) === sliceId,
-          );
-          if (
-            entry?.legendGroup.type === 'categorical' &&
-            entry.legendGroup.categories
-          ) {
-            const sliceCatVisibility = categoryVisibility[sliceId] || {};
-            const anyEnabled = entry.legendGroup.categories.some(
-              cat => sliceCatVisibility[cat.label] !== false,
-            );
-            // Don't allow turning on if all categories are disabled
-            if (!anyEnabled && Object.keys(sliceCatVisibility).length > 0) {
-              return prev;
-            }
-          }
-        }
+      const isCategoricalLayer =
+        entry?.legendGroup.type === 'categorical' &&
+        entry.legendGroup.categories;
 
-        return {
+      // If turning OFF the layer, also turn off all category checkboxes
+      if (isCurrentlyVisible && isCategoricalLayer) {
+        const allCategoriesOff: Record<string, boolean> = {};
+        entry.legendGroup.categories!.forEach(cat => {
+          allCategoriesOff[cat.label] = false;
+        });
+        setCategoryVisibility(prev => ({
           ...prev,
-          [sliceId]: !isCurrentlyVisible,
-        };
-      });
+          [sliceId]: allCategoriesOff,
+        }));
+      } else if (!isCurrentlyVisible && isCategoricalLayer) {
+        // If trying to turn ON, check if any category is enabled
+        // If all categories were explicitly disabled, re-enable them all
+        const sliceCatVisibility = categoryVisibility[sliceId] || {};
+        const anyEnabled = entry.legendGroup.categories!.some(
+          cat => sliceCatVisibility[cat.label] !== false,
+        );
+        // If all categories are off, re-enable them all when turning layer on
+        if (!anyEnabled && Object.keys(sliceCatVisibility).length > 0) {
+          const allCategoriesOn: Record<string, boolean> = {};
+          entry.legendGroup.categories!.forEach(cat => {
+            allCategoriesOn[cat.label] = true;
+          });
+          setCategoryVisibility(prev => ({
+            ...prev,
+            [sliceId]: allCategoriesOn,
+          }));
+        }
+      }
+
+      setLayerVisibility(prev => ({
+        ...prev,
+        [sliceId]: !isCurrentlyVisible,
+      }));
     },
-    [subSlicesLayers, categoryVisibility],
+    [subSlicesLayers, categoryVisibility, layerVisibility],
   );
 
   // Toggle a single category within a slice
