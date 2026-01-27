@@ -481,6 +481,10 @@ export function getLayer(
         dimensionColumn: dimension as string | undefined,
         // Set of enabled categories for filtering clusters
         enabledCategories,
+        // Clustering configuration
+        clusterMaxZoom: fd.clusterMaxZoom,
+        clusterMinPoints: fd.clusterMinPoints,
+        clusterRadius: fd.clusterRadius,
         // IconLayer props (only used if iconName is set)
         iconName,
         iconSize,

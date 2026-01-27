@@ -45,6 +45,10 @@ export type PointClusterLayerProps = {
   // Set of enabled category names (lowercase) - features not in this set are excluded from clustering
   // If not provided, all features are included
   enabledCategories?: Set<string>;
+  // Clustering configuration
+  clusterMaxZoom?: number; // Zoom level at which clustering stops (default: 14)
+  clusterMinPoints?: number; // Minimum points to form a cluster (default: 2)
+  clusterRadius?: number; // Proximity radius in pixels (default: 40)
   // IconLayer-specific (optional - if not provided, uses ScatterplotLayer for single points)
   iconName?: string;
   iconSize?: number;
@@ -60,19 +64,24 @@ export type PointClusterLayerProps = {
   pickable?: boolean;
 };
 
-const CLUSTER_RADIUS = 40; // pixels - controls how aggressively points cluster
-const MAX_ZOOM = 20; // max zoom level for clustering
+// Default clustering configuration values
+const DEFAULT_CLUSTER_RADIUS = 40; // pixels - controls how aggressively points cluster
+const DEFAULT_MAX_ZOOM = 14; // max zoom level for clustering
+const DEFAULT_MIN_POINTS = 2; // minimum points to form a cluster
 
 type ClusterData = PointFeature<any> | ClusterFeature<any>;
 
 // Store Supercluster index outside of layer to survive layer recreation during cloning
-// Key is layer ID, value is { index, dataLength } so we can detect stale caches
+// Key is layer ID, value is { index, features, dataLength, config } so we can detect stale caches
+// We store features so we can rebuild the index when config changes even if layer has no data
 const indexCache = new Map<
   string,
   {
     index: Supercluster<any, any>;
+    features: any[]; // Store features for rebuilding when config changes
     dataLength: number;
     enabledCategoriesKey: string;
+    clusterConfigKey: string; // Track clustering config changes
   }
 >();
 
@@ -111,10 +120,28 @@ export default class PointClusterLayer extends CompositeLayer<PointClusterLayerP
     return Array.from(enabledCategories).sort().join('|');
   }
 
+  // Get a stable string key from clustering config for cache comparison
+  getClusterConfigKey(): string {
+    const {
+      clusterMaxZoom = DEFAULT_MAX_ZOOM,
+      clusterMinPoints = DEFAULT_MIN_POINTS,
+      clusterRadius = DEFAULT_CLUSTER_RADIUS,
+    } = this.props;
+    return `${clusterMaxZoom}-${clusterMinPoints}-${clusterRadius}`;
+  }
+
   // Build a new Supercluster index from current props data
   buildClusterIndex() {
-    const { id, data, getPosition, enabledCategories, dimensionColumn } =
-      this.props;
+    const {
+      id,
+      data,
+      getPosition,
+      enabledCategories,
+      dimensionColumn,
+      clusterMaxZoom = DEFAULT_MAX_ZOOM,
+      clusterMinPoints = DEFAULT_MIN_POINTS,
+      clusterRadius = DEFAULT_CLUSTER_RADIUS,
+    } = this.props;
 
     if (!data || data.length === 0) {
       return;
@@ -167,18 +194,69 @@ export default class PointClusterLayer extends CompositeLayer<PointClusterLayerP
     });
 
     const newIndex = new Supercluster<any, any>({
-      maxZoom: MAX_ZOOM,
-      radius: CLUSTER_RADIUS,
+      maxZoom: clusterMaxZoom,
+      minPoints: clusterMinPoints,
+      radius: clusterRadius,
     });
 
     newIndex.load(validFeatures);
 
     // Cache the index globally (survives layer cloning)
-    // Store dataLength and enabledCategoriesKey to detect when rebuild is needed
+    // Store features, dataLength, enabledCategoriesKey, and clusterConfigKey to detect when rebuild is needed
     indexCache.set(id, {
       index: newIndex,
+      features: validFeatures,
       dataLength: data.length,
       enabledCategoriesKey: this.getEnabledCategoriesKey(),
+      clusterConfigKey: this.getClusterConfigKey(),
+    });
+  }
+
+  // Rebuild the index using cached features with new clustering config
+  rebuildIndexFromCachedFeatures(
+    features: any[],
+    clusterMaxZoom: number,
+    clusterMinPoints: number,
+    clusterRadius: number,
+  ) {
+    const { id, enabledCategories, dimensionColumn } = this.props;
+
+    // Filter features by enabled categories if needed
+    const filteredFeatures = enabledCategories
+      ? features.filter((f: any) => {
+          const categoryRaw =
+            f.properties?.categoryName ??
+            (dimensionColumn
+              ? f.properties?.properties?.[dimensionColumn]
+              : null);
+
+          if (categoryRaw != null) {
+            const categoryKey =
+              typeof categoryRaw === 'string'
+                ? categoryRaw.trim().toLowerCase()
+                : String(categoryRaw).trim().toLowerCase();
+
+            return enabledCategories.has(categoryKey);
+          }
+          return true;
+        })
+      : features;
+
+    const newIndex = new Supercluster<any, any>({
+      maxZoom: clusterMaxZoom,
+      minPoints: clusterMinPoints,
+      radius: clusterRadius,
+    });
+
+    newIndex.load(filteredFeatures);
+
+    // Update cache with new index but keep the same features
+    indexCache.set(id, {
+      index: newIndex,
+      features,
+      dataLength: features.length,
+      enabledCategoriesKey: this.getEnabledCategoriesKey(),
+      clusterConfigKey: this.getClusterConfigKey(),
     });
   }
 
@@ -187,21 +265,41 @@ export default class PointClusterLayer extends CompositeLayer<PointClusterLayerP
     const layerId = this.props.id;
     const currentDataLength = this.props.data?.length ?? 0;
     const cached = indexCache.get(layerId);
+    const currentCategoriesKey = this.getEnabledCategoriesKey();
+    const currentConfigKey = this.getClusterConfigKey();
 
-    // Don't rebuild if we have no data (likely a cloned layer) but cache exists
-    if (currentDataLength === 0 && cached) {
+    const {
+      clusterMaxZoom = DEFAULT_MAX_ZOOM,
+      clusterMinPoints = DEFAULT_MIN_POINTS,
+      clusterRadius = DEFAULT_CLUSTER_RADIUS,
+    } = this.props;
+
+    // Check if cached config matches current props
+    const cacheConfigMatches =
+      cached &&
+      cached.enabledCategoriesKey === currentCategoriesKey &&
+      cached.clusterConfigKey === currentConfigKey;
+
+    // If cache exists and config matches, nothing to do
+    if (cacheConfigMatches) {
       return;
     }
 
-    const currentCategoriesKey = this.getEnabledCategoriesKey();
-
-    // Rebuild if no cache OR if data length changed OR if enabled categories changed
-    if (
-      !cached ||
-      cached.dataLength !== currentDataLength ||
-      cached.enabledCategoriesKey !== currentCategoriesKey
-    ) {
+    // If we have current data, rebuild from current data
+    if (currentDataLength > 0) {
       this.buildClusterIndex();
+      return;
+    }
+
+    // If we have no current data but have cached features and config changed,
+    // rebuild the index using cached features with new config
+    if (cached && cached.features && cached.features.length > 0) {
+      this.rebuildIndexFromCachedFeatures(
+        cached.features,
+        clusterMaxZoom,
+        clusterMinPoints,
+        clusterRadius,
+      );
     }
   }
 
@@ -238,9 +336,11 @@ export default class PointClusterLayer extends CompositeLayer<PointClusterLayerP
   }
 
   renderLayers(): Layer[] {
+    // Ensure index is current before rendering
+    // This can now rebuild from cached features even without current data
+    this.ensureIndexExists();
+
     // Get the Supercluster index from cache
-    // IMPORTANT: Don't call ensureIndexExists here as cloned layers may have undefined data
-    // The index should have been built when the layer was first created with real data
     const index = this.getClusterIndex();
 
     // Get current zoom from the viewport context - this is always current
@@ -251,17 +351,6 @@ export default class PointClusterLayer extends CompositeLayer<PointClusterLayerP
     // This ensures we always render based on the current viewport
     let clusterData: ClusterData[] = [];
     let singlePointData: ClusterData[] = [];
-
-    if (index) {
-      const allData = index.getClusters([-180, -85, 180, 85], z);
-      clusterData = allData.filter((d: ClusterData) => d.properties?.cluster);
-      singlePointData = allData.filter(
-        (d: ClusterData) => !d.properties?.cluster,
-      );
-    } else {
-      // No index available - return empty layers
-      return [];
-    }
 
     const {
       iconName,
@@ -278,6 +367,45 @@ export default class PointClusterLayer extends CompositeLayer<PointClusterLayerP
       onHover,
       onClick,
     } = this.props;
+
+    if (index) {
+      const allData = index.getClusters([-180, -85, 180, 85], z);
+      clusterData = allData.filter((d: ClusterData) => d.properties?.cluster);
+      const unsortedSinglePoints = allData.filter(
+        (d: ClusterData) => !d.properties?.cluster,
+      );
+
+      // Sort single points by category order for z-index rendering
+      // Categories earlier in categoryColors render on top (last in draw order)
+      // This matches DartLayer's behavior for non-clustered Point/Icon layers
+      const categoryKeys = Object.keys(categoryColors);
+      const UNCATEGORIZED_INDEX = Number.MAX_SAFE_INTEGER;
+
+      singlePointData = [...unsortedSinglePoints].sort((a, b) => {
+        const getCategoryIndex = (d: ClusterData): number => {
+          const props = d.properties;
+          const categoryRaw =
+            props?.categoryName ??
+            (dimensionColumn ? props?.properties?.[dimensionColumn] : null);
+
+          if (categoryRaw == null) return UNCATEGORIZED_INDEX;
+
+          const lookupKey =
+            typeof categoryRaw === 'string'
+              ? categoryRaw.trim().toLowerCase()
+              : String(categoryRaw).trim().toLowerCase();
+
+          const idx = categoryKeys.indexOf(lookupKey);
+          return idx === -1 ? UNCATEGORIZED_INDEX : idx;
+        };
+
+        // Reverse order: higher index drawn first (bottom), lower index drawn last (top)
+        return getCategoryIndex(b) - getCategoryIndex(a);
+      });
+    } else {
+      // No index available - return empty layers
+      return [];
+    }
 
     const layers: Layer[] = [];
 

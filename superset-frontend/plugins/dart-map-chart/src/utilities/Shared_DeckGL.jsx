@@ -129,6 +129,54 @@ export const enableClustering = {
   },
 };
 
+export const clusterMaxZoom = {
+  name: 'clusterMaxZoom',
+  config: {
+    type: 'SliderControl',
+    label: t('Cluster Max Zoom'),
+    renderTrigger: true,
+    min: 0,
+    max: 22,
+    step: 1,
+    default: 14,
+    description: t(
+      'Zoom level at which clustering stops. Points will appear individually at zoom levels above this value.',
+    ),
+  },
+};
+
+export const clusterMinPoints = {
+  name: 'clusterMinPoints',
+  config: {
+    type: 'SliderControl',
+    label: t('Min Points per Cluster'),
+    renderTrigger: true,
+    min: 2,
+    max: 20,
+    step: 1,
+    default: 2,
+    description: t(
+      'Minimum number of points required to form a cluster. Points below this threshold will be shown individually.',
+    ),
+  },
+};
+
+export const clusterRadius = {
+  name: 'clusterRadius',
+  config: {
+    type: 'SliderControl',
+    label: t('Cluster Radius'),
+    renderTrigger: true,
+    min: 10,
+    max: 200,
+    step: 5,
+    default: 40,
+    description: t(
+      'Proximity radius in pixels. Points within this distance will be grouped into clusters.',
+    ),
+  },
+};
+
 export const dimension = {
   name: 'dimension',
   config: {
