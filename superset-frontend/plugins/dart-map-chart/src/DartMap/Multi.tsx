@@ -500,12 +500,39 @@ const DeckMulti = (props: DeckMultiProps) => {
   const { setControlValue, height, width } = props;
 
   // Toggle layer visibility callback
-  const handleToggleLayerVisibility = useCallback((sliceId: string) => {
-    setLayerVisibility(prev => ({
-      ...prev,
-      [sliceId]: !(prev[sliceId] !== false),
-    }));
-  }, []);
+  const handleToggleLayerVisibility = useCallback(
+    (sliceId: string) => {
+      setLayerVisibility(prev => {
+        const isCurrentlyVisible = prev[sliceId] !== false;
+
+        // If trying to turn ON, check if any category is enabled
+        if (!isCurrentlyVisible) {
+          const entry = subSlicesLayers.find(
+            e => String(e.sliceId) === sliceId,
+          );
+          if (
+            entry?.legendGroup.type === 'categorical' &&
+            entry.legendGroup.categories
+          ) {
+            const sliceCatVisibility = categoryVisibility[sliceId] || {};
+            const anyEnabled = entry.legendGroup.categories.some(
+              cat => sliceCatVisibility[cat.label] !== false,
+            );
+            // Don't allow turning on if all categories are disabled
+            if (!anyEnabled && Object.keys(sliceCatVisibility).length > 0) {
+              return prev;
+            }
+          }
+        }
+
+        return {
+          ...prev,
+          [sliceId]: !isCurrentlyVisible,
+        };
+      });
+    },
+    [subSlicesLayers, categoryVisibility],
+  );
 
   // Toggle a single category within a slice
   const handleToggleCategory = useCallback(
@@ -613,6 +640,52 @@ const DeckMulti = (props: DeckMultiProps) => {
       return anyChanged ? updatedLayers : currentLayers;
     });
   }, [categoryVisibility, props.onAddFilter, setTooltip]);
+
+  // Sync layer visibility with category visibility
+  // If all categories are off, hide the layer; if any category is on, show the layer
+  useEffect(() => {
+    if (subSlicesLayers.length === 0) return;
+
+    setLayerVisibility(prev => {
+      const updates: Record<string, boolean> = {};
+
+      subSlicesLayers.forEach(entry => {
+        const { type, categories } = entry.legendGroup;
+
+        // Only apply to categorical layers
+        if (type !== 'categorical' || !categories) {
+          return;
+        }
+
+        const sliceId = String(entry.sliceId);
+        const sliceCatVisibility = categoryVisibility[sliceId] || {};
+
+        // Check if any category is enabled
+        const anyEnabled = categories.some(
+          cat => sliceCatVisibility[cat.label] !== false,
+        );
+
+        // Check if all categories have been explicitly set (user has interacted)
+        const hasInteracted = Object.keys(sliceCatVisibility).length > 0;
+
+        if (hasInteracted) {
+          if (!anyEnabled && prev[sliceId] !== false) {
+            // All categories off -> hide layer
+            updates[sliceId] = false;
+          } else if (anyEnabled && prev[sliceId] === false) {
+            // Some category on and layer was hidden -> show layer
+            updates[sliceId] = true;
+          }
+        }
+      });
+
+      if (Object.keys(updates).length === 0) {
+        return prev;
+      }
+
+      return { ...prev, ...updates };
+    });
+  }, [categoryVisibility, subSlicesLayers]);
 
   // Sort layers based on config order
   const sortedLayers = useMemo(() => {
