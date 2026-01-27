@@ -192,7 +192,7 @@ export const DeckGLContainer = memo(
       (deckRef.current as any)?.deck?.setProps({
         initialViewState: {
           ...newViewState,
-          transitionDuration: 0,
+          transitionDuration: 100,
         },
       });
       pendingSaveTime.current = Date.now();
