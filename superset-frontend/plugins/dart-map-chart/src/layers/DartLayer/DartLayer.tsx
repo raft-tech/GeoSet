@@ -70,7 +70,9 @@ import {
 import { handleSchemaCheck } from '../../utils/migrationApi';
 import MeasureOverlay, { MeasureState } from '../../components/MeasureOverlay';
 import { Coordinate } from '../../utils/measureDistance';
-import ClickPopupBox, { ClickedFeatureInfo } from '../../components/ClickPopupBox';
+import ClickPopupBox, {
+  ClickedFeatureInfo,
+} from '../../components/ClickPopupBox';
 
 const LimitWarning = styled.div`
   background-color: ${({ theme }) => theme.colorWarningBg};
@@ -646,12 +648,6 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
   const [clickedFeature, setClickedFeature] =
     useState<ClickedFeatureInfo | null>(null);
 
-  const handleFeatureClick = useCallback((info: any) => {
-    if (info?.object?.properties) {
-      setClickedFeature({ properties: info.object.properties });
-    }
-  }, []);
-
   const handleClosePopup = useCallback(() => {
     setClickedFeature(null);
   }, []);
@@ -845,6 +841,17 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
     isActive: false,
     isDragging: false,
   });
+
+  // Don't show popup when measurement mode is active
+  const handleFeatureClick = useCallback(
+    (info: any) => {
+      if (measureState.isActive) return;
+      if (info?.object?.properties) {
+        setClickedFeature({ properties: info.object.properties });
+      }
+    },
+    [measureState.isActive],
+  );
 
   const handleRulerToggle = useCallback(() => {
     setMeasureState(prev => {

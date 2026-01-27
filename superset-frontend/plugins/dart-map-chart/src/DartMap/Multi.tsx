@@ -100,6 +100,8 @@ interface ClickedFeatureWithColumns extends ClickedFeatureInfo {
 
 const DeckMulti = (props: DeckMultiProps) => {
   const containerRef = useRef<DeckGLContainerHandle>(null);
+  // Ref to track measure state for use in callbacks without creating dependencies
+  const measureActiveRef = useRef(false);
 
   const [subSlicesLayers, setSubSlicesLayers] = useState<SubsliceLayerEntry[]>(
     [],
@@ -111,8 +113,10 @@ const DeckMulti = (props: DeckMultiProps) => {
   const [clickedFeature, setClickedFeature] =
     useState<ClickedFeatureWithColumns | null>(null);
 
+  // Don't show popup when measurement mode is active (uses ref to avoid dependency issues)
   const handleFeatureClick = useCallback(
     (info: any, featureInfoColumnNames?: string[]) => {
+      if (measureActiveRef.current) return;
       if (info?.object?.properties) {
         setClickedFeature({
           properties: info.object.properties,
@@ -546,6 +550,9 @@ const DeckMulti = (props: DeckMultiProps) => {
     isActive: false,
     isDragging: false,
   });
+
+  // Keep ref in sync with measure state for use in callbacks
+  measureActiveRef.current = measureState.isActive;
 
   const handleRulerToggle = useCallback(() => {
     setMeasureState(prev => {
