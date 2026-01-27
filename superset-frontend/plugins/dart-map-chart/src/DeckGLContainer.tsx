@@ -35,7 +35,6 @@ import { StaticMap, MapRef } from 'react-map-gl';
 import DeckGL from '@deck.gl/react';
 import type { Deck, Layer } from '@deck.gl/core';
 import { JsonObject, JsonValue, styled } from '@superset-ui/core';
-import mapboxgl from 'mapbox-gl';
 import Tooltip, { TooltipProps } from './components/Tooltip';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Viewport } from './utils/fitViewport';
@@ -115,6 +114,91 @@ export const StaticMapStyledWrapper = styled(StaticMap)`
     display: none !important;
   }
 `;
+
+// External scale control styled to match mapbox-gl scale control exactly
+const ScaleControlContainer = styled.div`
+  position: absolute;
+  bottom: 26px;
+  right: 10px;
+  z-index: 100;
+  pointer-events: none;
+  font:
+    10px/20px 'Helvetica Neue',
+    Arial,
+    Helvetica,
+    sans-serif;
+`;
+
+const ScaleBar = styled.div<{ $width: number }>`
+  box-sizing: border-box;
+  background-color: hsla(0, 0%, 100%, 0.75);
+  border: 2px solid #333;
+  border-top: none;
+  color: #333;
+  padding: 0 5px;
+  text-align: center;
+  width: ${({ $width }) => $width}px;
+  height: 20px;
+  line-height: 18px;
+`;
+
+// Calculate scale bar width and label - matches mapbox-gl ScaleControl logic
+const getScaleInfo = (
+  zoom: number,
+  latitude: number,
+  maxWidth: number = 100,
+): { width: number; label: string } => {
+  // Earth's circumference at equator in meters
+  const EARTH_CIRCUMFERENCE = 40075016.686;
+  // Meters per pixel at equator for zoom level (512px tile size)
+  const metersPerPixelAtEquator = EARTH_CIRCUMFERENCE / 512 / Math.pow(2, zoom);
+  // Adjust for latitude (meters per pixel decreases as you move away from equator)
+  const metersPerPixel =
+    metersPerPixelAtEquator * Math.cos((latitude * Math.PI) / 180);
+
+  // Convert to feet (1 meter = 3.28084 feet)
+  const feetPerPixel = metersPerPixel * 3.28084;
+  const maxFeet = feetPerPixel * maxWidth;
+
+  // Nice scale values in feet, matching mapbox behavior
+  let scaleFeet: number;
+  let label: string;
+
+  if (maxFeet >= 5280 * 2) {
+    // Use miles for larger distances
+    const maxMiles = maxFeet / 5280;
+    const niceValues = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000];
+    let scaleMiles = niceValues[0];
+    for (const value of niceValues) {
+      if (value <= maxMiles) {
+        scaleMiles = value;
+      } else {
+        break;
+      }
+    }
+    scaleFeet = scaleMiles * 5280;
+    label = `${scaleMiles} mi`;
+  } else {
+    // Use feet for smaller distances
+    const niceValues = [10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 5280];
+    scaleFeet = niceValues[0];
+    for (const value of niceValues) {
+      if (value <= maxFeet) {
+        scaleFeet = value;
+      } else {
+        break;
+      }
+    }
+    if (scaleFeet >= 5280) {
+      label = '1 mi';
+    } else {
+      label = `${scaleFeet} ft`;
+    }
+  }
+
+  const width = Math.round(scaleFeet / feetPerPixel);
+  return { width, label };
+};
 
 /**
  * Uses DeckGL "uncontrolled mode" (initialViewState) to avoid re-renders during pan/zoom.
@@ -257,30 +341,12 @@ export const DeckGLContainer = memo(
       });
     }, [props.width, props.height]);
 
-    // Only sync React state when interaction ends (uncontrolled mode perf optimization)
+    // Sync React state on view changes (needed for scale control updates)
     const onViewStateChange = useCallback(
-      ({
-        viewState: newViewState,
-        interactionState,
-      }: {
-        viewState: JsonObject;
-        interactionState?: {
-          isDragging?: boolean;
-          isPanning?: boolean;
-          isZooming?: boolean;
-        };
-      }) => {
+      ({ viewState: newViewState }: { viewState: JsonObject }) => {
         const newVS = newViewState as Viewport;
         currentViewport.current = newVS;
-
-        // Only update React state when interaction ends (not during drag)
-        const isInteracting =
-          interactionState?.isDragging ||
-          interactionState?.isPanning ||
-          interactionState?.isZooming;
-        if (!isInteracting) {
-          setViewState(newVS);
-        }
+        setViewState(newVS);
         // Always mark for save so viewport persists, but rate-limited by tick()
         pendingSaveTime.current = Date.now();
       },
@@ -357,12 +423,6 @@ export const DeckGLContainer = memo(
 
     const handleMapLoad = useCallback(event => {
       const map = event.target;
-
-      const scaleControl = new mapboxgl.ScaleControl({
-        maxWidth: 120,
-        unit: 'imperial',
-      });
-      map.addControl(scaleControl, 'bottom-right');
 
       const updateLayerVisibility = () => {
         const currZoom = map.getZoom();
@@ -511,6 +571,12 @@ export const DeckGLContainer = memo(
       ? { dragPan: false, dragRotate: false }
       : true;
 
+    // Calculate scale info from current viewport (matches mapbox-gl scale control)
+    const scaleInfo = useMemo(
+      () => getScaleInfo(viewState.zoom ?? 1, viewState.latitude ?? 0, 100),
+      [viewState.zoom, viewState.latitude],
+    );
+
     return (
       <div
         style={{ position: 'relative', width, height, overflow: 'hidden' }}
@@ -554,6 +620,9 @@ export const DeckGLContainer = memo(
             {distance}
           </MeasureTooltip>
         )}
+        <ScaleControlContainer>
+          <ScaleBar $width={scaleInfo.width}>{scaleInfo.label}</ScaleBar>
+        </ScaleControlContainer>
       </div>
     );
   }),
