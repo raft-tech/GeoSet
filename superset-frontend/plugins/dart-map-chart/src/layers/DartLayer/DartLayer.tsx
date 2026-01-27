@@ -445,6 +445,9 @@ export function getLayer(
         radiusMinPixels: 1,
         radiusMaxPixels: 50,
         radiusScale: 1,
+        transitions: {
+          getFillColor: 150,
+        },
         ...baseLayerProps,
       });
     }
@@ -517,6 +520,9 @@ export function getLayer(
         lineWidthUnits: 'pixels',
         lineWidthScale: 1,
         lineWidthMinPixels: 0,
+        transitions: {
+          getFillColor: 150,
+        },
         ...baseLayerProps,
       });
     }
@@ -547,6 +553,9 @@ export function getLayer(
         pointRadiusMinPixels: 5,
         lineWidthUnits: 'pixels',
         lineWidthMinPixels: 0,
+        transitions: {
+          getFillColor: 150,
+        },
         ...baseLayerProps,
       });
     // if no match, default to GeoJSON layer
@@ -576,6 +585,9 @@ export function getLayer(
         pointRadiusMinPixels: 5,
         lineWidthUnits: 'pixels',
         lineWidthMinPixels: 0,
+        transitions: {
+          getFillColor: 150,
+        },
         ...baseLayerProps,
       });
   }

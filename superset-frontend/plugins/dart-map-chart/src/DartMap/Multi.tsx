@@ -111,6 +111,8 @@ const DeckMulti = (props: DeckMultiProps) => {
   const containerRef = useRef<DeckGLContainerHandle>(null);
   // Ref to track measure state for use in callbacks without creating dependencies
   const measureActiveRef = useRef(false);
+  // Store initial autozoom viewport to prevent reset on category toggle
+  const initialAutozoomViewportRef = useRef<Viewport | null>(null);
 
   const [subSlicesLayers, setSubSlicesLayers] = useState<SubsliceLayerEntry[]>(
     [],
@@ -754,16 +756,27 @@ const DeckMulti = (props: DeckMultiProps) => {
   );
 
   // Calculate autozoom viewport from layers with autozoom enabled
+  // Only calculate once on initial load to prevent view reset on category toggle
   const viewport: Viewport = useMemo(() => {
+    // If we already calculated autozoom, use the stored viewport
+    if (initialAutozoomViewportRef.current) {
+      return initialAutozoomViewportRef.current;
+    }
+
     const autozoomLayers = sortedLayers.filter(entry => entry.autozoom);
     if (!autozoomLayers.length) return props.viewport;
+
     const allFeatures = autozoomLayers.flatMap(entry => entry.features);
-    return calculateAutozoomViewport(
+    const calculatedViewport = calculateAutozoomViewport(
       allFeatures,
       props.viewport,
       width,
       height,
     );
+
+    // Store the initial autozoom viewport
+    initialAutozoomViewportRef.current = calculatedViewport;
+    return calculatedViewport;
   }, [sortedLayers, props.viewport, width, height]);
 
   // Map control handlers - must be defined before any conditional returns
