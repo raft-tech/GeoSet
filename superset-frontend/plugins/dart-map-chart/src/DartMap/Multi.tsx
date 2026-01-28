@@ -50,6 +50,7 @@ import { CategoryState, MetricLegend, RGBAColor } from '../utils/colors';
 import { getGeometryType } from '../utils';
 import { fetchMapboxApiKey, getCachedMapboxApiKey } from '../utils/mapboxApi';
 import { multiChartMigration } from '../utils/migrationApi';
+import ClickPopupBox, { ClickedFeatureInfo } from '../components/ClickPopupBox';
 
 // Utility to convert snake_case or camelCase to Title Case
 const toTitleCase = (str: string) =>
@@ -93,8 +94,14 @@ type SubsliceLayerEntry = {
   autozoom: boolean;
 };
 
+interface ClickedFeatureWithColumns extends ClickedFeatureInfo {
+  featureInfoColumnNames?: string[];
+}
+
 const DeckMulti = (props: DeckMultiProps) => {
   const containerRef = useRef<DeckGLContainerHandle>(null);
+  // Ref to track measure state for use in callbacks without creating dependencies
+  const measureActiveRef = useRef(false);
 
   const [subSlicesLayers, setSubSlicesLayers] = useState<SubsliceLayerEntry[]>(
     [],
@@ -103,6 +110,27 @@ const DeckMulti = (props: DeckMultiProps) => {
   const [layerVisibility, setLayerVisibility] = useState<
     Record<string, boolean>
   >({});
+  const [clickedFeature, setClickedFeature] =
+    useState<ClickedFeatureWithColumns | null>(null);
+
+  // Don't show popup when measurement mode is active (uses ref to avoid dependency issues)
+  const handleFeatureClick = useCallback(
+    (info: any, featureInfoColumnNames?: string[]) => {
+      if (measureActiveRef.current) return;
+      if (info?.object?.properties) {
+        setClickedFeature({
+          properties: info.object.properties,
+          featureInfoColumnNames,
+        });
+      }
+    },
+    [],
+  );
+
+  const handleClosePopup = useCallback(() => {
+    setClickedFeature(null);
+  }, []);
+
   const setTooltip = useCallback((tooltip: TooltipProps['tooltip']) => {
     const { current } = containerRef;
     if (current) {
@@ -244,6 +272,9 @@ const DeckMulti = (props: DeckMultiProps) => {
                 // Use transformProps to process data (same logic as standalone chart)
                 const transformedProps = transformDartMapLayerProps(chartProps);
 
+                const sliceHoverColumnNames = transformedProps.hoverColumnNames;
+                const sliceFeatureInfoColumnNames =
+                  transformedProps.featureInfoColumnNames;
                 const newLayer = getDartMapLayer(
                   transformedProps.formData as any,
                   transformedProps.payload,
@@ -251,7 +282,9 @@ const DeckMulti = (props: DeckMultiProps) => {
                   setTooltip,
                   transformedProps.categories || {},
                   transformedProps.visualConfig,
-                  transformedProps.hoverColumnNames,
+                  sliceHoverColumnNames,
+                  (info: any) =>
+                    handleFeatureClick(info, sliceFeatureInfoColumnNames),
                 );
 
                 if (!newLayer) {
@@ -404,7 +437,7 @@ const DeckMulti = (props: DeckMultiProps) => {
         setSubSlicesLayers(validLayers);
       });
     },
-    [props.onAddFilter, setTooltip],
+    [props.onAddFilter, setTooltip, handleFeatureClick],
   );
 
   const prevSlicesData = usePrevious(slicesData);
@@ -517,6 +550,9 @@ const DeckMulti = (props: DeckMultiProps) => {
     isActive: false,
     isDragging: false,
   });
+
+  // Keep ref in sync with measure state for use in callbacks
+  measureActiveRef.current = measureState.isActive;
 
   const handleRulerToggle = useCallback(() => {
     setMeasureState(prev => {
@@ -634,6 +670,7 @@ const DeckMulti = (props: DeckMultiProps) => {
         onMeasureDragStart={handleMeasureDragStart}
         onMeasureDrag={handleMeasureDrag}
         onMeasureDragEnd={handleMeasureDragEnd}
+        onEmptyClick={handleClosePopup}
       />
       <MultiLegend
         legendsBySlice={legendsBySlice}
@@ -648,6 +685,14 @@ const DeckMulti = (props: DeckMultiProps) => {
         isRulerActive={measureState.isActive}
         position="top-right"
       />
+      {clickedFeature && (
+        <ClickPopupBox
+          feature={clickedFeature}
+          onClose={handleClosePopup}
+          featureInfoColumnNames={clickedFeature.featureInfoColumnNames}
+          position="right"
+        />
+      )}
     </div>
   );
 };
