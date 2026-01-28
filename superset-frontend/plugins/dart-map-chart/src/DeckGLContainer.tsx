@@ -60,6 +60,7 @@ export type DeckGLContainerProps = {
   onMeasureDragStart?: (coordinate: Coordinate) => void;
   onMeasureDrag?: (coordinate: Coordinate) => void;
   onMeasureDragEnd?: (coordinate: Coordinate) => void;
+  onEmptyClick?: () => void;
 };
 
 const MeasureTooltip = styled.div`
@@ -193,7 +194,7 @@ export const DeckGLContainer = memo(
       (deckRef.current as any)?.deck?.setProps({
         initialViewState: {
           ...newViewState,
-          transitionDuration: 0,
+          transitionDuration: 100,
         },
       });
       pendingSaveTime.current = Date.now();
@@ -456,23 +457,38 @@ export const DeckGLContainer = memo(
       map.on('zoom', updateLayerVisibility);
     }, []);
 
-    const { children = null, height, width } = props;
+    const {
+      children = null,
+      height,
+      width,
+      onMeasureClick,
+      onEmptyClick,
+    } = props;
 
     // Clear tooltip when mouse leaves the map container
     const handleMouseLeave = useCallback(() => {
       setTooltip(null);
     }, []);
 
-    // Handle map clicks for measure mode
+    // Track drag state for measurement - use refs to avoid stale closure issues
+    const measureDragRef = useRef(false); // True once drag threshold is exceeded
+    const mouseDownPosRef = useRef<{ x: number; y: number } | null>(null); // Initial mouse position
+    const DRAG_THRESHOLD = 5; // Pixels of movement required to start drag
+
+    // Handle map clicks for measure mode and empty space clicks
     const handleClick = useCallback(
       (info: any) => {
         // Don't handle click if a drag was in progress (threshold was exceeded)
         if (measureDragRef.current) return;
-        if (measureState.isActive && props.onMeasureClick && info.coordinate) {
-          props.onMeasureClick(info.coordinate as Coordinate);
+        if (measureState.isActive && onMeasureClick && info.coordinate) {
+          onMeasureClick(info.coordinate as Coordinate);
+        }
+        // Call onEmptyClick when clicking on empty map space (no feature picked)
+        if (!info.object && onEmptyClick) {
+          onEmptyClick();
         }
       },
-      [measureState.isActive, props.onMeasureClick],
+      [measureState.isActive, onMeasureClick, onEmptyClick],
     );
 
     // Cursor style for measure mode - use custom ruler cursor
@@ -480,11 +496,6 @@ export const DeckGLContainer = memo(
       () => (measureState.isActive ? RULER_CURSOR : 'grab'),
       [measureState.isActive],
     );
-
-    // Track drag state for measurement - use refs to avoid stale closure issues
-    const measureDragRef = useRef(false); // True once drag threshold is exceeded
-    const mouseDownPosRef = useRef<{ x: number; y: number } | null>(null); // Initial mouse position
-    const DRAG_THRESHOLD = 5; // Pixels of movement required to start drag
 
     // Handle mouse down for drag-to-measure
     const handleMouseDown = useCallback(

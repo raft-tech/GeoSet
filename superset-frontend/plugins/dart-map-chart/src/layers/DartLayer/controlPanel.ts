@@ -22,6 +22,7 @@
 import { ControlPanelConfig } from '@superset-ui/chart-controls';
 import { t } from '@superset-ui/core';
 import {
+  featureInfoColumns,
   hoverDataColumns,
   minMaxZoomSlider,
   viewport,
@@ -159,6 +160,7 @@ const config: ControlPanelConfig = {
         [viewport],
         [minMaxZoomSlider],
         [hoverDataColumns],
+        [featureInfoColumns],
         [
           {
             name: 'geojsonConfig',

@@ -194,8 +194,18 @@ export const hoverDataColumns = {
     ...sharedControls.groupby,
     label: t('Hover-Over Data'),
     default: [],
+    description: t('Add columns to be available in the hover tooltip. '),
+  },
+};
+
+export const featureInfoColumns = {
+  name: 'featureInfoColumns',
+  config: {
+    ...sharedControls.groupby,
+    label: t('Additional Details'),
+    default: [],
     description: t(
-      'Add columns to be available in the hover tooltip. ',
+      'Select columns to display in the Feature Info popup when clicking on a map feature.',
     ),
   },
 };
@@ -447,7 +457,10 @@ export const mapboxStyle = {
       ['mapbox://styles/acf-dart/cm8ovf5xt000v01s9fvk52nsa', t('Streets')],
       ['mapbox://styles/acf-dart/cm8ov7bgj002h01qt7nz76r15', t('Dark')],
       ['mapbox://styles/acf-dart/cm8ov8yl4001401s365rs672z', t('Light')],
-      ['mapbox://styles/acf-dart/cm8ovcjzx001501s316b38a01', t('Satellite Streets')],
+      [
+        'mapbox://styles/acf-dart/cm8ovcjzx001501s316b38a01',
+        t('Satellite Streets'),
+      ],
       ['mapbox://styles/mapbox/satellite-v9', t('Satellite')],
       ['mapbox://styles/acf-dart/cm8ova8jj007u01sd963n7ors', t('Outdoors')],
     ],

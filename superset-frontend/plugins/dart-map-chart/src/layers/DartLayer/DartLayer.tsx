@@ -72,6 +72,9 @@ import {
 import { handleSchemaCheck } from '../../utils/migrationApi';
 import MeasureOverlay, { MeasureState } from '../../components/MeasureOverlay';
 import { Coordinate } from '../../utils/measureDistance';
+import ClickPopupBox, {
+  ClickedFeatureInfo,
+} from '../../components/ClickPopupBox';
 
 const LimitWarning = styled.div`
   background-color: ${({ theme }) => theme.colorWarningBg};
@@ -253,6 +256,7 @@ export function getLayer(
     strokeColorMapping?: {};
   } = {},
   hoverColumnNames?: string[],
+  onFeatureClick?: (info: any) => void,
 ) {
   const {
     filled,
@@ -369,6 +373,7 @@ export function getLayer(
   const baseLayerProps = {
     ...commonLayerProps(fd, setTooltip, tooltipContentGenerator),
     pickable: true,
+    onClick: onFeatureClick,
   };
 
   // validate which layer type to render
@@ -654,6 +659,7 @@ export type DeckGLGeoJsonProps = {
   mapboxApiKey: string;
   mapStyle: string;
   hoverColumnNames?: string[];
+  featureInfoColumnNames?: string[];
   limitReached?: boolean;
   visualConfig?: {
     dimension?: string;
@@ -684,6 +690,7 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
     mapStyle,
     visualConfig: propVisualConfig,
     hoverColumnNames,
+    featureInfoColumnNames,
     limitReached,
   } = props;
 
@@ -693,6 +700,14 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
     if (current) {
       current.setTooltip(tooltip);
     }
+  }, []);
+
+  // State for clicked feature popup
+  const [clickedFeature, setClickedFeature] =
+    useState<ClickedFeatureInfo | null>(null);
+
+  const handleClosePopup = useCallback(() => {
+    setClickedFeature(null);
   }, []);
 
   // Fetch Mapbox API key from backend and update when available
@@ -885,6 +900,17 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
     isDragging: false,
   });
 
+  // Don't show popup when measurement mode is active
+  const handleFeatureClick = useCallback(
+    (info: any) => {
+      if (measureState.isActive) return;
+      if (info?.object?.properties) {
+        setClickedFeature({ properties: info.object.properties });
+      }
+    },
+    [measureState.isActive],
+  );
+
   const handleRulerToggle = useCallback(() => {
     setMeasureState(prev => {
       if (prev.isActive) {
@@ -1015,6 +1041,7 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
         categories,
         visualConfig,
         hoverColumnNames,
+        handleFeatureClick,
       ),
     [
       formData,
@@ -1024,6 +1051,7 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
       categories,
       visualConfig,
       hoverColumnNames,
+      handleFeatureClick,
     ],
   );
 
@@ -1101,6 +1129,7 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
         onMeasureDragStart={handleMeasureDragStart}
         onMeasureDrag={handleMeasureDrag}
         onMeasureDragEnd={handleMeasureDragEnd}
+        onEmptyClick={handleClosePopup}
       />
       <Legend
         forceCategorical
@@ -1127,6 +1156,14 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
         width={width}
         height={mapHeight}
       />
+      {clickedFeature && (
+        <ClickPopupBox
+          feature={clickedFeature}
+          onClose={handleClosePopup}
+          featureInfoColumnNames={featureInfoColumnNames}
+          position="left"
+        />
+      )}
       {limitReached && (
         <LimitWarning>
           {t(
