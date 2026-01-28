@@ -48,21 +48,31 @@ export default function buildQuery(formData: QueryFormData) {
   }
 
   // Add columns for Feature Info popup
-  if (
-    formData.featureInfoColumns &&
-    Array.isArray(formData.featureInfoColumns)
-  ) {
-    formData.featureInfoColumns.forEach((col: any) => {
-      // Avoid duplicates if column is already added via hoverDataColumns
-      const colName = col.column_name || col.label || col;
-      const alreadyAdded = columns.some((c: any) => {
-        const existingName = c.column_name || c.label || c;
-        return existingName === colName;
-      });
-      if (!alreadyAdded) {
-        columns.push(col);
+  if (formData.featureInfoColumns?.length) {
+    const getColName = (col: any): string =>
+      col.column_name || col.label || col;
+
+    // Check for duplicates
+    const seen = new Set<string>();
+    for (const col of formData.featureInfoColumns) {
+      const name = getColName(col);
+      if (seen.has(name)) {
+        throw new Error(
+          `Duplicate column labels in Additional Details: "${name}". Please make sure all columns have a unique label.`,
+        );
       }
-    });
+      seen.add(name);
+    }
+
+    // Skip columns already added via hoverDataColumns
+    const hoverColNames = new Set(
+      (formData.hoverDataColumns ?? []).map(getColName),
+    );
+    const newCols = formData.featureInfoColumns.filter(
+      (col: any) => !hoverColNames.has(getColName(col)),
+    );
+
+    columns.push(...newCols);
   }
 
   // Handle metric config properly
