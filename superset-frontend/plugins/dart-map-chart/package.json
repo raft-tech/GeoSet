@@ -36,6 +36,7 @@
     "@types/d3-interpolate": "^3.0.4",
     "@types/d3-scale-chromatic": "^3.1.0",
     "@types/geojson": "^7946.0.15",
+    "@ant-design/icons": "^5.6.1",
     "antd": "^5.27.5",
     "bootstrap-slider": "^11.0.2",
     "d3-array": "^1.2.4",
