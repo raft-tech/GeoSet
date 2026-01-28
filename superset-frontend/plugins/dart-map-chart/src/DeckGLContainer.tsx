@@ -142,62 +142,30 @@ const ScaleBar = styled.div<{ $width: number }>`
   line-height: 18px;
 `;
 
-// Calculate scale bar width and label - matches mapbox-gl ScaleControl logic
-const getScaleInfo = (
-  zoom: number,
-  latitude: number,
-  maxWidth: number = 100,
-): { width: number; label: string } => {
-  // Earth's circumference at equator in meters
-  const EARTH_CIRCUMFERENCE = 40075016.686;
-  // Meters per pixel at equator for zoom level (512px tile size)
-  const metersPerPixelAtEquator = EARTH_CIRCUMFERENCE / 512 / Math.pow(2, zoom);
-  // Adjust for latitude (meters per pixel decreases as you move away from equator)
-  const metersPerPixel =
-    metersPerPixelAtEquator * Math.cos((latitude * Math.PI) / 180);
+// Haversine distance calculation (meters) - matches mapbox-gl LngLat.distanceTo()
+const getDistance = (
+  lngLat1: [number, number],
+  lngLat2: [number, number],
+): number => {
+  const R = 6371008.8; // Earth's radius in meters
+  const rad = Math.PI / 180;
+  const lat1 = lngLat1[1] * rad;
+  const lat2 = lngLat2[1] * rad;
+  const dLat = lat2 - lat1;
+  const dLng = (lngLat2[0] - lngLat1[0]) * rad;
 
-  // Convert to feet (1 meter = 3.28084 feet)
-  const feetPerPixel = metersPerPixel * 3.28084;
-  const maxFeet = feetPerPixel * maxWidth;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+};
 
-  // Nice scale values in feet, matching mapbox behavior
-  let scaleFeet: number;
-  let label: string;
-
-  if (maxFeet >= 5280 * 2) {
-    // Use miles for larger distances
-    const maxMiles = maxFeet / 5280;
-    const niceValues = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000];
-    let scaleMiles = niceValues[0];
-    for (const value of niceValues) {
-      if (value <= maxMiles) {
-        scaleMiles = value;
-      } else {
-        break;
-      }
-    }
-    scaleFeet = scaleMiles * 5280;
-    label = `${scaleMiles} mi`;
-  } else {
-    // Use feet for smaller distances
-    const niceValues = [10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 5280];
-    scaleFeet = niceValues[0];
-    for (const value of niceValues) {
-      if (value <= maxFeet) {
-        scaleFeet = value;
-      } else {
-        break;
-      }
-    }
-    if (scaleFeet >= 5280) {
-      label = '1 mi';
-    } else {
-      label = `${scaleFeet} ft`;
-    }
-  }
-
-  const width = Math.round(scaleFeet / feetPerPixel);
-  return { width, label };
+// Round to a "nice" number - matches mapbox-gl getRoundNum()
+const getRoundNum = (num: number): number => {
+  const pow10 = Math.pow(10, `${Math.floor(num)}`.length - 1);
+  let d = num / pow10;
+  d = d >= 10 ? 10 : d >= 5 ? 5 : d >= 3 ? 3 : d >= 2 ? 2 : d >= 1 ? 1 : pow10;
+  return pow10 * d;
 };
 
 /**
@@ -571,11 +539,50 @@ export const DeckGLContainer = memo(
       ? { dragPan: false, dragRotate: false }
       : true;
 
-    // Calculate scale info from current viewport (matches mapbox-gl scale control)
-    const scaleInfo = useMemo(
-      () => getScaleInfo(viewState.zoom ?? 1, viewState.latitude ?? 0, 100),
-      [viewState.zoom, viewState.latitude],
-    );
+    // Calculate scale info using map projection (matches mapbox-gl ScaleControl exactly)
+    const scaleInfo = useMemo(() => {
+      const maxWidth = 100;
+      const map = mapRef.current?.getMap();
+
+      if (!map) {
+        // Fallback when map not ready
+        return { width: 50, label: '' };
+      }
+
+      // Match mapbox: get two points at center-y, separated by maxWidth pixels
+      const y = height / 2;
+      const x = width / 2 - maxWidth / 2;
+      const left = map.unproject([x, y]);
+      const right = map.unproject([x + maxWidth, y]);
+
+      // Calculate actual spherical distance in meters
+      const maxMeters = getDistance(
+        [left.lng, left.lat],
+        [right.lng, right.lat],
+      );
+
+      // Convert to feet (imperial)
+      const maxFeet = maxMeters * 3.28084;
+
+      // Determine if we should use miles or feet
+      let distance: number;
+      let label: string;
+
+      if (maxFeet > 5280) {
+        // Use miles
+        const maxMiles = maxFeet / 5280;
+        distance = getRoundNum(maxMiles);
+        label = `${distance} mi`;
+        // Calculate bar width proportionally
+        const ratio = distance / maxMiles;
+        return { width: Math.round(maxWidth * ratio), label };
+      }
+      // Use feet
+      distance = getRoundNum(maxFeet);
+      label = `${distance} ft`;
+      const ratio = distance / maxFeet;
+      return { width: Math.round(maxWidth * ratio), label };
+    }, [viewState.zoom, viewState.latitude, width, height]);
 
     return (
       <div
