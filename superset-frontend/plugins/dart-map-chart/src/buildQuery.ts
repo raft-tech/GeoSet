@@ -40,40 +40,31 @@ export default function buildQuery(formData: QueryFormData) {
     columns.push(dimension);
   }
 
-  // Add js_columns for hover tooltip data
-  if (formData.hoverDataColumns && Array.isArray(formData.hoverDataColumns)) {
-    formData.hoverDataColumns.forEach((col: any) => {
-      columns.push(col);
-    });
-  }
+  // Helper to find all duplicates in an array
+  const findDuplicates = (arr: string[]): string[] => [
+    ...new Set(arr.filter((col, i) => arr.indexOf(col) !== i)),
+  ];
 
-  // Add columns for Feature Info popup
-  if (formData.featureInfoColumns?.length) {
-    const getColName = (col: any): string =>
-      col.column_name || col.label || col;
-
-    // Check for duplicates
-    const seen = new Set<string>();
-    for (const col of formData.featureInfoColumns) {
-      const name = getColName(col);
-      if (seen.has(name)) {
-        throw new Error(
-          `Duplicate column labels in Additional Details: "${name}". Please make sure all columns have a unique label.`,
-        );
-      }
-      seen.add(name);
-    }
-
-    // Skip columns already added via hoverDataColumns
-    const hoverColNames = new Set(
-      (formData.hoverDataColumns ?? []).map(getColName),
+  // Add hover tooltip columns
+  const hoverCols = (formData.hoverDataColumns ?? []) as string[];
+  const hoverDupes = findDuplicates(hoverCols);
+  if (hoverDupes.length) {
+    throw new Error(
+      `Duplicate column labels in Hover-Over Data: ${hoverDupes.map(d => `"${d}"`).join(', ')}. Please make sure all columns have a unique label.`,
     );
-    const newCols = formData.featureInfoColumns.filter(
-      (col: any) => !hoverColNames.has(getColName(col)),
-    );
-
-    columns.push(...newCols);
   }
+  columns.push(...hoverCols);
+
+  // Add Feature Info popup columns
+  const featureCols = (formData.featureInfoColumns ?? []) as string[];
+  const featureDupes = findDuplicates(featureCols);
+  if (featureDupes.length) {
+    throw new Error(
+      `Duplicate column labels in Additional Details: ${featureDupes.map(d => `"${d}"`).join(', ')}. Please make sure all columns have a unique label.`,
+    );
+  }
+  const newFeatureCols = featureCols.filter(col => !hoverCols.includes(col));
+  columns.push(...newFeatureCols);
 
   // Handle metric config properly
   const metricConfig = colorByValue.valueColumn;
