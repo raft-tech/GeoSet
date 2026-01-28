@@ -180,6 +180,7 @@ export const DeckGLContainer = memo(
     const pendingSaveTime = useRef<number | null>(null);
     const [tooltip, setTooltip] = useState<TooltipProps['tooltip']>(null);
     const [viewState, setViewState] = useState(() => props.viewport);
+    const [mapReady, setMapReady] = useState(false);
 
     const [layerStates, setLayerStates] = useState(() => {
       if (!props.layerStates) {
@@ -424,6 +425,9 @@ export const DeckGLContainer = memo(
 
       // Update visibility on zoom level change
       map.on('zoom', updateLayerVisibility);
+
+      // Signal that map is ready for scale control
+      setMapReady(true);
     }, []);
 
     const { children = null, height, width } = props;
@@ -540,6 +544,7 @@ export const DeckGLContainer = memo(
       : true;
 
     // Calculate scale info using map projection (matches mapbox-gl ScaleControl exactly)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- deps trigger recalc when map state changes
     const scaleInfo = useMemo(() => {
       const maxWidth = 100;
       const map = mapRef.current?.getMap();
@@ -582,7 +587,7 @@ export const DeckGLContainer = memo(
       label = `${distance} ft`;
       const ratio = distance / maxFeet;
       return { width: Math.round(maxWidth * ratio), label };
-    }, [viewState.zoom, viewState.latitude, width, height]);
+    }, [viewState.zoom, viewState.latitude, width, height, mapReady]);
 
     return (
       <div

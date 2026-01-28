@@ -130,7 +130,7 @@ export function useMeasureLayers(
  * Component to render measurement UI elements (tooltip, instructions)
  */
 const MeasureOverlay = memo(({ measureState }: MeasureOverlayProps) => {
-  const { startPoint, endPoint, isActive } = measureState;
+  const { isActive } = measureState;
 
   if (!isActive) return null;
 
