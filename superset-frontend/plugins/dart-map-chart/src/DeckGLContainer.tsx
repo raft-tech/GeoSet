@@ -426,6 +426,19 @@ export const DeckGLContainer = memo(
       // Update visibility on zoom level change
       map.on('zoom', updateLayerVisibility);
 
+      // Update scale control on zoom/move (more responsive than relying on React state)
+      const updateScaleViewState = () => {
+        const center = map.getCenter();
+        setViewState(prev => ({
+          ...prev,
+          zoom: map.getZoom(),
+          latitude: center.lat,
+          longitude: center.lng,
+        }));
+      };
+      map.on('zoom', updateScaleViewState);
+      map.on('move', updateScaleViewState);
+
       // Signal that map is ready for scale control
       setMapReady(true);
     }, []);
@@ -577,14 +590,14 @@ export const DeckGLContainer = memo(
         // Use miles
         const maxMiles = maxFeet / 5280;
         distance = getRoundNum(maxMiles);
-        label = `${distance} mi`;
+        label = `${distance.toLocaleString()} mi`;
         // Calculate bar width proportionally
         const ratio = distance / maxMiles;
         return { width: Math.round(maxWidth * ratio), label };
       }
       // Use feet
       distance = getRoundNum(maxFeet);
-      label = `${distance} ft`;
+      label = `${distance.toLocaleString()} ft`;
       const ratio = distance / maxFeet;
       return { width: Math.round(maxWidth * ratio), label };
     }, [viewState.zoom, viewState.latitude, width, height, mapReady]);
