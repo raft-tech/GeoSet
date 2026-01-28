@@ -57,7 +57,7 @@ export function formatClusterCount(count: number): string {
 const DEFAULT_BASE_SIZE = 72;
 
 /**
- * Generate cluster marker SVG with count and color (pin/teardrop shape)
+ * Generate cluster marker SVG with count and color (circle with border)
  */
 export function getClusterSvg(
   count: number,
@@ -66,16 +66,16 @@ export function getClusterSvg(
 ): string {
   const [r, g, b, a] = rgba;
   const scale = getClusterScale(count);
-  const width = Math.round(baseSize * scale);
-  const height = Math.round(width * 1.4); // Pin is taller than wide
-  const circleRadius = width / 2 - 4;
-  const circleCenterY = circleRadius + 4; // Circle center position from top
+  const size = Math.round(baseSize * scale);
+  const strokeWidth = 3;
+  const circleRadius = size / 2 - strokeWidth;
+  const center = size / 2;
 
   // Format the count for display (e.g., "10+", "20+", "100+", "1k+")
   const displayCount = formatClusterCount(count);
 
   // Adjust font size based on display string length and icon size
-  const baseFontSize = Math.max(10, Math.round(width * 0.35));
+  const baseFontSize = Math.max(10, Math.round(size * 0.35));
   let fontSize = baseFontSize;
   if (displayCount.length >= 4) {
     fontSize = Math.round(baseFontSize * 0.7);
@@ -83,29 +83,17 @@ export function getClusterSvg(
     fontSize = Math.round(baseFontSize * 0.85);
   }
 
-  // Create pin/teardrop shape: circle at top with pointed bottom
-  // The path creates a rounded top that tapers to a point at the bottom
-  const cx = width / 2;
-  const pinTipY = height - 2;
-
-  return `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
     <defs>
       <filter id="shadow-${count}" x="-20%" y="-20%" width="140%" height="140%">
         <feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.3"/>
       </filter>
     </defs>
-    <path d="M ${cx} ${pinTipY}
-             C ${cx - circleRadius * 0.6} ${circleCenterY + circleRadius * 1.2}
-               ${cx - circleRadius} ${circleCenterY + circleRadius * 0.5}
-               ${cx - circleRadius} ${circleCenterY}
-             A ${circleRadius} ${circleRadius} 0 1 1 ${cx + circleRadius} ${circleCenterY}
-             C ${cx + circleRadius} ${circleCenterY + circleRadius * 0.5}
-               ${cx + circleRadius * 0.6} ${circleCenterY + circleRadius * 1.2}
-               ${cx} ${pinTipY} Z"
-          fill="rgb(${r},${g},${b})" fill-opacity="${a / 255}"
-          stroke="white" stroke-width="2"
-          filter="url(#shadow-${count})"/>
-    <text x="${cx}" y="${circleCenterY}" text-anchor="middle" dominant-baseline="central" fill="white" font-family="system-ui, sans-serif" font-size="${fontSize}" font-weight="bold">${displayCount}</text>
+    <circle cx="${center}" cy="${center}" r="${circleRadius}"
+            fill="rgb(${r},${g},${b})" fill-opacity="${a / 255}"
+            stroke="white" stroke-width="${strokeWidth}"
+            filter="url(#shadow-${count})"/>
+    <text x="${center}" y="${center}" text-anchor="middle" dominant-baseline="central" fill="white" font-family="system-ui, sans-serif" font-size="${fontSize}" font-weight="bold">${displayCount}</text>
   </svg>`;
 }
 
@@ -117,9 +105,8 @@ export function getClusterIconSize(
   baseSize = DEFAULT_BASE_SIZE,
 ): { width: number; height: number } {
   const scale = getClusterScale(count);
-  const width = Math.round(baseSize * scale);
-  const height = Math.round(width * 1.4);
-  return { width, height };
+  const size = Math.round(baseSize * scale);
+  return { width: size, height: size };
 }
 
 /**

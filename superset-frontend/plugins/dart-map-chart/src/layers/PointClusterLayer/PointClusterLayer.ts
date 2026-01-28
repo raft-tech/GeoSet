@@ -454,7 +454,7 @@ export default class PointClusterLayer extends CompositeLayer<PointClusterLayerP
             url,
             width,
             height,
-            anchorY: height,
+            anchorY: height / 2,
           };
         },
 
