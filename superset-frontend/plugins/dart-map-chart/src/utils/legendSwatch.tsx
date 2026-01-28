@@ -51,13 +51,12 @@ export const LineSwatch = styled.div<{ fill: RGBAColor }>`
   border-radius: 2px;
 `;
 
-// Point/Circle swatch - circle
-export const PointSwatch = styled.div<{ fill: RGBAColor; stroke: RGBAColor }>`
+// Point/Circle swatch - circle (no stroke border)
+export const PointSwatch = styled.div<{ fill: RGBAColor }>`
   width: 14px;
   height: 14px;
   border-radius: 50%;
   background: ${({ fill }) => toRgbaString(fill)};
-  border: ${({ stroke }) => `1px solid ${toRgbaString(stroke)}`};
 `;
 
 // Icon swatch - displays SVG icon
@@ -109,7 +108,7 @@ export const Swatch: React.FC<SwatchProps> = ({
   if (geoType === 'point' || geoType === 'multipoint') {
     return (
       <SwatchWrapper>
-        <PointSwatch fill={fill} stroke={stroke} />
+        <PointSwatch fill={fill} />
       </SwatchWrapper>
     );
   }

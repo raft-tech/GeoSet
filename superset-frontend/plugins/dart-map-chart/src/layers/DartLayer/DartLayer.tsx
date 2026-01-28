@@ -390,9 +390,13 @@ export function getLayer(
         if (!iconName) {
           iconName = 'circle';
         }
+        // Filter out disabled features for IconLayer to avoid transparent icon artifacts
+        const iconFeatures = sortedFeatures.filter(
+          (f: any) => !f.color || f.color[3] !== 0,
+        );
         return new IconLayer({
-          id: `icon-layer-${fd.slice_id}-${sortedFeatures.length}`,
-          data: sortedFeatures as Feature<Geometry, GeoJsonProperties>[],
+          id: `icon-layer-${fd.slice_id}-${iconFeatures.length}`,
+          data: iconFeatures as Feature<Geometry, GeoJsonProperties>[],
           getIconColor: (f: any) => f.color,
           getPosition: f => f.geometry?.coordinates,
           getIcon: f => {
@@ -411,9 +415,9 @@ export function getLayer(
           sizeUnits: 'pixels',
           // Force layer update when data or icons change
           updateTriggers: {
-            getIcon: [iconName, fillColorArray, sortedFeatures.length],
-            getIconColor: [sortedFeatures.length],
-            getPosition: [sortedFeatures.length],
+            getIcon: [iconName, fillColorArray, iconFeatures.length],
+            getIconColor: [iconFeatures.length],
+            getPosition: [iconFeatures.length],
           },
           // Load icons immediately
           loadOptions: {
@@ -441,6 +445,9 @@ export function getLayer(
         radiusMinPixels: 1,
         radiusMaxPixels: 50,
         radiusScale: 1,
+        transitions: {
+          getFillColor: 150,
+        },
         ...baseLayerProps,
       });
     }
@@ -513,6 +520,9 @@ export function getLayer(
         lineWidthUnits: 'pixels',
         lineWidthScale: 1,
         lineWidthMinPixels: 0,
+        transitions: {
+          getFillColor: 150,
+        },
         ...baseLayerProps,
       });
     }
@@ -543,6 +553,9 @@ export function getLayer(
         pointRadiusMinPixels: 5,
         lineWidthUnits: 'pixels',
         lineWidthMinPixels: 0,
+        transitions: {
+          getFillColor: 150,
+        },
         ...baseLayerProps,
       });
     // if no match, default to GeoJSON layer
@@ -572,6 +585,9 @@ export function getLayer(
         pointRadiusMinPixels: 5,
         lineWidthUnits: 'pixels',
         lineWidthMinPixels: 0,
+        transitions: {
+          getFillColor: 150,
+        },
         ...baseLayerProps,
       });
   }
