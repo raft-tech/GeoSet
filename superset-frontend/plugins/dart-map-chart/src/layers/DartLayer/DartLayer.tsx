@@ -450,7 +450,7 @@ export function getLayer(
           radiusMaxPixels: 50,
           radiusScale: 1,
           transitions: {
-            getFillColor: 150,
+            getFillColor: 50,
           },
           ...baseLayerProps,
         });
@@ -580,7 +580,7 @@ export function getLayer(
         lineWidthScale: 1,
         lineWidthMinPixels: 0,
         transitions: {
-          getFillColor: 150,
+          getFillColor: 50,
         },
         ...baseLayerProps,
       });
@@ -613,7 +613,7 @@ export function getLayer(
         lineWidthUnits: 'pixels',
         lineWidthMinPixels: 0,
         transitions: {
-          getFillColor: 150,
+          getFillColor: 50,
         },
         ...baseLayerProps,
       });
@@ -645,7 +645,7 @@ export function getLayer(
         lineWidthUnits: 'pixels',
         lineWidthMinPixels: 0,
         transitions: {
-          getFillColor: 150,
+          getFillColor: 50,
         },
         ...baseLayerProps,
       });
