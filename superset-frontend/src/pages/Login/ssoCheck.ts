@@ -37,9 +37,21 @@ async function reportSsoFailure(): Promise<void> {
   try {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const localTime = new Date().toLocaleString();
+
+    // Get client IP address
+    let ipAddress = 'unknown';
+    try {
+      const ipResponse = await fetch('https://api.ipify.org?format=json');
+      const ipData = await ipResponse.json();
+      ipAddress = ipData.ip;
+    } catch {
+      // IP lookup failed, continue with 'unknown'
+    }
+
+    // Report to backend (which sends Mattermost notification)
     await SupersetClient.post({
       endpoint: '/api/v1/sso/failure',
-      jsonPayload: { timezone, localTime },
+      jsonPayload: { timezone, localTime, ipAddress },
     });
   } catch (error) {
     logging.error('Failed to report SSO failure:', error);
