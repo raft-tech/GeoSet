@@ -1074,7 +1074,7 @@ QUERY_LOGGER = None
 MAPBOX_API_KEY = os.environ.get("MAPBOX_API_KEY", "")
 
 # Maximum number of rows returned for any analytical database query
-SQL_MAX_ROW = 500000
+SQL_MAX_ROW = 100000
 
 # Maximum number of rows for any query with Server Pagination in Table Viz type
 TABLE_VIZ_MAX_ROW_SERVER = 500000
@@ -1844,7 +1844,6 @@ TALISMAN_CONFIG = {
             "https://events.mapbox.com",
             "https://tile.openstreetmap.org",
             "https://tile.osm.ch",
-            "data:",
         ],
         "object-src": "'none'",
         "style-src": [
@@ -1879,7 +1878,6 @@ TALISMAN_DEV_CONFIG = {
             "https://events.mapbox.com",
             "https://tile.openstreetmap.org",
             "https://tile.osm.ch",
-            "data:",
         ],
         "object-src": "'none'",
         "style-src": [

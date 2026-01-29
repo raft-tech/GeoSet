@@ -100,6 +100,22 @@ CELERY_CONFIG = CeleryConfig
 
 FEATURE_FLAGS = {"ALERT_REPORTS": True, "ACCESSIBILITY_SECTION_508": True}
 ALERT_REPORTS_NOTIFICATION_DRY_RUN = True
+
+# DART-specific overrides
+# Increase max rows for large geospatial datasets
+SQL_MAX_ROW = 500000
+
+# Add 'data:' to CSP connect-src for deck.gl SVG icon support
+import copy
+from superset.config import TALISMAN_CONFIG as _TALISMAN_CONFIG
+from superset.config import TALISMAN_DEV_CONFIG as _TALISMAN_DEV_CONFIG
+
+TALISMAN_CONFIG = copy.deepcopy(_TALISMAN_CONFIG)
+TALISMAN_CONFIG["content_security_policy"]["connect-src"].append("data:")
+
+TALISMAN_DEV_CONFIG = copy.deepcopy(_TALISMAN_DEV_CONFIG)
+TALISMAN_DEV_CONFIG["content_security_policy"]["connect-src"].append("data:")
+
 WEBDRIVER_BASEURL = "http://superset:8088/"  # When using docker compose baseurl should be http://superset_app:8088/  # noqa: E501
 # The base URL for the email report hyperlinks.
 WEBDRIVER_BASEURL_USER_FRIENDLY = WEBDRIVER_BASEURL
