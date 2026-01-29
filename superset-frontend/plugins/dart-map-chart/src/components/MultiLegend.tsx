@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 /* eslint-disable react-hooks/rules-of-hooks */
 import { styled } from '@superset-ui/core';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import MapIcon from '@material-ui/icons/MapTwoTone';
 import { RGBAColor } from '../utils/colors';
 import { Swatch } from '../utils/legendSwatch';
@@ -10,6 +10,7 @@ export type CategoryEntry = {
   label: string;
   fillColor: RGBAColor;
   strokeColor: RGBAColor;
+  enabled?: boolean; // Whether category is visible (default true)
 };
 
 export type MetricEntry = {
@@ -35,6 +36,8 @@ export type MultiLegendProps = {
   legendsBySlice: Record<string, LegendGroup>;
   layerVisibility?: Record<string, boolean>;
   onToggleLayerVisibility?: (sliceId: string) => void;
+  // Toggle a single category within a slice
+  onToggleCategory?: (sliceId: string, categoryLabel: string) => void;
 };
 
 // Control margin for legend positioning
@@ -192,10 +195,35 @@ const VisibilityCheckbox = styled.input`
   flex-shrink: 0;
 `;
 
+// Checkbox that supports indeterminate state (shows minus sign when some but not all are selected)
+const IndeterminateCheckbox: React.FC<{
+  checked: boolean;
+  indeterminate: boolean;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}> = ({ checked, indeterminate, onChange }) => {
+  const ref = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (ref.current) {
+      ref.current.indeterminate = indeterminate;
+    }
+  }, [indeterminate]);
+
+  return (
+    <VisibilityCheckbox
+      ref={ref}
+      type="checkbox"
+      checked={checked}
+      onChange={onChange}
+    />
+  );
+};
+
 export const MultiLegend: React.FC<MultiLegendProps> = ({
   legendsBySlice,
   layerVisibility = {},
   onToggleLayerVisibility,
+  onToggleCategory,
 }) => {
   const sliceIds = Object.keys(legendsBySlice);
 
@@ -249,14 +277,24 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
 
             const isVisible = layerVisibility[id] !== false; // default to visible
 
+            // Calculate indeterminate state for categorical layers
+            const categories = group.categories || [];
+            const enabledCount = categories.filter(
+              cat => cat.enabled !== false,
+            ).length;
+            const isIndeterminate =
+              categories.length > 0 &&
+              enabledCount > 0 &&
+              enabledCount < categories.length;
+
             return (
               <Group key={id}>
                 {/* Header */}
                 <Header>
                   {sliceIds.length > 1 && (
-                    <VisibilityCheckbox
-                      type="checkbox"
+                    <IndeterminateCheckbox
                       checked={isVisible}
+                      indeterminate={isIndeterminate}
                       onChange={e => {
                         e.stopPropagation();
                         onToggleLayerVisibility?.(id);
@@ -292,17 +330,41 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
                     {/* CATEGORIES */}
                     {group.categories && group.categories.length > 0 && (
                       <>
-                        {group.categories.map((cat, i) => (
-                          <CategoryRow key={i}>
-                            <Swatch
-                              fill={cat.fillColor}
-                              stroke={cat.strokeColor}
-                              icon={group.icon}
-                              geometryType={group.geometryType}
-                            />
-                            <div>{cat.label}</div>
-                          </CategoryRow>
-                        ))}
+                        {group.categories.map((cat, i) => {
+                          const isEnabled = cat.enabled !== false;
+                          const hasToggle = !!onToggleCategory;
+
+                          // Apply opacity to color when disabled
+                          const displayFillColor: RGBAColor = isEnabled
+                            ? cat.fillColor
+                            : [
+                                cat.fillColor[0],
+                                cat.fillColor[1],
+                                cat.fillColor[2],
+                                100,
+                              ];
+
+                          return (
+                            <CategoryRow key={i}>
+                              {hasToggle && (
+                                <VisibilityCheckbox
+                                  type="checkbox"
+                                  checked={isEnabled}
+                                  onChange={() =>
+                                    onToggleCategory(id, cat.label)
+                                  }
+                                />
+                              )}
+                              <Swatch
+                                fill={displayFillColor}
+                                stroke={cat.strokeColor}
+                                icon={group.icon}
+                                geometryType={group.geometryType}
+                              />
+                              <div>{cat.label}</div>
+                            </CategoryRow>
+                          );
+                        })}
                       </>
                     )}
 

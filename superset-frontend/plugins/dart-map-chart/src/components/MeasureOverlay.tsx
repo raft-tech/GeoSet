@@ -17,7 +17,6 @@
  * under the License.
  */
 import { memo, useMemo } from 'react';
-import { styled } from '@superset-ui/core';
 import { LineLayer, ScatterplotLayer } from '@deck.gl/layers';
 import {
   Coordinate,
@@ -39,21 +38,6 @@ export type MeasureOverlayProps = {
   width: number;
   height: number;
 };
-
-const InstructionBanner = styled.div`
-  position: absolute;
-  top: 56px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: ${({ theme }) => theme.colorTextBase}CC;
-  color: ${({ theme }) => theme.colorBgElevated};
-  padding: ${({ theme }) => theme.sizeUnit * 2}px
-    ${({ theme }) => theme.sizeUnit * 4}px;
-  border-radius: ${({ theme }) => theme.borderRadius}px;
-  font-size: ${({ theme }) => theme.fontSizeSM}px;
-  z-index: 100;
-  white-space: nowrap;
-`;
 
 export type MeasureLayersResult = {
   layers: any[];
@@ -146,27 +130,11 @@ export function useMeasureLayers(
  * Component to render measurement UI elements (tooltip, instructions)
  */
 const MeasureOverlay = memo(({ measureState }: MeasureOverlayProps) => {
-  const { startPoint, endPoint, isActive } = measureState;
+  const { isActive } = measureState;
 
   if (!isActive) return null;
 
-  const showInstructions = !startPoint;
-  const showClickAgain = startPoint && !endPoint;
-
-  return (
-    <>
-      {showInstructions && (
-        <InstructionBanner>
-          Click on the map to set the start point
-        </InstructionBanner>
-      )}
-      {showClickAgain && (
-        <InstructionBanner>
-          Click on the map to set the end point
-        </InstructionBanner>
-      )}
-    </>
-  );
+  return null;
 });
 
 export default MeasureOverlay;
