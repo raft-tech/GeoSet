@@ -159,10 +159,10 @@ const SelectedSliceRow = ({
         >
           <Icons.CloseOutlined
             iconSize="m"
-            iconColor={theme.colorTextSecondary}
+            iconColor={theme.colorIcon}
             css={css`
               vertical-align: sub;
-              margin-left: ${theme.sizeUnit}px;
+              margin: 0 ${theme.sizeUnit}px;
             `}
           />
         </CloseContainer>

@@ -8,6 +8,8 @@ Additionally, each merge request should be given a score indicating how focused 
 
 All merge requests should set the target branch to `main`.
 
+**Important:** Since this repository is a fork of `apache/superset`, you must use the `--repo raft-tech/spatial-superset` flag when creating PRs. Otherwise, `gh` will default to creating PRs against the upstream apache repository.
+
 If a merge request already exists for source branch, update the merge request title and body if necessary.
 
 ## Reviewers

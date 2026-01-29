@@ -70,6 +70,9 @@ import {
 import { handleSchemaCheck } from '../../utils/migrationApi';
 import MeasureOverlay, { MeasureState } from '../../components/MeasureOverlay';
 import { Coordinate } from '../../utils/measureDistance';
+import ClickPopupBox, {
+  ClickedFeatureInfo,
+} from '../../components/ClickPopupBox';
 
 const LimitWarning = styled.div`
   background-color: ${({ theme }) => theme.colorWarningBg};
@@ -252,6 +255,7 @@ export function getLayer(
     strokeColorMapping?: {};
   } = {},
   hoverColumnNames?: string[],
+  onFeatureClick?: (info: any) => void,
 ) {
   const {
     filled,
@@ -368,6 +372,7 @@ export function getLayer(
   const baseLayerProps = {
     ...commonLayerProps(fd, setTooltip, tooltipContentGenerator),
     pickable: true,
+    onClick: onFeatureClick,
   };
 
   // validate which layer type to render
@@ -386,9 +391,13 @@ export function getLayer(
         if (!iconName) {
           iconName = 'circle';
         }
+        // Filter out disabled features for IconLayer to avoid transparent icon artifacts
+        const iconFeatures = sortedFeatures.filter(
+          (f: any) => !f.color || f.color[3] !== 0,
+        );
         return new IconLayer({
-          id: `icon-layer-${fd.slice_id}-${sortedFeatures.length}`,
-          data: sortedFeatures as Feature<Geometry, GeoJsonProperties>[],
+          id: `icon-layer-${fd.slice_id}-${iconFeatures.length}`,
+          data: iconFeatures as Feature<Geometry, GeoJsonProperties>[],
           getIconColor: (f: any) => f.color,
           getPosition: f => f.geometry?.coordinates,
           getIcon: f => {
@@ -407,9 +416,9 @@ export function getLayer(
           sizeUnits: 'pixels',
           // Force layer update when data or icons change
           updateTriggers: {
-            getIcon: [iconName, fillColorArray, sortedFeatures.length],
-            getIconColor: [sortedFeatures.length],
-            getPosition: [sortedFeatures.length],
+            getIcon: [iconName, fillColorArray, iconFeatures.length],
+            getIconColor: [iconFeatures.length],
+            getPosition: [iconFeatures.length],
           },
           // Load icons immediately
           loadOptions: {
@@ -437,6 +446,9 @@ export function getLayer(
         radiusMinPixels: 1,
         radiusMaxPixels: 50,
         radiusScale: 1,
+        transitions: {
+          getFillColor: 150,
+        },
         ...baseLayerProps,
       });
     }
@@ -509,6 +521,9 @@ export function getLayer(
         lineWidthUnits: 'pixels',
         lineWidthScale: 1,
         lineWidthMinPixels: 0,
+        transitions: {
+          getFillColor: 150,
+        },
         ...baseLayerProps,
       });
     }
@@ -539,6 +554,9 @@ export function getLayer(
         pointRadiusMinPixels: 5,
         lineWidthUnits: 'pixels',
         lineWidthMinPixels: 0,
+        transitions: {
+          getFillColor: 150,
+        },
         ...baseLayerProps,
       });
     // if no match, default to GeoJSON layer
@@ -568,6 +586,9 @@ export function getLayer(
         pointRadiusMinPixels: 5,
         lineWidthUnits: 'pixels',
         lineWidthMinPixels: 0,
+        transitions: {
+          getFillColor: 150,
+        },
         ...baseLayerProps,
       });
   }
@@ -597,6 +618,7 @@ export type DeckGLGeoJsonProps = {
   mapboxApiKey: string;
   mapStyle: string;
   hoverColumnNames?: string[];
+  featureInfoColumnNames?: string[];
   limitReached?: boolean;
   visualConfig?: {
     dimension?: string;
@@ -627,6 +649,7 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
     mapStyle,
     visualConfig: propVisualConfig,
     hoverColumnNames,
+    featureInfoColumnNames,
     limitReached,
   } = props;
 
@@ -636,6 +659,14 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
     if (current) {
       current.setTooltip(tooltip);
     }
+  }, []);
+
+  // State for clicked feature popup
+  const [clickedFeature, setClickedFeature] =
+    useState<ClickedFeatureInfo | null>(null);
+
+  const handleClosePopup = useCallback(() => {
+    setClickedFeature(null);
   }, []);
 
   // Fetch Mapbox API key from backend and update when available
@@ -828,6 +859,17 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
     isDragging: false,
   });
 
+  // Don't show popup when measurement mode is active
+  const handleFeatureClick = useCallback(
+    (info: any) => {
+      if (measureState.isActive) return;
+      if (info?.object?.properties) {
+        setClickedFeature({ properties: info.object.properties });
+      }
+    },
+    [measureState.isActive],
+  );
+
   const handleRulerToggle = useCallback(() => {
     setMeasureState(prev => {
       if (prev.isActive) {
@@ -958,6 +1000,7 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
         categories,
         visualConfig,
         hoverColumnNames,
+        handleFeatureClick,
       ),
     [
       formData,
@@ -967,6 +1010,7 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
       categories,
       visualConfig,
       hoverColumnNames,
+      handleFeatureClick,
     ],
   );
 
@@ -1044,6 +1088,7 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
         onMeasureDragStart={handleMeasureDragStart}
         onMeasureDrag={handleMeasureDrag}
         onMeasureDragEnd={handleMeasureDragEnd}
+        onEmptyClick={handleClosePopup}
       />
       <Legend
         forceCategorical
@@ -1070,6 +1115,14 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
         width={width}
         height={mapHeight}
       />
+      {clickedFeature && (
+        <ClickPopupBox
+          feature={clickedFeature}
+          onClose={handleClosePopup}
+          featureInfoColumnNames={featureInfoColumnNames}
+          position="left"
+        />
+      )}
       {limitReached && (
         <LimitWarning>
           {t(

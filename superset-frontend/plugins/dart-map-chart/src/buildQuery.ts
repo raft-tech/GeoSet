@@ -40,12 +40,31 @@ export default function buildQuery(formData: QueryFormData) {
     columns.push(dimension);
   }
 
-  // Add js_columns for hover tooltip data
-  if (formData.hoverDataColumns && Array.isArray(formData.hoverDataColumns)) {
-    formData.hoverDataColumns.forEach((col: any) => {
-      columns.push(col);
-    });
+  // Helper to find all duplicates in an array
+  const findDuplicates = (arr: string[]): string[] => [
+    ...new Set(arr.filter((col, i) => arr.indexOf(col) !== i)),
+  ];
+
+  // Add hover tooltip columns
+  const hoverCols = (formData.hoverDataColumns ?? []) as string[];
+  const hoverDupes = findDuplicates(hoverCols);
+  if (hoverDupes.length) {
+    throw new Error(
+      `Duplicate column labels in Hover-Over Data: ${hoverDupes.map(d => `"${d}"`).join(', ')}. Please make sure all columns have a unique label.`,
+    );
   }
+  columns.push(...hoverCols);
+
+  // Add Feature Info popup columns
+  const featureCols = (formData.featureInfoColumns ?? []) as string[];
+  const featureDupes = findDuplicates(featureCols);
+  if (featureDupes.length) {
+    throw new Error(
+      `Duplicate column labels in Additional Details: ${featureDupes.map(d => `"${d}"`).join(', ')}. Please make sure all columns have a unique label.`,
+    );
+  }
+  const newFeatureCols = featureCols.filter(col => !hoverCols.includes(col));
+  columns.push(...newFeatureCols);
 
   // Handle metric config properly
   const metricConfig = colorByValue.valueColumn;
