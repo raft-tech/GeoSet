@@ -51,7 +51,7 @@ services:
       - path: docker/.env-local # optional override
         required: false
     image: nginx:latest
-    container_name: geoset_nginx
+    container_name: superset_nginx
     restart: unless-stopped
     ports:
       - "80:80"
@@ -63,7 +63,7 @@ services:
 
   redis:
     image: redis:7
-    container_name: geoset_cache
+    container_name: superset_cache
     restart: unless-stopped
     ports:
       - "127.0.0.1:6379:6379"
@@ -77,7 +77,7 @@ services:
       - path: docker/.env-local # optional override
         required: false
     image: postgres:16
-    container_name: geoset_db
+    container_name: superset_db
     restart: unless-stopped
     ports:
       - "127.0.0.1:5432:5432"
@@ -93,7 +93,7 @@ services:
         required: false
     build:
       <<: *common-build
-    container_name: geoset_app
+    container_name: superset_app
     command: ["/app/docker/docker-bootstrap.sh", "app"]
     restart: unless-stopped
     ports:
@@ -109,7 +109,7 @@ services:
     volumes: *superset-volumes
 
   superset-websocket:
-    container_name: geoset_websocket
+    container_name: superset_websocket
     build: ./superset-websocket
     ports:
       - 8080:8080
@@ -144,7 +144,7 @@ services:
   superset-init:
     build:
       <<: *common-build
-    container_name: geoset_init
+    container_name: superset_init
     command: ["/app/docker/docker-init.sh"]
     env_file:
       - path: docker/.env # default
@@ -181,7 +181,7 @@ services:
       superset: "http://superset:8088"
     ports:
       - "127.0.0.1:9000:9000"  # exposing the dynamic webpack dev server
-    container_name: geoset_node
+    container_name: superset_node
     command: ["/app/docker/docker-frontend.sh"]
     env_file:
       - path: docker/.env # default
@@ -193,7 +193,7 @@ services:
   superset-worker:
     build:
       <<: *common-build
-    container_name: geoset_worker
+    container_name: superset_worker
     command: ["/app/docker/docker-bootstrap.sh", "worker"]
     env_file:
       - path: docker/.env # default
@@ -219,7 +219,7 @@ services:
   superset-worker-beat:
     build:
       <<: *common-build
-    container_name: geoset_worker_beat
+    container_name: superset_worker_beat
     command: ["/app/docker/docker-bootstrap.sh", "beat"]
     env_file:
       - path: docker/.env # default
@@ -237,7 +237,7 @@ services:
   superset-tests-worker:
     build:
       <<: *common-build
-    container_name: geoset_tests_worker
+    container_name: superset_tests_worker
     command: ["/app/docker/docker-bootstrap.sh", "worker"]
     env_file:
       - path: docker/.env # default
