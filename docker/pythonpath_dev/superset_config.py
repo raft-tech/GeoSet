@@ -113,9 +113,11 @@ from superset.config import TALISMAN_DEV_CONFIG as _TALISMAN_DEV_CONFIG
 
 TALISMAN_CONFIG = copy.deepcopy(_TALISMAN_CONFIG)
 TALISMAN_CONFIG["content_security_policy"]["connect-src"].append(SSO_HEALTH_CHECK_URL)
+TALISMAN_CONFIG["content_security_policy"]["connect-src"].append("https://api.ipify.org")
 
 TALISMAN_DEV_CONFIG = copy.deepcopy(_TALISMAN_DEV_CONFIG)
 TALISMAN_DEV_CONFIG["content_security_policy"]["connect-src"].append(SSO_HEALTH_CHECK_URL)
+TALISMAN_DEV_CONFIG["content_security_policy"]["connect-src"].append("https://api.ipify.org")
 WEBDRIVER_BASEURL = "http://superset:8088/"  # When using docker compose baseurl should be http://superset_app:8088/  # noqa: E501
 # The base URL for the email report hyperlinks.
 WEBDRIVER_BASEURL_USER_FRIENDLY = WEBDRIVER_BASEURL

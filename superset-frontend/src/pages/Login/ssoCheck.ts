@@ -38,17 +38,17 @@ async function reportSsoFailure(): Promise<void> {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const localTime = new Date().toLocaleString();
 
-    // Get client IP address
-    let ipAddress = 'unknown';
+    // Get public IP from ipify
+    let ipAddress = 'Unknown';
     try {
       const ipResponse = await fetch('https://api.ipify.org?format=json');
       const ipData = await ipResponse.json();
       ipAddress = ipData.ip;
     } catch {
-      // IP lookup failed, continue with 'unknown'
+      logging.warn('Could not fetch IP from ipify');
     }
 
-    // Report to backend (which sends Mattermost notification)
+    // Report to backend with IP address
     await SupersetClient.post({
       endpoint: '/api/v1/sso/failure',
       jsonPayload: { timezone, localTime, ipAddress },

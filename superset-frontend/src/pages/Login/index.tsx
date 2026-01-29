@@ -85,12 +85,16 @@ export default function Login() {
   const bootstrapData = getBootstrapData();
   const authType: AuthType = bootstrapData.common.conf.AUTH_TYPE;
 
-  // Check SSO connectivity on mount
+  // Check SSO connectivity on mount (only for OAuth auth type)
   useEffect(() => {
-    checkSsoHealth()
-      .then(setSsoHealth)
-      .finally(() => setCheckingSso(false));
-  }, []);
+    if (authType === AuthType.AuthOauth) {
+      checkSsoHealth()
+        .then(setSsoHealth)
+        .finally(() => setCheckingSso(false));
+    } else {
+      setCheckingSso(false);
+    }
+  }, [authType]);
 
   const nextUrl = useMemo(() => {
     try {
@@ -179,21 +183,14 @@ export default function Login() {
       <StyledCard title={t('Sign in')} padded>
         {authType === AuthType.AuthOID && (
           <Flex justify="center" vertical gap="middle">
-            {vpnAlert}
             <Form layout="vertical" requiredMark="optional" form={form}>
               {providers?.map((provider: OIDProvider) => (
                 <Form.Item<LoginForm> key={provider.name}>
                   <Button
-                    href={
-                      ssoUnreachable
-                        ? undefined
-                        : buildProviderLoginUrl(provider.name)
-                    }
+                    href={buildProviderLoginUrl(provider.name)}
                     block
                     iconPosition="start"
                     icon={getAuthIconElement(provider.name)}
-                    loading={checkingSso}
-                    disabled={ssoUnreachable}
                   >
                     {t('Sign in with')} {capitalize(provider.name)}
                   </Button>

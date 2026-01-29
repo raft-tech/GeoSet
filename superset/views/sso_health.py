@@ -47,9 +47,7 @@ def sso_failure() -> FlaskResponse:
     """
     data = request.get_json() or {}
     # Prefer IP from frontend (via ipify) if provided, fallback to request headers
-    client_ip = data.get(
-        "ipAddress", request.headers.get("X-Forwarded-For", request.remote_addr)
-    )
+    client_ip = data.get("ipAddress", "Unknown")
     user_timezone = data.get("timezone", "Unknown")
     local_time = data.get("localTime", "Unknown")
 
@@ -74,9 +72,4 @@ def sso_failure() -> FlaskResponse:
     except Exception as e:
         logger.error("Failed to send Mattermost notification: %s", e)
 
-    return jsonify({
-        "logged": True,
-        "ip": client_ip,
-        "local_time": local_time,
-        "user_timezone": user_timezone,
-    })
+    return jsonify({"logged": True})
