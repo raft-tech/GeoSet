@@ -604,6 +604,21 @@ export class LineSvg extends CustomSvg {
   }
 }
 
+export class MarkerSvg extends CustomSvg {
+  constructor(fillHexColor: string, width = -1, height = -1) {
+    super(fillHexColor, width, height);
+    if (width === -1) {
+      this.width = 128;
+    }
+    if (height === -1) {
+      this.height = 128;
+    }
+    /* eslint-disable */
+        this.svg = `<svg width="${this.width}" height="${this.height}" fill="${fillHexColor}" version="1.1" id="marker_svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 54.757 54.757" xml:space="preserve"><g><path d="M27.557,12c-3.859,0-7,3.141-7,7s3.141,7,7,7s7-3.141,7-7S31.416,12,27.557,12z M27.557,24c-2.757,0-5-2.243-5-5s2.243-5,5-5s5,2.243,5,5S30.314,24,27.557,24z"/><path d="M40.94,5.617C37.318,1.995,32.502,0,27.38,0c-5.123,0-9.938,1.995-13.56,5.617c-6.703,6.702-7.536,19.312-1.804,26.952L27.38,54.757L42.721,32.6C48.476,24.929,47.643,12.319,40.94,5.617z M41.099,31.431L27.38,51.243L13.639,31.4C8.44,24.468,9.185,13.08,15.235,7.031C18.479,3.787,22.792,2,27.38,2s8.901,1.787,12.146,5.031C45.576,13.08,46.321,24.468,41.099,31.431z"/></g></svg>`
+        /* eslint-enable */
+  }
+}
+
 export function getSvg(
   name: string,
   fillHexColor: string,
@@ -619,6 +634,8 @@ export function getSvg(
       return new PointSvg(fillHexColor, width, height).svg;
     case 'line':
       return new LineSvg(fillHexColor, width, height).svg;
+    case 'marker':
+      return new MarkerSvg(fillHexColor, width, height).svg;
     default:
       return new CircleSvg(fillHexColor, width, height).svg;
   }

@@ -26,6 +26,10 @@ import {
   hoverDataColumns,
   minMaxZoomSlider,
   viewport,
+  enableClustering,
+  clusterMaxZoom,
+  clusterMinPoints,
+  clusterRadius,
 } from '../../utilities/Shared_DeckGL';
 import { dndGeojsonColumn } from '../../utilities/sharedDndControls';
 import JsonEditorControl from '../../components/JsonEditorControl';
@@ -83,6 +87,7 @@ const config: ControlPanelConfig = {
       expanded: true,
       controlSetRows: [
         [dndGeojsonColumn],
+        ['row_limit'],
         [
           {
             name: 'geoJsonLayer',
@@ -99,7 +104,58 @@ const config: ControlPanelConfig = {
             },
           },
         ],
-        ['row_limit'],
+        [
+          {
+            name: enableClustering.name,
+            config: {
+              ...enableClustering.config,
+              visibility: ({ controls }: { controls: any }) =>
+                controls?.geoJsonLayer?.value === 'Point',
+            },
+          },
+        ],
+        [
+          {
+            name: clusterMaxZoom.name,
+            config: {
+              ...clusterMaxZoom.config,
+              visibility: ({ controls }: { controls: any }) =>
+                controls?.geoJsonLayer?.value === 'Point',
+              shouldMapStateToProps: () => true,
+              mapStateToProps: ({ controls }: { controls: any }) => ({
+                disabled: controls?.enableClustering?.value !== true,
+              }),
+            },
+          },
+        ],
+        [
+          {
+            name: clusterMinPoints.name,
+            config: {
+              ...clusterMinPoints.config,
+              visibility: ({ controls }: { controls: any }) =>
+                controls?.geoJsonLayer?.value === 'Point',
+              shouldMapStateToProps: () => true,
+              mapStateToProps: ({ controls }: { controls: any }) => ({
+                disabled: controls?.enableClustering?.value !== true,
+              }),
+            },
+          },
+        ],
+        [
+          {
+            name: clusterRadius.name,
+            config: {
+              ...clusterRadius.config,
+              visibility: ({ controls }: { controls: any }) =>
+                controls?.geoJsonLayer?.value === 'Point',
+              shouldMapStateToProps: () => true,
+              mapStateToProps: ({ controls }: { controls: any }) => ({
+                disabled: controls?.enableClustering?.value !== true,
+              }),
+            },
+          },
+        ],
         ['adhoc_filters'],
         [viewport],
         [minMaxZoomSlider],
