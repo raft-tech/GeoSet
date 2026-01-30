@@ -493,7 +493,7 @@ export const legendCollapsed = {
     default: false,
     renderTrigger: true,
     description: t(
-      'When checked, the legend entry for this layer will start collapsed in the multi-layer legend.',
+      'When checked, the legend entry for this chart will initially be collapsed in the Multi-layer legend.',
     ),
   },
 };
