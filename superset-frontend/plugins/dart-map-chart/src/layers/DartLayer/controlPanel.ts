@@ -162,6 +162,7 @@ const config: ControlPanelConfig = {
         [minMaxZoomSlider],
         [hoverDataColumns],
         [featureInfoColumns],
+        [legendCollapsed],
         [
           {
             name: 'geojsonConfig',
@@ -180,7 +181,6 @@ const config: ControlPanelConfig = {
             },
           },
         ],
-        [legendCollapsed],
         [
           {
             name: 'schema_version',
