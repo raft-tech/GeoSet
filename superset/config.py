@@ -1844,6 +1844,7 @@ TALISMAN_CONFIG = {
             "https://events.mapbox.com",
             "https://tile.openstreetmap.org",
             "https://tile.osm.ch",
+            "data:",
         ],
         "object-src": "'none'",
         "style-src": [
@@ -1878,6 +1879,7 @@ TALISMAN_DEV_CONFIG = {
             "https://events.mapbox.com",
             "https://tile.openstreetmap.org",
             "https://tile.osm.ch",
+            "data:",
         ],
         "object-src": "'none'",
         "style-src": [
