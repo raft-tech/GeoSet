@@ -107,57 +107,45 @@ export function LoginHelpCard() {
     >
       <Alert
         type="warning"
-        showIcon
-        icon={
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            height="24"
-            viewBox="0 0 24 24"
-            width="24"
-            fill="#1b1b1b"
-            aria-hidden="true"
-          >
-            <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
-          </svg>
-        }
+        showIcon={false}
         closable={false}
         css={css`
-          padding: 8px 12px;
+          padding: 12px;
         `}
         message={
-          <>
-            <Typography.Title
-              level={4}
-              css={css`
-                margin: 0 !important;
-              `}
+          <Flex gap="small">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              height="24"
+              viewBox="0 0 24 24"
+              width="24"
+              fill="#1b1b1b"
+              aria-hidden="true"
+              style={{ flexShrink: 0 }}
             >
-              {t('Having trouble signing in?')}
-            </Typography.Title>
-            <br />
-            <strong>{t('Try this:')}</strong>
-            <ul
-              css={css`
-                margin: 4px 0 0 0;
-                padding-left: 20px;
-              `}
-            >
-              <li>{t('Connect to VPN')}</li>
-              <li>
-                {!showIssueForm ? (
-                  <Typography.Link
-                    strong
-                    underline
-                    onClick={() => setShowIssueForm(true)}
-                  >
-                    {t('Report Issue')}
-                  </Typography.Link>
-                ) : (
-                  t('Report Issue')
-                )}
-              </li>
-            </ul>
-          </>
+              <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
+            </svg>
+            <div>
+              <strong>{t('Are you having trouble signing in?')}</strong>
+              <br />
+              <br />
+              {t(
+                'Ensure you are connected to VPN or ethernet before logging in. If issues persist, ',
+              )}
+              {!showIssueForm ? (
+                <Typography.Link
+                  strong
+                  underline
+                  onClick={() => setShowIssueForm(true)}
+                >
+                  {t('contact us for assistance')}
+                </Typography.Link>
+              ) : (
+                t('contact us for assistance')
+              )}
+              .
+            </div>
+          </Flex>
         }
       />
 
