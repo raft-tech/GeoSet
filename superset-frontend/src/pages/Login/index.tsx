@@ -19,7 +19,6 @@
 
 import { SupersetClient, styled, t, css } from '@superset-ui/core';
 import {
-  Alert,
   Button,
   Card,
   Flex,
@@ -28,10 +27,10 @@ import {
   Typography,
   Icons,
 } from '@superset-ui/core/components';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { capitalize } from 'lodash/fp';
 import getBootstrapData from 'src/utils/getBootstrapData';
-import { checkSsoHealth, SsoHealthStatus } from './ssoCheck';
+import { LoginIssueHelpCard } from './ssoCheck';
 
 type OAuthProvider = {
   name: string;
@@ -79,22 +78,11 @@ const StyledLabel = styled(Typography.Text)`
 export default function Login() {
   const [form] = Form.useForm<LoginForm>();
   const [loading, setLoading] = useState(false);
-  const [ssoHealth, setSsoHealth] = useState<SsoHealthStatus | null>(null);
-  const [checkingSso, setCheckingSso] = useState(true);
 
   const bootstrapData = getBootstrapData();
-  const authType: AuthType = bootstrapData.common.conf.AUTH_TYPE;
-
-  // Check SSO connectivity on mount (only for OAuth auth type)
-  useEffect(() => {
-    if (authType === AuthType.AuthOauth) {
-      checkSsoHealth()
-        .then(setSsoHealth)
-        .finally(() => setCheckingSso(false));
-    } else {
-      setCheckingSso(false);
-    }
-  }, [authType]);
+  // STUB: Force OAuth auth type for testing
+  const authType: AuthType = AuthType.AuthOauth;
+  // const authType: AuthType = bootstrapData.common.conf.AUTH_TYPE;
 
   const nextUrl = useMemo(() => {
     try {
@@ -117,34 +105,11 @@ export default function Login() {
       : base;
   };
 
-  const providers: Provider[] = bootstrapData.common.conf.AUTH_PROVIDERS;
+  // STUB: Override providers with test data
+  const providers: Provider[] = [{ name: 'ACF-SSO', icon: '' }];
+  // const providers: Provider[] = bootstrapData.common.conf.AUTH_PROVIDERS;
   const authRegistration: boolean =
     bootstrapData.common.conf.AUTH_USER_REGISTRATION;
-
-  // Disable login when SSO is configured but unreachable
-  const ssoUnreachable =
-    !checkingSso && ssoHealth?.configured && !ssoHealth?.reachable;
-
-  const vpnAlert = ssoUnreachable && (
-    <Alert
-      type="error"
-      showIcon
-      message={t('VPN Connection Required')}
-      description={
-        <>
-          {t(
-            'Unable to reach the SSO server. Please ensure you are connected to the VPN. If still unable to sign in, contact',
-          )}{' '}
-          <a href="mailto:morgan.vlasse@acf.hhs.gov?subject=DART%20SSO%20Sign-in%20Issue">
-            morgan.vlasse@acf.hhs.gov
-          </a>
-        </>
-      }
-      css={css`
-        margin-bottom: 16px;
-      `}
-    />
-  );
 
   const onFinish = (values: LoginForm) => {
     setLoading(true);
@@ -170,14 +135,17 @@ export default function Login() {
     return undefined;
   };
 
+  // just stub it out here
+  // set other authtypes other than oauth to false and add the stub thing here like dont change the below things
   return (
     <Flex
       justify="center"
       align="center"
+      vertical
       data-test="login-form"
       css={css`
         width: 100%;
-        height: calc(100vh - 200px);
+        min-height: calc(100vh - 200px);
       `}
     >
       <StyledCard title={t('Sign in')} padded>
@@ -201,21 +169,14 @@ export default function Login() {
         )}
         {authType === AuthType.AuthOauth && (
           <Flex justify="center" gap={0} vertical>
-            {vpnAlert}
             <Form layout="vertical" requiredMark="optional" form={form}>
               {providers.map((provider: OAuthProvider) => (
                 <Form.Item<LoginForm> key={provider.name}>
                   <Button
-                    href={
-                      ssoUnreachable
-                        ? undefined
-                        : buildProviderLoginUrl(provider.name)
-                    }
+                    href={buildProviderLoginUrl(provider.name)}
                     block
                     iconPosition="start"
                     icon={getAuthIconElement(provider.name)}
-                    loading={checkingSso}
-                    disabled={ssoUnreachable}
                   >
                     {t('Sign in with')} {capitalize(provider.name)}
                   </Button>
@@ -292,6 +253,8 @@ export default function Login() {
           </Flex>
         )}
       </StyledCard>
+
+      {authType === AuthType.AuthOauth && <LoginIssueHelpCard />}
     </Flex>
   );
 }
