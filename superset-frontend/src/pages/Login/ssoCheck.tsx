@@ -22,7 +22,6 @@ import { SupersetClient, logging, styled, t, css } from '@superset-ui/core';
 import {
   Alert,
   Button,
-  Card,
   Flex,
   Form,
   Input,
@@ -103,18 +102,6 @@ export async function checkSsoHealth(): Promise<SsoHealthStatus> {
   }
 }
 
-const StyledHelpCard = styled(Card)`
-  ${({ theme }) => css`
-    max-width: 400px;
-    width: 100%;
-    margin-top: ${theme.marginLG}px;
-    margin-bottom: ${theme.marginLG}px;
-    padding: 16px;
-    background: ${theme.colorBgBase};
-    border: none;
-  `}
-`;
-
 const StyledLabel = styled(Typography.Text)`
   ${({ theme }) => css`
     font-size: ${theme.fontSizeSM}px;
@@ -136,85 +123,100 @@ export function LoginIssueHelpCard() {
   };
 
   return (
-    <StyledHelpCard>
-      <Flex vertical gap="middle">
-        <Alert
-          type="warning"
-          showIcon
-          closable={false}
-          message={t(
-            "If you're seeing 403 Forbidden, make sure you're connected to the VPN.",
-          )}
-        />
+    <Flex
+      vertical
+      gap="middle"
+      css={css`
+        width: 100%;
+        margin-top: 8px;
+      `}
+    >
+      <Alert
+        type="warning"
+        showIcon
+        closable={false}
+        css={css`
+          padding: 8px 12px;
+        `}
+        message={
+          !showIssueForm ? (
+            <>
+              {t(
+                "If you're seeing 403 Forbidden, make sure you're connected to the VPN.",
+              )}{' '}
+              <Typography.Link strong onClick={() => setShowIssueForm(true)}>
+                {t('Report issue')}
+              </Typography.Link>
+            </>
+          ) : (
+            t(
+              "If you're seeing 403 Forbidden, make sure you're connected to the VPN.",
+            )
+          )
+        }
+      />
 
-        {!showIssueForm ? (
-          <Button block onClick={() => setShowIssueForm(true)}>
-            {t('Report login issues')}
-          </Button>
-        ) : (
-          <Form
-            form={issueForm}
-            layout="vertical"
-            requiredMark="optional"
-            onFinish={onIssueSubmit}
+      {showIssueForm && (
+        <Form
+          form={issueForm}
+          layout="vertical"
+          requiredMark="optional"
+          onFinish={onIssueSubmit}
+        >
+          <Form.Item<LoginIssueForm>
+            label={<StyledLabel>{t('Name:')}</StyledLabel>}
+            name="name"
+            rules={[{ required: true, message: t('Please enter your name') }]}
           >
-            <Form.Item<LoginIssueForm>
-              label={<StyledLabel>{t('Name:')}</StyledLabel>}
-              name="name"
-              rules={[
-                { required: true, message: t('Please enter your name') },
-              ]}
+            <Input
+              prefix={<Icons.UserOutlined iconSize="l" />}
+              placeholder={t('Your name')}
+            />
+          </Form.Item>
+          <Form.Item<LoginIssueForm>
+            label={<StyledLabel>{t('Email:')}</StyledLabel>}
+            name="email"
+            rules={[
+              { required: true, message: t('Please enter your email') },
+              { type: 'email', message: t('Please enter a valid email') },
+            ]}
+          >
+            <Input
+              prefix={<Icons.MailOutlined iconSize="l" />}
+              placeholder={t('your.email@example.com')}
+            />
+          </Form.Item>
+          <Form.Item<LoginIssueForm>
+            label={<StyledLabel>{t('Message:')}</StyledLabel>}
+            name="message"
+          >
+            <Input.TextArea
+              rows={3}
+              placeholder={t('Describe the issue you are experiencing...')}
+            />
+          </Form.Item>
+          <Form.Item label={null}>
+            <Flex
+              gap="small"
+              css={css`
+                width: 100%;
+              `}
             >
-              <Input
-                prefix={<Icons.UserOutlined iconSize="l" />}
-                placeholder={t('Your name')}
-              />
-            </Form.Item>
-            <Form.Item<LoginIssueForm>
-              label={<StyledLabel>{t('Email:')}</StyledLabel>}
-              name="email"
-              rules={[
-                { required: true, message: t('Please enter your email') },
-                { type: 'email', message: t('Please enter a valid email') },
-              ]}
-            >
-              <Input
-                prefix={<Icons.MailOutlined iconSize="l" />}
-                placeholder={t('your.email@example.com')}
-              />
-            </Form.Item>
-            <Form.Item<LoginIssueForm>
-              label={<StyledLabel>{t('Message:')}</StyledLabel>}
-              name="message"
-            >
-              <Input.TextArea
-                rows={3}
-                placeholder={t('Describe the issue you are experiencing...')}
-              />
-            </Form.Item>
-            <Form.Item label={null}>
-              <Flex
-                gap="small"
-                css={css`
-                  width: 100%;
-                `}
+              <Button block onClick={() => setShowIssueForm(false)}>
+                {t('Cancel')}
+              </Button>
+              <Button
+                block
+                type="primary"
+                htmlType="submit"
+                loading={submittingIssue}
               >
-                <Button
-                  block
-                  type="primary"
-                  htmlType="submit"
-                  loading={submittingIssue}
-                >
-                  {t('Submit')}
-                </Button>
-                <Button block onClick={() => setShowIssueForm(false)}>
-                  {t('Cancel')}
-                </Button>
-              </Flex>
-            </Form.Item>
-          </Form>
-        )}
-      </Flex>
-    </StyledHelpCard>
+                {t('Submit')}
+              </Button>
+            </Flex>
+          </Form.Item>
+        </Form>
+      )}
+    </Flex>
   );
 }

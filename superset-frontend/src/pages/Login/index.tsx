@@ -183,6 +183,7 @@ export default function Login() {
                 </Form.Item>
               ))}
             </Form>
+            <LoginIssueHelpCard />
           </Flex>
         )}
 
@@ -253,8 +254,6 @@ export default function Login() {
           </Flex>
         )}
       </StyledCard>
-
-      {authType === AuthType.AuthOauth && <LoginIssueHelpCard />}
     </Flex>
   );
 }
