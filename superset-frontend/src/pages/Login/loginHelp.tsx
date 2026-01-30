@@ -45,15 +45,18 @@ export function LoginHelpCard() {
   const [issueForm] = Form.useForm<LoginHelpForm>();
   const [showIssueForm, setShowIssueForm] = useState(false);
   const [submittingIssue, setSubmittingIssue] = useState(false);
-  const [reportSent, setReportSent] = useState(false);
+  const [notification, setNotification] = useState<'success' | 'error' | null>(
+    null,
+  );
 
   useEffect(() => {
-    if (reportSent) {
-      const timer = setTimeout(() => setReportSent(false), 3000);
+    if (notification) {
+      const timeout = notification === 'success' ? 3000 : 5000;
+      const timer = setTimeout(() => setNotification(null), timeout);
       return () => clearTimeout(timer);
     }
     return undefined;
-  }, [reportSent]);
+  }, [notification]);
 
   const onIssueSubmit = async (values: LoginHelpForm) => {
     setSubmittingIssue(true);
@@ -82,9 +85,10 @@ export function LoginHelpCard() {
         },
       });
 
-      setReportSent(true);
+      setNotification('success');
     } catch (error) {
       logging.error('Failed to report issue:', error);
+      setNotification('error');
     } finally {
       setSubmittingIssue(false);
       setShowIssueForm(false);
@@ -157,11 +161,15 @@ export function LoginHelpCard() {
         }
       />
 
-      {reportSent && (
+      {notification && (
         <Alert
-          type="success"
+          type={notification}
           showIcon
-          message={t('Report sent. Thank you!')}
+          message={
+            notification === 'success'
+              ? t('Report sent. Thank you!')
+              : t('Failed to send report. Please try again.')
+          }
           css={css`
             padding: 6px 12px;
           `}

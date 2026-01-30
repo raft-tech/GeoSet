@@ -79,5 +79,7 @@ def report_login_issue() -> FlaskResponse:
         requests.post(MATTERMOST_WEBHOOK_URL, json=mattermost_payload, timeout=10)
     except Exception as e:
         logger.error("Failed to send Mattermost notification: %s", e)
+        raise
+
 
     return jsonify({"logged": True})
