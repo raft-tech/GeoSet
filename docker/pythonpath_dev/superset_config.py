@@ -101,23 +101,6 @@ CELERY_CONFIG = CeleryConfig
 FEATURE_FLAGS = {"ALERT_REPORTS": True, "ACCESSIBILITY_SECTION_508": True}
 ALERT_REPORTS_NOTIFICATION_DRY_RUN = True
 
-# SSO Health Check configuration
-# This URL is used by the login page to check if the user can reach the SSO provider
-# If unreachable, a VPN connection warning will be displayed
-SSO_HEALTH_CHECK_URL = os.getenv("SSO_HEALTH_CHECK_URL", "https://sso.management.acf.gov")
-
-# Add SSO URL to CSP connect-src for health check
-import copy
-from superset.config import TALISMAN_CONFIG as _TALISMAN_CONFIG
-from superset.config import TALISMAN_DEV_CONFIG as _TALISMAN_DEV_CONFIG
-
-TALISMAN_CONFIG = copy.deepcopy(_TALISMAN_CONFIG)
-TALISMAN_CONFIG["content_security_policy"]["connect-src"].append(SSO_HEALTH_CHECK_URL)
-TALISMAN_CONFIG["content_security_policy"]["connect-src"].append("https://api.ipify.org")
-
-TALISMAN_DEV_CONFIG = copy.deepcopy(_TALISMAN_DEV_CONFIG)
-TALISMAN_DEV_CONFIG["content_security_policy"]["connect-src"].append(SSO_HEALTH_CHECK_URL)
-TALISMAN_DEV_CONFIG["content_security_policy"]["connect-src"].append("https://api.ipify.org")
 WEBDRIVER_BASEURL = "http://superset:8088/"  # When using docker compose baseurl should be http://superset_app:8088/  # noqa: E501
 # The base URL for the email report hyperlinks.
 WEBDRIVER_BASEURL_USER_FRIENDLY = WEBDRIVER_BASEURL
