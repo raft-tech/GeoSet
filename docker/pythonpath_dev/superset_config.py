@@ -124,16 +124,6 @@ if os.getenv("CYPRESS_CONFIG") == "true":
 # Optionally import superset_config_docker.py (which will have been included on
 # the PYTHONPATH) in order to allow for local settings to be overridden
 #
-import copy
-from superset.config import TALISMAN_CONFIG as _TALISMAN_CONFIG
-from superset.config import TALISMAN_DEV_CONFIG as _TALISMAN_DEV_CONFIG
-
-TALISMAN_CONFIG = copy.deepcopy(_TALISMAN_CONFIG)
-TALISMAN_CONFIG["content_security_policy"]["connect-src"].append("https://api.ipify.org")
-
-TALISMAN_DEV_CONFIG = copy.deepcopy(_TALISMAN_DEV_CONFIG)
-TALISMAN_DEV_CONFIG["content_security_policy"]["connect-src"].append("https://api.ipify.org")
-
 try:
     import superset_config_docker
     from superset_config_docker import *  # noqa
