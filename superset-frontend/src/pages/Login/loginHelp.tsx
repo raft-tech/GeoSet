@@ -109,8 +109,10 @@ export function LoginHelpCard() {
         type="warning"
         showIcon={false}
         closable={false}
+        // eslint-disable-next-line theme-colors/no-literal-colors
         css={css`
           padding: 12px;
+          background-color: #fffbeb;
         `}
         message={
           <Flex gap="small">
