@@ -232,10 +232,10 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
 
         self.superset_app.register_blueprint(health_blueprint)
 
-        # Register SSO health check blueprint
-        from superset.views.sso_health import sso_health_blueprint
+        # Register login help blueprint
+        from superset.views.login_help import login_help_blueprint
 
-        self.superset_app.register_blueprint(sso_health_blueprint)
+        self.superset_app.register_blueprint(login_help_blueprint)
 
         #
         # Setup API views

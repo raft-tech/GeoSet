@@ -30,7 +30,7 @@ import {
 import { useState, useMemo } from 'react';
 import { capitalize } from 'lodash/fp';
 import getBootstrapData from 'src/utils/getBootstrapData';
-import { LoginIssueHelpCard } from './ssoCheck';
+import { LoginHelpCard } from './loginHelp';
 
 type OAuthProvider = {
   name: string;
@@ -183,7 +183,7 @@ export default function Login() {
                 </Form.Item>
               ))}
             </Form>
-            <LoginIssueHelpCard />
+            <LoginHelpCard />
           </Flex>
         )}
 

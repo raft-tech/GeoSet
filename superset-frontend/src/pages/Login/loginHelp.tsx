@@ -17,7 +17,7 @@
  * under the License.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SupersetClient, logging, styled, t, css } from '@superset-ui/core';
 import {
   Alert,
@@ -29,77 +29,10 @@ import {
   Icons,
 } from '@superset-ui/core/components';
 
-export type SsoHealthStatus = {
-  reachable: boolean;
-  status_code: number | null;
-  error: string | null;
-  configured: boolean;
-};
-
-interface LoginIssueForm {
+interface LoginHelpForm {
   name: string;
   email: string;
   message?: string;
-}
-
-const DEFAULT_ERROR_STATUS: SsoHealthStatus = {
-  reachable: false,
-  status_code: null,
-  error: 'Failed to check SSO connectivity',
-  configured: true,
-};
-
-async function reportSsoFailure(): Promise<void> {
-  try {
-    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const localTime = new Date().toLocaleString();
-
-    // Get public IP from ipify
-    let ipAddress = 'Unknown';
-    try {
-      const ipResponse = await fetch('https://api.ipify.org?format=json');
-      const ipData = await ipResponse.json();
-      ipAddress = ipData.ip;
-    } catch {
-      logging.warn('Could not fetch IP from ipify');
-    }
-
-    // Report to backend with IP address
-    await SupersetClient.post({
-      endpoint: '/api/v1/sso/failure',
-      jsonPayload: { timezone, localTime, ipAddress },
-    });
-  } catch (error) {
-    logging.error('Failed to report SSO failure:', error);
-  }
-}
-
-const SSO_URL = 'https://sso.management.acf.gov';
-
-export async function checkSsoHealth(): Promise<SsoHealthStatus> {
-  try {
-    const response = await fetch(SSO_URL, { method: 'HEAD' });
-    if (!response.ok) {
-      logging.error('SSO health check failed with status:', response.status);
-      // reportSsoFailure();
-      return {
-        reachable: false,
-        status_code: response.status,
-        error: `SSO returned ${response.status}`,
-        configured: true,
-      };
-    }
-    return {
-      reachable: true,
-      status_code: response.status,
-      error: null,
-      configured: true,
-    };
-  } catch (error) {
-    logging.error('SSO health check error:', error);
-    // reportSsoFailure();
-    return DEFAULT_ERROR_STATUS;
-  }
 }
 
 const StyledLabel = styled(Typography.Text)`
@@ -108,18 +41,55 @@ const StyledLabel = styled(Typography.Text)`
   `}
 `;
 
-export function LoginIssueHelpCard() {
-  const [issueForm] = Form.useForm<LoginIssueForm>();
+export function LoginHelpCard() {
+  const [issueForm] = Form.useForm<LoginHelpForm>();
   const [showIssueForm, setShowIssueForm] = useState(false);
   const [submittingIssue, setSubmittingIssue] = useState(false);
+  const [reportSent, setReportSent] = useState(false);
 
-  const onIssueSubmit = (values: LoginIssueForm) => {
+  useEffect(() => {
+    if (reportSent) {
+      const timer = setTimeout(() => setReportSent(false), 3000);
+      return () => clearTimeout(timer);
+    }
+    return undefined;
+  }, [reportSent]);
+
+  const onIssueSubmit = async (values: LoginHelpForm) => {
     setSubmittingIssue(true);
-    // TODO: Wire up to backend endpoint
-    console.log('Issue reported:', values);
-    setSubmittingIssue(false);
-    setShowIssueForm(false);
-    issueForm.resetFields();
+    try {
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const localTime = new Date().toLocaleString();
+
+      let ipAddress = 'Unknown';
+      try {
+        const ipResponse = await fetch('https://api.ipify.org?format=json');
+        const ipData = await ipResponse.json();
+        ipAddress = ipData.ip;
+      } catch {
+        logging.warn('Could not fetch IP from ipify');
+      }
+
+      await SupersetClient.post({
+        endpoint: '/api/v1/login/help',
+        jsonPayload: {
+          name: values.name,
+          email: values.email,
+          message: values.message,
+          ipAddress,
+          timezone,
+          localTime,
+        },
+      });
+
+      setReportSent(true);
+    } catch (error) {
+      logging.error('Failed to report issue:', error);
+    } finally {
+      setSubmittingIssue(false);
+      setShowIssueForm(false);
+      issueForm.resetFields();
+    }
   };
 
   return (
@@ -134,27 +104,69 @@ export function LoginIssueHelpCard() {
       <Alert
         type="warning"
         showIcon
+        icon={
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            height="24"
+            viewBox="0 0 24 24"
+            width="24"
+            fill="#1b1b1b"
+            aria-hidden="true"
+          >
+            <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
+          </svg>
+        }
         closable={false}
         css={css`
           padding: 8px 12px;
         `}
         message={
-          !showIssueForm ? (
-            <>
-              {t(
-                "If you're seeing 403 Forbidden, make sure you're connected to the VPN.",
-              )}{' '}
-              <Typography.Link strong onClick={() => setShowIssueForm(true)}>
-                {t('Report issue')}
-              </Typography.Link>
-            </>
-          ) : (
-            t(
-              "If you're seeing 403 Forbidden, make sure you're connected to the VPN.",
-            )
-          )
+          <>
+            <Typography.Title
+              level={4}
+              css={css`
+                margin: 0 !important;
+              `}
+            >
+              {t('Having trouble signing in?')}
+            </Typography.Title>
+            <br />
+            <strong>{t('Try this:')}</strong>
+            <ul
+              css={css`
+                margin: 4px 0 0 0;
+                padding-left: 20px;
+              `}
+            >
+              <li>{t('Connect to VPN')}</li>
+              <li>
+                {!showIssueForm ? (
+                  <Typography.Link
+                    strong
+                    underline
+                    onClick={() => setShowIssueForm(true)}
+                  >
+                    {t('Report Issue')}
+                  </Typography.Link>
+                ) : (
+                  t('Report Issue')
+                )}
+              </li>
+            </ul>
+          </>
         }
       />
+
+      {reportSent && (
+        <Alert
+          type="success"
+          showIcon
+          message={t('Report sent. Thank you!')}
+          css={css`
+            padding: 6px 12px;
+          `}
+        />
+      )}
 
       {showIssueForm && (
         <Form
@@ -163,7 +175,7 @@ export function LoginIssueHelpCard() {
           requiredMark="optional"
           onFinish={onIssueSubmit}
         >
-          <Form.Item<LoginIssueForm>
+          <Form.Item<LoginHelpForm>
             label={<StyledLabel>{t('Name:')}</StyledLabel>}
             name="name"
             rules={[{ required: true, message: t('Please enter your name') }]}
@@ -173,9 +185,10 @@ export function LoginIssueHelpCard() {
               placeholder={t('Your name')}
             />
           </Form.Item>
-          <Form.Item<LoginIssueForm>
+          <Form.Item<LoginHelpForm>
             label={<StyledLabel>{t('Email:')}</StyledLabel>}
             name="email"
+            validateTrigger="onBlur"
             rules={[
               { required: true, message: t('Please enter your email') },
               { type: 'email', message: t('Please enter a valid email') },
@@ -186,7 +199,7 @@ export function LoginIssueHelpCard() {
               placeholder={t('your.email@example.com')}
             />
           </Form.Item>
-          <Form.Item<LoginIssueForm>
+          <Form.Item<LoginHelpForm>
             label={<StyledLabel>{t('Message:')}</StyledLabel>}
             name="message"
           >
