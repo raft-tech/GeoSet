@@ -134,3 +134,5 @@ scratch/
 # some VS Code files
 .vscode/launch.json
 .vscode/tasks.json
+
+.claude/settings.local.json
