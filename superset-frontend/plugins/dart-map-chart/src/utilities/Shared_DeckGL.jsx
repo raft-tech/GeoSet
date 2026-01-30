@@ -489,7 +489,7 @@ export const legendCollapsed = {
   name: 'legendCollapsed',
   config: {
     type: 'CheckboxControl',
-    label: t('Default Legend Entry Collapsed'),
+    label: t('Collapse Legend Entry by Default'),
     default: false,
     renderTrigger: true,
     description: t(
