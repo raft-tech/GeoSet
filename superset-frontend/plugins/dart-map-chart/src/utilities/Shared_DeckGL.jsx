@@ -491,7 +491,7 @@ export const legendCollapsed = {
     type: 'CheckboxControl',
     label: t('Collapse Legend Entry by Default'),
     default: false,
-    renderTrigger: true,
+    renderTrigger: false,
     description: t(
       'When checked, the legend entry for this chart will initially be collapsed in the multi-layer legend.',
     ),
