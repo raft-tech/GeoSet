@@ -25,6 +25,7 @@ import { formatNumber, styled } from '@superset-ui/core';
 import { MetricLegend, RGBAColor } from '../utils/colors';
 import { rgbaArrayToCssString } from '../utils/colorsFallback';
 import { Swatch } from '../utils/legendSwatch';
+import { formatLegendNumber } from '../utils/formatNumber';
 
 // MapControls: top 12px + height 32px + padding 12px = 56px from top
 const MAP_CONTROLS_OFFSET = 56;
@@ -146,9 +147,13 @@ const Legend = ({
         }}
       />
       <div className="legend-labels">
-        <span>{metricLegend.min != null ? format(metricLegend.min) : ''}</span>
         <span>
-          {metricLegend.max != null ? `${format(metricLegend.max)}+` : ''}
+          {metricLegend.min != null ? formatLegendNumber(metricLegend.min) : ''}
+        </span>
+        <span>
+          {metricLegend.max != null
+            ? `${formatLegendNumber(metricLegend.max)}+`
+            : ''}
         </span>
       </div>
     </div>

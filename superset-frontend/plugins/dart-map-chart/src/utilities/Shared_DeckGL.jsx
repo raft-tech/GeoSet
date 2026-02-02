@@ -484,3 +484,16 @@ export const geojsonColumn = {
     }),
   },
 };
+
+export const legendCollapsed = {
+  name: 'legendCollapsed',
+  config: {
+    type: 'CheckboxControl',
+    label: t('Collapse Legend Entry by Default'),
+    default: false,
+    mapStateToProps: () => ({}),
+    description: t(
+      'When checked, the legend entry for this chart will initially be collapsed in the multi-layer legend.',
+    ),
+  },
+};
