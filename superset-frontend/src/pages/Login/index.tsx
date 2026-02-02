@@ -80,9 +80,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
 
   const bootstrapData = getBootstrapData();
-  // STUB: Force OAuth auth type for testing
-  const authType: AuthType = AuthType.AuthOauth;
-  // const authType: AuthType = bootstrapData.common.conf.AUTH_TYPE;
+  const authType: AuthType = bootstrapData.common.conf.AUTH_TYPE;
 
   const nextUrl = useMemo(() => {
     try {
@@ -105,9 +103,7 @@ export default function Login() {
       : base;
   };
 
-  // STUB: Override providers with test data
-  const providers: Provider[] = [{ name: 'ACF-SSO', icon: '' }];
-  // const providers: Provider[] = bootstrapData.common.conf.AUTH_PROVIDERS;
+  const providers: Provider[] = bootstrapData.common.conf.AUTH_PROVIDERS;
   const authRegistration: boolean =
     bootstrapData.common.conf.AUTH_USER_REGISTRATION;
 
@@ -135,8 +131,6 @@ export default function Login() {
     return undefined;
   };
 
-  // just stub it out here
-  // set other authtypes other than oauth to false and add the stub thing here like dont change the below things
   return (
     <Flex
       justify="center"

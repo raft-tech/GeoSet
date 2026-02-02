@@ -132,7 +132,7 @@ export function LoginHelpCard() {
               <br />
               <br />
               {t(
-                'Ensure you are connected to VPN or ethernet before logging in. If issues persist, ',
+                'Ensure you are connected to VPN or HHS ethernet before logging in. If issues persist, ',
               )}
               {!showIssueForm ? (
                 <Typography.Link
