@@ -120,14 +120,17 @@ const SettingsPopoverContent = styled.div`
   min-width: 180px;
 `;
 
+const SettingsTitle = styled.div`
+  font-size: ${({ theme }) => theme.fontSizeSM}px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colorText};
+  margin-bottom: ${({ theme }) => theme.sizeUnit}px;
+`;
+
 const SettingsRow = styled.div`
   display: flex;
   align-items: center;
   padding: ${({ theme }) => theme.sizeUnit}px 0;
-
-  &:not(:last-child) {
-    border-bottom: 1px solid ${({ theme }) => theme.colorBorderSecondary};
-  }
 `;
 
 const SettingsLabel = styled.span`
@@ -188,13 +191,17 @@ const SelectedSliceRow = ({
 
   const settingsContent = (
     <SettingsPopoverContent onClick={e => e.stopPropagation()}>
+      <SettingsTitle>{t('Layer Properties')}</SettingsTitle>
       <SettingsRow>
         <Checkbox
           checked={autozoom}
           onChange={() => onToggleAutozoom(sliceId)}
         />
         <SettingsLabel>{t('Auto Zoom')}</SettingsLabel>
-        <Tooltip title={t('Automatically zoom the map to fit this layer')}>
+        <Tooltip
+          title={t('Automatically zoom the map to fit this layer')}
+          mouseLeaveDelay={0}
+        >
           <InfoIcon>
             <Icons.InfoCircleOutlined
               iconSize="s"
@@ -211,6 +218,7 @@ const SelectedSliceRow = ({
         <SettingsLabel>{t('Collapse Legend')}</SettingsLabel>
         <Tooltip
           title={t('Start with the legend entry collapsed in the map legend')}
+          mouseLeaveDelay={0}
         >
           <InfoIcon>
             <Icons.InfoCircleOutlined
@@ -226,7 +234,10 @@ const SelectedSliceRow = ({
           onChange={() => onToggleInitiallyHidden(sliceId)}
         />
         <SettingsLabel>{t('Hidden by Default')}</SettingsLabel>
-        <Tooltip title={t('Hide this layer when the map first loads')}>
+        <Tooltip
+          title={t('Hide this layer when the map first loads')}
+          mouseLeaveDelay={0}
+        >
           <InfoIcon>
             <Icons.InfoCircleOutlined
               iconSize="s"
