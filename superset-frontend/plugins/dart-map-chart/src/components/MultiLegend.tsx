@@ -31,6 +31,7 @@ export type LegendGroup = {
   simpleStyle?: { fillColor: RGBAColor; strokeColor: RGBAColor };
   categories?: CategoryEntry[];
   metric?: MetricEntry;
+  initialCollapsed?: boolean; // Whether this legend entry starts collapsed
 };
 
 export type MultiLegendProps = {
@@ -234,7 +235,10 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const toggle = (id: string) => {
-    setExpanded(prev => ({ ...prev, [id]: !(prev[id] ?? true) }));
+    const group = legendsBySlice[id];
+    // When toggling, invert current state (respecting initialCollapsed if not yet toggled)
+    const currentlyOpen = expanded[id] ?? !group?.initialCollapsed;
+    setExpanded(prev => ({ ...prev, [id]: !currentlyOpen }));
   };
 
   // Get default colors for title swatch based on group type
@@ -273,7 +277,8 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
           </LegendHeader>
           {sliceIds.map(id => {
             const group = legendsBySlice[id];
-            const isOpen = expanded[id] ?? true;
+            // Use expanded state if user has toggled, otherwise respect initialCollapsed setting
+            const isOpen = expanded[id] ?? !group.initialCollapsed;
             const { fill, stroke } = getDefaultColors(group);
 
             const isVisible = layerVisibility[id] !== false; // default to visible

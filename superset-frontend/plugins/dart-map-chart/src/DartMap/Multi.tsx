@@ -369,6 +369,7 @@ const DeckMulti = (props: DeckMultiProps) => {
                       startColor: ml.startColor,
                       endColor: ml.endColor,
                     },
+                    initialCollapsed: subsliceCopy.form_data.legendCollapsed,
                   };
                 } else if (hasCategories) {
                   // Category-based coloring
@@ -390,6 +391,7 @@ const DeckMulti = (props: DeckMultiProps) => {
                     geometryType: transformPropsGeojsonLayer,
                     type: 'categorical',
                     categories: categoryEntries,
+                    initialCollapsed: subsliceCopy.form_data.legendCollapsed,
                   };
                 } else {
                   // Simple/static coloring (base charts - no categories or metrics)
@@ -409,6 +411,7 @@ const DeckMulti = (props: DeckMultiProps) => {
                       fillColor,
                       strokeColor,
                     },
+                    initialCollapsed: subsliceCopy.form_data.legendCollapsed,
                   };
                 }
 
