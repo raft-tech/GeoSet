@@ -27,7 +27,7 @@ import {
   ScatterplotLayer,
 } from '@deck.gl/layers';
 import { PathStyleExtension } from '@deck.gl/extensions';
-// Ignoring the eslint error below since typescript prefers 'geojson' to '@types/geojson'
+// ignoring the eslint error below since typescript prefers 'geojson' to '@types/geojson'
 // eslint-disable-next-line import/no-unresolved
 import { Feature, Geometry, GeoJsonProperties } from 'geojson';
 import {
@@ -117,7 +117,6 @@ const alterProps = (props: JsonObject = {}, propOverrides: JsonObject = {}) => {
       newProps[k] = props[k];
     }
   });
-
   // Normalize fillColor and strokeColor to RGBA arrays
   if (newProps.fillColor !== undefined) {
     newProps.fillColor = normalizeRGBA(newProps.fillColor);
