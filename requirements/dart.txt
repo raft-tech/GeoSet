@@ -1,7 +1,0 @@
-# DART-specific requirements (extends base.txt)
-# Only includes packages not in base.txt
--e .[postgres]
-
-gevent==24.11.1
-zope-event==6.0.0
-zope-interface==8.0.0
