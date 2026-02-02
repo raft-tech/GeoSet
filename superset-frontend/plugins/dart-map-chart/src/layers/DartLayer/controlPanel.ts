@@ -30,7 +30,6 @@ import {
   clusterMaxZoom,
   clusterMinPoints,
   clusterRadius,
-  legendCollapsed,
 } from '../../utilities/Shared_DeckGL';
 import { dndGeojsonColumn } from '../../utilities/sharedDndControls';
 import JsonEditorControl from '../../components/JsonEditorControl';
@@ -162,7 +161,6 @@ const config: ControlPanelConfig = {
         [minMaxZoomSlider],
         [hoverDataColumns],
         [featureInfoColumns],
-        [legendCollapsed],
         [
           {
             name: 'geojsonConfig',

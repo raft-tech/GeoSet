@@ -58,10 +58,12 @@ const toTitleCase = (str: string) =>
     .replace(/_/g, ' ')
     .replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1));
 
-// Per-layer autozoom config
+// Per-layer config
 interface DeckSliceConfig {
   sliceId: number;
   autozoom: boolean;
+  legendCollapsed: boolean;
+  initiallyHidden: boolean;
 }
 
 // Normalize deck slices (handle legacy number[] format)
@@ -69,7 +71,19 @@ const normalizeDeckSlices = (
   deckSlices: (DeckSliceConfig | number)[] | undefined,
 ): DeckSliceConfig[] =>
   deckSlices?.map(item =>
-    typeof item === 'number' ? { sliceId: item, autozoom: true } : item,
+    typeof item === 'number'
+      ? {
+          sliceId: item,
+          autozoom: true,
+          legendCollapsed: false,
+          initiallyHidden: false,
+        }
+      : {
+          sliceId: item.sliceId,
+          autozoom: item.autozoom ?? true,
+          legendCollapsed: item.legendCollapsed ?? false,
+          initiallyHidden: item.initiallyHidden ?? false,
+        },
   ) ?? [];
 
 export type DeckMultiProps = {
@@ -101,6 +115,7 @@ type SubsliceLayerEntry = {
     hoverColumnNames: string[];
   };
   zoomSliderOptions: { minZoom: number; maxZoom: number };
+  initiallyHidden: boolean; // Whether this layer starts hidden
 };
 
 interface ClickedFeatureWithColumns extends ClickedFeatureInfo {
@@ -236,11 +251,13 @@ const DeckMulti = (props: DeckMultiProps) => {
 
       Promise.all(
         slices.map((subslice: { slice_id: number } & JsonObject) => {
-          // Get autozoom setting for this slice from the config
+          // Get layer settings from the config
           const sliceConfig = deckSlicesConfig.find(
             c => c.sliceId === subslice.slice_id,
           );
           const sliceAutozoom = sliceConfig?.autozoom ?? true;
+          const sliceLegendCollapsed = sliceConfig?.legendCollapsed ?? false;
+          const sliceInitiallyHidden = sliceConfig?.initiallyHidden ?? false;
           let copyFormData = {
             ...subslice.form_data,
           };
@@ -369,7 +386,7 @@ const DeckMulti = (props: DeckMultiProps) => {
                       startColor: ml.startColor,
                       endColor: ml.endColor,
                     },
-                    initialCollapsed: subsliceCopy.form_data.legendCollapsed,
+                    initialCollapsed: sliceLegendCollapsed,
                   };
                 } else if (hasCategories) {
                   // Category-based coloring
@@ -391,7 +408,7 @@ const DeckMulti = (props: DeckMultiProps) => {
                     geometryType: transformPropsGeojsonLayer,
                     type: 'categorical',
                     categories: categoryEntries,
-                    initialCollapsed: subsliceCopy.form_data.legendCollapsed,
+                    initialCollapsed: sliceLegendCollapsed,
                   };
                 } else {
                   // Simple/static coloring (base charts - no categories or metrics)
@@ -411,7 +428,7 @@ const DeckMulti = (props: DeckMultiProps) => {
                       fillColor,
                       strokeColor,
                     },
-                    initialCollapsed: subsliceCopy.form_data.legendCollapsed,
+                    initialCollapsed: sliceLegendCollapsed,
                   };
                 }
 
@@ -451,6 +468,7 @@ const DeckMulti = (props: DeckMultiProps) => {
                     hoverColumnNames: transformedProps.hoverColumnNames,
                   },
                   zoomSliderOptions: newLayerStateOptions,
+                  initiallyHidden: sliceInitiallyHidden,
                 };
               });
             })
@@ -501,6 +519,34 @@ const DeckMulti = (props: DeckMultiProps) => {
       }));
     });
   }, [normalizedDeckSlices]);
+
+  // Initialize layer visibility based on layerHiddenByDefault setting
+  // Runs once when layers are first loaded
+  const prevSubSlicesLayersLength = usePrevious(subSlicesLayers.length);
+  useEffect(() => {
+    if (prevSubSlicesLayersLength === 0 && subSlicesLayers.length > 0) {
+      const hiddenLayers = subSlicesLayers.filter(e => e.initiallyHidden);
+      if (hiddenLayers.length > 0) {
+        // Hide the layers
+        setLayerVisibility(
+          Object.fromEntries(hiddenLayers.map(e => [String(e.sliceId), false])),
+        );
+        // Also turn off all categories for hidden categorical layers
+        setCategoryVisibility(
+          Object.fromEntries(
+            hiddenLayers
+              .filter(e => e.legendGroup.categories?.length)
+              .map(e => [
+                String(e.sliceId),
+                Object.fromEntries(
+                  e.legendGroup.categories!.map(c => [c.label, false]),
+                ),
+              ]),
+          ),
+        );
+      }
+    }
+  }, [subSlicesLayers, prevSubSlicesLayersLength]);
 
   const { setControlValue, height, width } = props;
 

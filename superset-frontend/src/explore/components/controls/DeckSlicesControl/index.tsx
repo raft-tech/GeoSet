@@ -43,6 +43,8 @@ interface DeckSliceOption {
 export interface DeckSliceConfig {
   sliceId: number;
   autozoom: boolean;
+  legendCollapsed: boolean;
+  initiallyHidden: boolean;
 }
 
 export interface DeckSlicesControlProps {
@@ -91,31 +93,73 @@ interface SelectedSliceRowProps {
   label: string;
   sliceId: number;
   autozoom: boolean;
+  legendCollapsed: boolean;
+  initiallyHidden: boolean;
   index: number;
   onRemove: (sliceId: number) => void;
   onMoveLabel: (dragIndex: number, hoverIndex: number) => void;
   onToggleAutozoom: (sliceId: number) => void;
+  onToggleLegendCollapsed: (sliceId: number) => void;
+  onToggleInitiallyHidden: (sliceId: number) => void;
 }
 
-const AutozoomToggle = styled.div`
+const SettingsButton = styled.div`
   display: flex;
   align-items: center;
   margin-left: auto;
-  padding-right: ${({ theme }) => theme.sizeUnit}px;
+  padding: 0 ${({ theme }) => theme.sizeUnit}px;
+  cursor: pointer;
+
+  &:hover {
+    opacity: 0.8;
+  }
+`;
+
+const SettingsPopoverContent = styled.div`
+  padding: ${({ theme }) => theme.sizeUnit * 2}px;
+  min-width: 180px;
+`;
+
+const SettingsRow = styled.div`
+  display: flex;
+  align-items: center;
+  padding: ${({ theme }) => theme.sizeUnit}px 0;
+
+  &:not(:last-child) {
+    border-bottom: 1px solid ${({ theme }) => theme.colorBorderSecondary};
+  }
+`;
+
+const SettingsLabel = styled.span`
+  font-size: ${({ theme }) => theme.fontSizeSM}px;
+  color: ${({ theme }) => theme.colorText};
+  margin-left: ${({ theme }) => theme.sizeUnit}px;
+  flex: 1;
+`;
+
+const InfoIcon = styled.span`
+  display: flex;
+  align-items: center;
+  margin-left: ${({ theme }) => theme.sizeUnit}px;
 `;
 
 const SelectedSliceRow = ({
   label,
   sliceId,
   autozoom,
+  legendCollapsed,
+  initiallyHidden,
   index,
   onRemove,
   onMoveLabel,
   onToggleAutozoom,
+  onToggleLegendCollapsed,
+  onToggleInitiallyHidden,
 }: SelectedSliceRowProps) => {
   const theme = useTheme();
   const dropRef = useRef<HTMLDivElement>(null);
   const labelRef = useRef<HTMLSpanElement>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const [{ isDragging }, dragRef] = useDrag({
     item: { type: DND_TYPE, dragIndex: index },
@@ -141,6 +185,58 @@ const SelectedSliceRow = ({
     !isDragging &&
     labelRef.current &&
     labelRef.current.scrollWidth > labelRef.current.clientWidth;
+
+  const settingsContent = (
+    <SettingsPopoverContent onClick={e => e.stopPropagation()}>
+      <SettingsRow>
+        <Checkbox
+          checked={autozoom}
+          onChange={() => onToggleAutozoom(sliceId)}
+        />
+        <SettingsLabel>{t('Auto Zoom')}</SettingsLabel>
+        <Tooltip title={t('Automatically zoom the map to fit this layer')}>
+          <InfoIcon>
+            <Icons.InfoCircleOutlined
+              iconSize="s"
+              iconColor={theme.colorTextSecondary}
+            />
+          </InfoIcon>
+        </Tooltip>
+      </SettingsRow>
+      <SettingsRow>
+        <Checkbox
+          checked={legendCollapsed}
+          onChange={() => onToggleLegendCollapsed(sliceId)}
+        />
+        <SettingsLabel>{t('Collapse Legend')}</SettingsLabel>
+        <Tooltip
+          title={t('Start with the legend entry collapsed in the map legend')}
+        >
+          <InfoIcon>
+            <Icons.InfoCircleOutlined
+              iconSize="s"
+              iconColor={theme.colorTextSecondary}
+            />
+          </InfoIcon>
+        </Tooltip>
+      </SettingsRow>
+      <SettingsRow>
+        <Checkbox
+          checked={initiallyHidden}
+          onChange={() => onToggleInitiallyHidden(sliceId)}
+        />
+        <SettingsLabel>{t('Hidden by Default')}</SettingsLabel>
+        <Tooltip title={t('Hide this layer when the map first loads')}>
+          <InfoIcon>
+            <Icons.InfoCircleOutlined
+              iconSize="s"
+              iconColor={theme.colorTextSecondary}
+            />
+          </InfoIcon>
+        </Tooltip>
+      </SettingsRow>
+    </SettingsPopoverContent>
+  );
 
   return (
     <DragContainer
@@ -175,24 +271,24 @@ const SelectedSliceRow = ({
             <LabelText ref={labelRef}>{label}</LabelText>
           )}
         </Label>
-        <AutozoomToggle onClick={e => e.stopPropagation()}>
-          <Tooltip title={t('Auto zoom to this layer')}>
-            <Checkbox
-              checked={autozoom}
-              onChange={() => onToggleAutozoom(sliceId)}
-            />
-          </Tooltip>
-          <span
-            css={css`
-              font-size: ${theme.fontSizeSM}px;
-              color: ${theme.colorTextSecondary};
-              margin-left: ${theme.sizeUnit}px;
-              white-space: nowrap;
-            `}
+        <Popover
+          content={settingsContent}
+          trigger="click"
+          open={settingsOpen}
+          onOpenChange={setSettingsOpen}
+          placement="right"
+        >
+          <SettingsButton
+            onClick={e => {
+              e.stopPropagation();
+              setSettingsOpen(!settingsOpen);
+            }}
           >
-            {t('Auto Zoom')}
-          </span>
-        </AutozoomToggle>
+            <Tooltip title={t('Layer settings')}>
+              <Icons.SettingOutlined iconSize="m" iconColor={theme.colorIcon} />
+            </Tooltip>
+          </SettingsButton>
+        </Popover>
       </OptionControlContainer>
     </DragContainer>
   );
@@ -203,7 +299,19 @@ const normalizeValue = (
   value: (DeckSliceConfig | number)[] | undefined,
 ): DeckSliceConfig[] =>
   value?.map(item =>
-    typeof item === 'number' ? { sliceId: item, autozoom: true } : item,
+    typeof item === 'number'
+      ? {
+          sliceId: item,
+          autozoom: true,
+          legendCollapsed: false,
+          initiallyHidden: false,
+        }
+      : {
+          sliceId: item.sliceId,
+          autozoom: item.autozoom ?? true,
+          legendCollapsed: item.legendCollapsed ?? false,
+          initiallyHidden: item.initiallyHidden ?? false,
+        },
   ) ?? [];
 
 const DeckSlicesControl = ({
@@ -272,9 +380,20 @@ const DeckSlicesControl = ({
       localValues
         .map(v => {
           const opt = options.find(o => o.value === v.sliceId);
-          return opt ? { ...opt, autozoom: v.autozoom } : null;
+          return opt
+            ? {
+                ...opt,
+                autozoom: v.autozoom,
+                legendCollapsed: v.legendCollapsed,
+                initiallyHidden: v.initiallyHidden,
+              }
+            : null;
         })
-        .filter(Boolean) as (DeckSliceOption & { autozoom: boolean })[],
+        .filter(Boolean) as (DeckSliceOption & {
+        autozoom: boolean;
+        legendCollapsed: boolean;
+        initiallyHidden: boolean;
+      })[],
     [localValues, options],
   );
 
@@ -294,7 +413,15 @@ const DeckSlicesControl = ({
     updateValues(
       isSelected
         ? localValues.filter(v => v.sliceId !== sliceId)
-        : [...localValues, { sliceId, autozoom: true }],
+        : [
+            ...localValues,
+            {
+              sliceId,
+              autozoom: true,
+              legendCollapsed: false,
+              initiallyHidden: false,
+            },
+          ],
     );
   };
 
@@ -302,6 +429,24 @@ const DeckSlicesControl = ({
     updateValues(
       localValues.map(v =>
         v.sliceId === sliceId ? { ...v, autozoom: !v.autozoom } : v,
+      ),
+    );
+
+  const handleToggleLegendCollapsed = (sliceId: number) =>
+    updateValues(
+      localValues.map(v =>
+        v.sliceId === sliceId
+          ? { ...v, legendCollapsed: !v.legendCollapsed }
+          : v,
+      ),
+    );
+
+  const handleToggleInitiallyHidden = (sliceId: number) =>
+    updateValues(
+      localValues.map(v =>
+        v.sliceId === sliceId
+          ? { ...v, initiallyHidden: !v.initiallyHidden }
+          : v,
       ),
     );
 
@@ -357,10 +502,14 @@ const DeckSlicesControl = ({
             label={opt.label}
             sliceId={opt.value}
             autozoom={opt.autozoom}
+            legendCollapsed={opt.legendCollapsed}
+            initiallyHidden={opt.initiallyHidden}
             index={index}
             onRemove={handleRemove}
             onMoveLabel={moveLabel}
             onToggleAutozoom={handleToggleAutozoom}
+            onToggleLegendCollapsed={handleToggleLegendCollapsed}
+            onToggleInitiallyHidden={handleToggleInitiallyHidden}
           />
         ))}
         <Popover

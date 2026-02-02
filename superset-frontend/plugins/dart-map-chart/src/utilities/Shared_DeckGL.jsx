@@ -497,3 +497,16 @@ export const legendCollapsed = {
     ),
   },
 };
+
+export const layerHiddenByDefault = {
+  name: 'layerHiddenByDefault',
+  config: {
+    type: 'CheckboxControl',
+    label: t('Hide Layer by Default'),
+    default: false,
+    mapStateToProps: () => ({}),
+    description: t(
+      'When checked, this layer will be hidden by default in the multi-layer map.',
+    ),
+  },
+};
