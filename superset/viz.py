@@ -1517,6 +1517,7 @@ class MapboxViz(BaseViz):
             "color": self.form_data.get("mapbox_color"),
         }
 
+
 class DeckGLMultiLayer(BaseViz):
     """Pile on multiple DeckGL layers"""
 
