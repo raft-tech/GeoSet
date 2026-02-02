@@ -14,6 +14,10 @@ Details related to the backend can be found within the `superset/CLAUDE.md` file
 
 Details related to the frontend and plugin development can be found within the `superset-frontend/CLAUDE.md` file.
 
+## Git/GitHub
+
+This is a fork of Apache Superset. When using `gh` CLI commands (PRs, issues, etc.), always target the fork repo explicitly with `--repo raft-tech/GeoSet`.
+
 ## Important Notes
 
 - Always use context7 when I need code generation, setup or configuration steps, or
