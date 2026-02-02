@@ -80,8 +80,6 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
 
   const bootstrapData = getBootstrapData();
-  const authType: AuthType = bootstrapData.common.conf.AUTH_TYPE;
-
   const nextUrl = useMemo(() => {
     try {
       const params = new URLSearchParams(window.location.search);
@@ -103,6 +101,7 @@ export default function Login() {
       : base;
   };
 
+  const authType: AuthType = bootstrapData.common.conf.AUTH_TYPE;
   const providers: Provider[] = bootstrapData.common.conf.AUTH_PROVIDERS;
   const authRegistration: boolean =
     bootstrapData.common.conf.AUTH_USER_REGISTRATION;
@@ -146,8 +145,8 @@ export default function Login() {
         {authType === AuthType.AuthOID && (
           <Flex justify="center" vertical gap="middle">
             <Form layout="vertical" requiredMark="optional" form={form}>
-              {providers?.map((provider: OIDProvider) => (
-                <Form.Item<LoginForm> key={provider.name}>
+              {providers.map((provider: OIDProvider) => (
+                <Form.Item<LoginForm>>
                   <Button
                     href={buildProviderLoginUrl(provider.name)}
                     block
@@ -165,7 +164,7 @@ export default function Login() {
           <Flex justify="center" gap={0} vertical>
             <Form layout="vertical" requiredMark="optional" form={form}>
               {providers.map((provider: OAuthProvider) => (
-                <Form.Item<LoginForm> key={provider.name}>
+                <Form.Item<LoginForm>>
                   <Button
                     href={buildProviderLoginUrl(provider.name)}
                     block
