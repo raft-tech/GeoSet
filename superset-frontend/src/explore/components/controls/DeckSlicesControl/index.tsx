@@ -19,11 +19,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { css, styled, t, useTheme, SupersetClient } from '@superset-ui/core';
 import { useDrag, useDrop } from 'react-dnd';
-import ControlHeader from 'src/explore/components/ControlHeader';
 import { Icons } from '@superset-ui/core/components/Icons';
 import { Tooltip } from '@superset-ui/core/components/Tooltip';
 import { Checkbox } from '@superset-ui/core/components/Checkbox';
 import { Popover } from '@superset-ui/core/components/Popover';
+// eslint-disable-next-line no-restricted-imports
+import { Button } from '@superset-ui/core/components/Button';
+import ControlHeader from 'src/explore/components/ControlHeader';
 import {
   DragContainer,
   OptionControlContainer,
@@ -116,21 +118,27 @@ const SettingsButton = styled.div`
 `;
 
 const SettingsPopoverContent = styled.div`
-  padding: ${({ theme }) => theme.sizeUnit * 2}px;
-  min-width: 180px;
+  min-width: 200px;
 `;
 
-const SettingsTitle = styled.div`
-  font-size: ${({ theme }) => theme.fontSizeSM}px;
-  font-weight: 600;
-  color: ${({ theme }) => theme.colorText};
-  margin-bottom: ${({ theme }) => theme.sizeUnit}px;
+const PopoverTitle = styled.span`
+  display: block;
+  padding-bottom: 8px;
+  margin-bottom: -4px;
+  border-bottom: 1px solid ${({ theme }) => theme.colorBorderSecondary};
 `;
 
 const SettingsRow = styled.div`
   display: flex;
   align-items: center;
-  padding: ${({ theme }) => theme.sizeUnit}px 0;
+  padding: ${({ theme }) => theme.sizeUnit * 0.5}px 0;
+`;
+
+const ButtonRow = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: ${({ theme }) => theme.sizeUnit}px;
+  margin-top: ${({ theme }) => theme.sizeUnit * 2}px;
 `;
 
 const SettingsLabel = styled.span`
@@ -164,6 +172,42 @@ const SelectedSliceRow = ({
   const labelRef = useRef<HTMLSpanElement>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
+  // Draft state for settings - only applied on Save
+  const [draftAutozoom, setDraftAutozoom] = useState(autozoom);
+  const [draftLegendCollapsed, setDraftLegendCollapsed] =
+    useState(legendCollapsed);
+  const [draftInitiallyHidden, setDraftInitiallyHidden] =
+    useState(initiallyHidden);
+
+  // Reset draft state when popover opens
+  const handleOpenChange = (open: boolean) => {
+    if (open) {
+      setDraftAutozoom(autozoom);
+      setDraftLegendCollapsed(legendCollapsed);
+      setDraftInitiallyHidden(initiallyHidden);
+    }
+    setSettingsOpen(open);
+  };
+
+  // Apply draft changes on Save
+  const handleSave = () => {
+    if (draftAutozoom !== autozoom) {
+      onToggleAutozoom(sliceId);
+    }
+    if (draftLegendCollapsed !== legendCollapsed) {
+      onToggleLegendCollapsed(sliceId);
+    }
+    if (draftInitiallyHidden !== initiallyHidden) {
+      onToggleInitiallyHidden(sliceId);
+    }
+    setSettingsOpen(false);
+  };
+
+  // Close without saving - draft changes are discarded
+  const handleClose = () => {
+    setSettingsOpen(false);
+  };
+
   const [{ isDragging }, dragRef] = useDrag({
     item: { type: DND_TYPE, dragIndex: index },
     collect: monitor => ({
@@ -191,11 +235,10 @@ const SelectedSliceRow = ({
 
   const settingsContent = (
     <SettingsPopoverContent onClick={e => e.stopPropagation()}>
-      <SettingsTitle>{t('Layer Properties')}</SettingsTitle>
       <SettingsRow>
         <Checkbox
-          checked={autozoom}
-          onChange={() => onToggleAutozoom(sliceId)}
+          checked={draftAutozoom}
+          onChange={() => setDraftAutozoom(!draftAutozoom)}
         />
         <SettingsLabel>{t('Auto Zoom')}</SettingsLabel>
         <Tooltip
@@ -212,8 +255,8 @@ const SelectedSliceRow = ({
       </SettingsRow>
       <SettingsRow>
         <Checkbox
-          checked={legendCollapsed}
-          onChange={() => onToggleLegendCollapsed(sliceId)}
+          checked={draftLegendCollapsed}
+          onChange={() => setDraftLegendCollapsed(!draftLegendCollapsed)}
         />
         <SettingsLabel>{t('Collapse Legend')}</SettingsLabel>
         <Tooltip
@@ -230,8 +273,8 @@ const SelectedSliceRow = ({
       </SettingsRow>
       <SettingsRow>
         <Checkbox
-          checked={initiallyHidden}
-          onChange={() => onToggleInitiallyHidden(sliceId)}
+          checked={draftInitiallyHidden}
+          onChange={() => setDraftInitiallyHidden(!draftInitiallyHidden)}
         />
         <SettingsLabel>{t('Hidden by Default')}</SettingsLabel>
         <Tooltip
@@ -246,6 +289,14 @@ const SelectedSliceRow = ({
           </InfoIcon>
         </Tooltip>
       </SettingsRow>
+      <ButtonRow>
+        <Button buttonStyle="secondary" cta onClick={handleClose}>
+          {t('Close')}
+        </Button>
+        <Button buttonStyle="primary" cta onClick={handleSave}>
+          {t('Save')}
+        </Button>
+      </ButtonRow>
     </SettingsPopoverContent>
   );
 
@@ -283,10 +334,11 @@ const SelectedSliceRow = ({
           )}
         </Label>
         <Popover
+          title={<PopoverTitle>{t('Layer Properties')}</PopoverTitle>}
           content={settingsContent}
           trigger="click"
           open={settingsOpen}
-          onOpenChange={setSettingsOpen}
+          onOpenChange={handleOpenChange}
           placement="right"
         >
           <SettingsButton
@@ -295,7 +347,7 @@ const SelectedSliceRow = ({
               setSettingsOpen(!settingsOpen);
             }}
           >
-            <Tooltip title={t('Layer settings')}>
+            <Tooltip title={t('Layer settings')} mouseEnterDelay={1}>
               <Icons.SettingOutlined iconSize="m" iconColor={theme.colorIcon} />
             </Tooltip>
           </SettingsButton>
