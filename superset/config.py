@@ -1880,7 +1880,6 @@ TALISMAN_DEV_CONFIG = {
             "https://events.mapbox.com",
             "https://tile.openstreetmap.org",
             "https://tile.osm.ch",
-            "https://api.ipify.org",
             "data:",
         ],
         "object-src": "'none'",
