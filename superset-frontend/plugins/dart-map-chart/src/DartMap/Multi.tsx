@@ -520,7 +520,7 @@ const DeckMulti = (props: DeckMultiProps) => {
     });
   }, [normalizedDeckSlices]);
 
-  // Initialize layer visibility based on layerHiddenByDefault setting
+  // Initialize layer visibility based on initiallyHidden setting
   // Runs once when layers are first loaded
   const prevSubSlicesLayersLength = usePrevious(subSlicesLayers.length);
   useEffect(() => {
