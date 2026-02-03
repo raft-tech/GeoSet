@@ -91,6 +91,12 @@ interface DragItem {
   type: string;
 }
 
+interface SliceSettings {
+  autozoom: boolean;
+  legendCollapsed: boolean;
+  initiallyHidden: boolean;
+}
+
 interface SelectedSliceRowProps {
   label: string;
   sliceId: number;
@@ -100,9 +106,7 @@ interface SelectedSliceRowProps {
   index: number;
   onRemove: (sliceId: number) => void;
   onMoveLabel: (dragIndex: number, hoverIndex: number) => void;
-  onToggleAutozoom: (sliceId: number) => void;
-  onToggleLegendCollapsed: (sliceId: number) => void;
-  onToggleInitiallyHidden: (sliceId: number) => void;
+  onUpdateSliceSettings: (sliceId: number, settings: SliceSettings) => void;
 }
 
 const SettingsButton = styled.div`
@@ -163,9 +167,7 @@ const SelectedSliceRow = ({
   index,
   onRemove,
   onMoveLabel,
-  onToggleAutozoom,
-  onToggleLegendCollapsed,
-  onToggleInitiallyHidden,
+  onUpdateSliceSettings,
 }: SelectedSliceRowProps) => {
   const theme = useTheme();
   const dropRef = useRef<HTMLDivElement>(null);
@@ -189,16 +191,18 @@ const SelectedSliceRow = ({
     setSettingsOpen(open);
   };
 
-  // Apply draft changes on Save
+  // Apply draft changes on Save - apply ALL changes in one update
   const handleSave = () => {
-    if (draftAutozoom !== autozoom) {
-      onToggleAutozoom(sliceId);
-    }
-    if (draftLegendCollapsed !== legendCollapsed) {
-      onToggleLegendCollapsed(sliceId);
-    }
-    if (draftInitiallyHidden !== initiallyHidden) {
-      onToggleInitiallyHidden(sliceId);
+    const autozoomChanged = draftAutozoom !== autozoom;
+    const legendCollapsedChanged = draftLegendCollapsed !== legendCollapsed;
+    const initiallyHiddenChanged = draftInitiallyHidden !== initiallyHidden;
+
+    if (autozoomChanged || legendCollapsedChanged || initiallyHiddenChanged) {
+      onUpdateSliceSettings(sliceId, {
+        autozoom: draftAutozoom,
+        legendCollapsed: draftLegendCollapsed,
+        initiallyHidden: draftInitiallyHidden,
+      });
     }
     setSettingsOpen(false);
   };
@@ -488,30 +492,16 @@ const DeckSlicesControl = ({
     );
   };
 
-  const handleToggleAutozoom = (sliceId: number) =>
-    updateValues(
-      localValues.map(v =>
-        v.sliceId === sliceId ? { ...v, autozoom: !v.autozoom } : v,
-      ),
+  // Update all settings for a slice in one call to avoid stale state issues
+  const handleUpdateSliceSettings = (
+    sliceId: number,
+    settings: SliceSettings,
+  ) => {
+    const newValues = localValues.map(v =>
+      v.sliceId === sliceId ? { ...v, ...settings } : v,
     );
-
-  const handleToggleLegendCollapsed = (sliceId: number) =>
-    updateValues(
-      localValues.map(v =>
-        v.sliceId === sliceId
-          ? { ...v, legendCollapsed: !v.legendCollapsed }
-          : v,
-      ),
-    );
-
-  const handleToggleInitiallyHidden = (sliceId: number) =>
-    updateValues(
-      localValues.map(v =>
-        v.sliceId === sliceId
-          ? { ...v, initiallyHidden: !v.initiallyHidden }
-          : v,
-      ),
-    );
+    updateValues(newValues);
+  };
 
   const moveLabel = (dragIndex: number, hoverIndex: number) => {
     const newValues = [...localValues];
@@ -570,9 +560,7 @@ const DeckSlicesControl = ({
             index={index}
             onRemove={handleRemove}
             onMoveLabel={moveLabel}
-            onToggleAutozoom={handleToggleAutozoom}
-            onToggleLegendCollapsed={handleToggleLegendCollapsed}
-            onToggleInitiallyHidden={handleToggleInitiallyHidden}
+            onUpdateSliceSettings={handleUpdateSliceSettings}
           />
         ))}
         <Popover
