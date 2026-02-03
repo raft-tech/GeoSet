@@ -51,7 +51,6 @@ import { getGeometryType } from '../utils';
 import { fetchMapboxApiKey, getCachedMapboxApiKey } from '../utils/mapboxApi';
 import { multiChartMigration } from '../utils/migrationApi';
 import ClickPopupBox, { ClickedFeatureInfo } from '../components/ClickPopupBox';
-
 // Utility to convert snake_case or camelCase to Title Case
 const toTitleCase = (str: string) =>
   str
