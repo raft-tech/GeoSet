@@ -485,28 +485,3 @@ export const geojsonColumn = {
   },
 };
 
-export const legendCollapsed = {
-  name: 'legendCollapsed',
-  config: {
-    type: 'CheckboxControl',
-    label: t('Collapse Legend Entry by Default'),
-    default: false,
-    mapStateToProps: () => ({}),
-    description: t(
-      'When checked, the legend entry for this chart will initially be collapsed in the multi-layer legend.',
-    ),
-  },
-};
-
-export const layerHiddenByDefault = {
-  name: 'layerHiddenByDefault',
-  config: {
-    type: 'CheckboxControl',
-    label: t('Hide Layer by Default'),
-    default: false,
-    mapStateToProps: () => ({}),
-    description: t(
-      'When checked, this layer will be hidden by default in the multi-layer map.',
-    ),
-  },
-};
