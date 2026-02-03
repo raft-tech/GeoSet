@@ -30,7 +30,7 @@ describe('colors', () => {
 describe('getCategories', () => {
   const mockFormData = {
     datasource: '1__table',
-    viz_type: 'dart_layer',
+    viz_type: 'geoset_layer',
     dimension: 'category',
   } as unknown as QueryFormData;
 

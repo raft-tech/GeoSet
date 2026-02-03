@@ -1,4 +1,4 @@
-"""Marshmallow schemas for DART map layer configuration validation (V2).
+"""Marshmallow schemas for GeoSet map layer configuration validation (V2).
 
 V2 adds a title field to the legend schema and requires legend.name to be null
 when colorByCategory or colorByValue is used.
@@ -8,8 +8,8 @@ from typing import Any
 
 from marshmallow import fields, Schema, validates_schema, ValidationError
 
-from superset.dart_map.schemas.base import BaseDartLayerSchema
-from superset.dart_map.schemas.DartLayerV1Schema import (
+from superset.geoset_map.schemas.base import BaseGeoSetLayerSchema
+from superset.geoset_map.schemas.GeoSetLayerV1Schema import (
     ColorByCategorySchema,
     ColorByValueSchema,
     GlobalColoringSchema,
@@ -34,10 +34,10 @@ class LegendSchemaV2(Schema):
     name = fields.String(load_default=None, allow_none=True)
 
 
-class DartLayerV2Schema(BaseDartLayerSchema):
-    """Schema for DART map layer configuration (version 2).
+class GeoSetLayerV2Schema(BaseGeoSetLayerSchema):
+    """Schema for GeoSet map layer configuration (version 2).
 
-    Validates the complete configuration for a DART map layer, including
+    Validates the complete configuration for a GeoSet map layer, including
     global coloring, optional categorical or value-based coloring, and legend settings.
 
     Changes from V1:

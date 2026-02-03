@@ -377,7 +377,7 @@ export default class PointClusterLayer extends CompositeLayer<PointClusterLayerP
 
       // Sort single points by category order for z-index rendering
       // Categories earlier in categoryColors render on top (last in draw order)
-      // This matches DartLayer's behavior for non-clustered Point/Icon layers
+      // This matches GeoSetLayer's behavior for non-clustered Point/Icon layers
       const categoryKeys = Object.keys(categoryColors);
       const UNCATEGORIZED_INDEX = Number.MAX_SAFE_INTEGER;
 

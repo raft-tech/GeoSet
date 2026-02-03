@@ -24,13 +24,13 @@ import controlPanel from './controlPanel';
 import buildQuery from './buildQuery';
 
 const metadata = new ChartMetadata({
-  category: t('Dart'),
+  category: t('GeoSet'),
   credits: ['https://uber.github.io/deck.gl'],
   description: t('Compose multiple layers together to form complex visuals.'),
   exampleGallery: [{ url: example }],
-  name: t('DART Map'),
+  name: t('GeoSet Map'),
   thumbnail,
-  tags: [t('deckGL'), t('Multi-Layers'), t('dart')],
+  tags: [t('deckGL'), t('Multi-Layers'), t('geoset')],
 });
 
 export default class MultiChartPlugin extends ChartPlugin {

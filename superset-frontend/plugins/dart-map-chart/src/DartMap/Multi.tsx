@@ -36,14 +36,14 @@ import {
   DeckGLContainerStyledWrapper,
 } from '../DeckGLContainer';
 import {
-  getLayer as getDartMapLayer,
+  getLayer as getGeoSetMapLayer,
   getLayerState as layerStateGenerator,
 } from '../layers/DartLayer/DartLayer';
 import { calculateAutozoomViewport, Viewport } from '../utils/fitViewport';
 import { TooltipProps } from '../components/Tooltip';
 import { LayerState } from '../types';
-import buildDartMapLayerQuery from '../buildQuery';
-import transformDartMapLayerProps from '../transformProps';
+import buildGeoSetMapLayerQuery from '../buildQuery';
+import transformGeoSetMapLayerProps from '../transformProps';
 import MultiLegend, { LegendGroup } from '../components/MultiLegend';
 import MapControls from '../components/MapControls';
 import { CategoryState, MetricLegend, RGBAColor } from '../utils/colors';
@@ -276,7 +276,7 @@ const DeckMulti = (props: DeckMultiProps) => {
                 form_data: migratedFormData as QueryFormData,
               };
 
-              const queryContext = buildDartMapLayerQuery(
+              const queryContext = buildGeoSetMapLayerQuery(
                 subsliceCopy.form_data,
               );
 
@@ -301,12 +301,12 @@ const DeckMulti = (props: DeckMultiProps) => {
                 } as any;
 
                 // Use transformProps to process data (same logic as standalone chart)
-                const transformedProps = transformDartMapLayerProps(chartProps);
+                const transformedProps = transformGeoSetMapLayerProps(chartProps);
 
                 const sliceHoverColumnNames = transformedProps.hoverColumnNames;
                 const sliceFeatureInfoColumnNames =
                   transformedProps.featureInfoColumnNames;
-                const newLayer = getDartMapLayer(
+                const newLayer = getGeoSetMapLayer(
                   transformedProps.formData as any,
                   transformedProps.payload,
                   props.onAddFilter,
@@ -657,7 +657,7 @@ const DeckMulti = (props: DeckMultiProps) => {
         }
 
         // Rebuild the layer with updated categories
-        const newLayer = getDartMapLayer(
+        const newLayer = getGeoSetMapLayer(
           entry.transformedProps.formData,
           entry.transformedProps.payload,
           props.onAddFilter,

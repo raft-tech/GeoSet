@@ -26,7 +26,7 @@ async function validateSchema(
 ): Promise<ValidationResult> {
   try {
     await SupersetClient.post({
-      endpoint: `/api/v1/dart_map/schema/${version}`,
+      endpoint: `/api/v1/geoset_map/schema/${version}`,
       jsonPayload: payload,
     });
     return { success: true };
@@ -48,7 +48,7 @@ async function migrateSchema(
 ): Promise<MigrationResult> {
   try {
     const response = await SupersetClient.post({
-      endpoint: `/api/v1/dart_map/schema/${fromVersion}/${toVersion}`,
+      endpoint: `/api/v1/geoset_map/schema/${fromVersion}/${toVersion}`,
       jsonPayload: payload,
     });
     return { success: true, data: response.json?.result };

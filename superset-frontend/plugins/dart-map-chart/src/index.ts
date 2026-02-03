@@ -19,6 +19,6 @@
 // Pre-fetch Mapbox API key as early as possible (when plugin loads)
 import './utils/mapboxApi';
 
-export { default as DartMapChartPreset } from './preset';
-export { default as DartMapGeoJsonChartPlugin } from './layers/DartLayer';
+export { default as GeoSetMapChartPreset } from './preset';
+export { default as GeoSetMapGeoJsonChartPlugin } from './layers/DartLayer';
 export { default as MultiChartPlugin } from './DartMap';

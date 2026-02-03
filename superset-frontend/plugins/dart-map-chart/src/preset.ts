@@ -17,15 +17,15 @@
  * under the License.
  */
 import { Preset } from '@superset-ui/core';
-import DartMapGeoJsonChartPlugin from './layers/DartLayer';
+import GeoSetMapGeoJsonChartPlugin from './layers/DartLayer';
 import MultiChartPlugin from './DartMap';
 
-export default class DartMapChartPreset extends Preset {
+export default class GeoSetMapChartPreset extends Preset {
   constructor() {
     super({
-      name: 'dart map charts',
+      name: 'geoset map charts',
       plugins: [
-        new DartMapGeoJsonChartPlugin().configure({
+        new GeoSetMapGeoJsonChartPlugin().configure({
           key: 'deck_dart_map_layer',
         }),
         new MultiChartPlugin().configure({ key: 'deck_dart_map' }),

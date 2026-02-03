@@ -22,7 +22,7 @@ import { ChartProps } from '@superset-ui/core';
 const NOOP = () => {};
 
 /**
- * transformProps for the DartMap Multi chart.
+ * transformProps for the GeoSet Map Multi chart.
  *
  * This is a simple pass-through that provides the props needed by Multi.tsx.
  * The Multi chart fetches its own subslice data, so we just need basic props.

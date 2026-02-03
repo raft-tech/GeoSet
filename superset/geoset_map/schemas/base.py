@@ -1,12 +1,12 @@
-"""Base schema for DART map layer configuration validation."""
+"""Base schema for GeoSet map layer configuration validation."""
 
 from marshmallow import post_dump, Schema
 
 
-class BaseDartLayerSchema(Schema):
-    """Base schema for DART map layers with common serialization behavior.
+class BaseGeoSetLayerSchema(Schema):
+    """Base schema for GeoSet map layers with common serialization behavior.
 
-    All DartLayer schema versions should inherit from this class to ensure
+    All GeoSetLayer schema versions should inherit from this class to ensure
     consistent serialization behavior, including automatic removal of null
     values from the output.
     """

@@ -25,18 +25,18 @@ import buildQuery from '../../buildQuery';
 import controlPanel from './controlPanel';
 
 const metadata = new ChartMetadata({
-  category: t('Dart'),
+  category: t('GeoSet'),
   credits: ['https://uber.github.io/deck.gl'],
   description: t(
     'The GeoJsonLayer takes in GeoJSON formatted data and renders it as interactive polygons, lines and points (circles, icons and/or texts).',
   ),
   exampleGallery: [{ url: example }],
-  name: t('Dart Layer'),
+  name: t('GeoSet Layer'),
   thumbnail,
-  tags: [t('deckGL'), t('2D'), t('dart')],
+  tags: [t('deckGL'), t('2D'), t('geoset')],
 });
 
-export default class DartMapGeojsonChartPlugin extends ChartPlugin {
+export default class GeoSetMapGeojsonChartPlugin extends ChartPlugin {
   constructor() {
     super({
       loadChart: () => import('./DartLayer'),

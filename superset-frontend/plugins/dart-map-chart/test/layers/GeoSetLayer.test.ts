@@ -19,7 +19,7 @@
 import { GeoJsonFeature } from '../../src/types';
 
 /**
- * Helper function that replicates the sorting logic from DartLayer.tsx
+ * Helper function that replicates the sorting logic from GeoSetLayer.tsx
  * for testing purposes. This matches the implementation at lines 332-357.
  */
 function sortFeaturesByCategoryOrder(
@@ -53,7 +53,7 @@ function sortFeaturesByCategoryOrder(
   });
 }
 
-describe('DartLayer feature sorting by category order', () => {
+describe('GeoSetLayer feature sorting by category order', () => {
   const createFeature = (
     category: string | null,
     id: string,

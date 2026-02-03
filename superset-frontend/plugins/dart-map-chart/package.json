@@ -1,7 +1,7 @@
 {
-  "name": "@superset-ui/dart-map-chart",
+  "name": "@superset-ui/geoset-map-chart",
   "version": "0.20.4",
-  "description": "Dart Superset Map Chart - deck.gl",
+  "description": "GeoSet Superset Map Chart - deck.gl",
   "keywords": [
     "superset"
   ],
@@ -12,7 +12,7 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/apache/superset.git",
-    "directory": "superset-frontend/packages/dart-map-chart"
+    "directory": "superset-frontend/packages/geoset-map-chart"
   },
   "license": "Apache-2.0",
   "author": "Superset",

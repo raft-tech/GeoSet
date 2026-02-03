@@ -32,11 +32,11 @@ export default {
             name: 'deck_slices',
             config: {
               type: 'DeckSlicesControl',
-              label: t('Dart Layer charts'),
+              label: t('GeoSet Layer charts'),
               validators: [validateNonEmpty],
               default: [],
               description: t(
-                'Pick a set of Dart Layer charts to layer on top of one another',
+                'Pick a set of GeoSet Layer charts to layer on top of one another',
               ),
               dataEndpoint:
                 'api/v1/chart/?q=(filters:!((col:viz_type,opr:eq,value:deck_dart_map_layer)),page_size:1000)',

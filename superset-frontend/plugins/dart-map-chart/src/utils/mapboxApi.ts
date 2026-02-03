@@ -17,7 +17,7 @@
  * under the License.
  */
 
-const MAPBOX_API_ENDPOINT = '/api/v1/dart_map/mapbox_api_key/';
+const MAPBOX_API_ENDPOINT = '/api/v1/geoset_map/mapbox_api_key/';
 
 // Cache the key and the in-flight promise to avoid duplicate requests
 let cachedKey: string | null = null;

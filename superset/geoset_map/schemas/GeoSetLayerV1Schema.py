@@ -1,8 +1,8 @@
-"""Marshmallow schemas for DART map layer configuration validation."""
+"""Marshmallow schemas for GeoSet map layer configuration validation."""
 
 from marshmallow import fields, Schema, validate, validates_schema, ValidationError
 
-from superset.dart_map.schemas.base import BaseDartLayerSchema
+from superset.geoset_map.schemas.base import BaseGeoSetLayerSchema
 
 
 class ColorField(fields.List):
@@ -183,10 +183,10 @@ class LegendSchema(Schema):
     name = fields.String(required=True)
 
 
-class DartLayerV1Schema(BaseDartLayerSchema):
-    """Schema for DART map layer configuration (version 1).
+class GeoSetLayerV1Schema(BaseGeoSetLayerSchema):
+    """Schema for GeoSet map layer configuration (version 1).
 
-    Validates the complete configuration for a DART map layer, including
+    Validates the complete configuration for a GeoSet map layer, including
     global coloring, optional categorical or value-based coloring, and legend settings.
 
     Note: Only one of color_by_category or color_by_value can be provided, not both.

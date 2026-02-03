@@ -1,7 +1,7 @@
 import { buildQueryContext, QueryFormData } from '@superset-ui/core';
 
 /**
- * buildQuery for the DartMap Multi chart.
+ * buildQuery for the GeoSet Map Multi chart.
  *
  * The Multi chart doesn't query data directly - it fetches data for each
  * subslice separately in Multi.tsx. But we need to return a valid query
@@ -15,7 +15,7 @@ export default function buildQuery(formData: QueryFormData) {
       ...baseQueryObject,
       columns: [
         {
-          label: 'Dart MAP',
+          label: 'GeoSet MAP',
           sqlExpression: '1',
           expressionType: 'SQL',
         },

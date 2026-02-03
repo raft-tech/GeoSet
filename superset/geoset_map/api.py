@@ -7,9 +7,9 @@ from flask_appbuilder.api import expose, protect, safe
 from marshmallow import ValidationError
 
 from superset.constants import MODEL_API_RW_METHOD_PERMISSION_MAP
-from superset.dart_map.schemas import (
-    DartLayerV1Schema,
-    DartLayerV2Schema,
+from superset.geoset_map.schemas import (
+    GeoSetLayerV1Schema,
+    GeoSetLayerV2Schema,
     MapboxApiKeySchema,
 )
 from superset.extensions import event_logger
@@ -29,27 +29,27 @@ def parse_version_number(version: str) -> int | None:
     return int(match.group(1)) if match else None
 
 
-class DartMapRestApi(BaseSupersetApi):
+class GeoSetMapRestApi(BaseSupersetApi):
     mapbox_api_key_schema = MapboxApiKeySchema()
-    # when new DartLayer schemas are created they need to be added to this mapping
-    dart_layer_schemas = {
-        "v1": DartLayerV1Schema(),
-        "v2": DartLayerV2Schema(),
+    # when new GeoSetLayer schemas are created they need to be added to this mapping
+    geoset_layer_schemas = {
+        "v1": GeoSetLayerV1Schema(),
+        "v2": GeoSetLayerV2Schema(),
     }
     # mapping of (from_version, to_version) to upgrade function
     # when new upgrade paths are added, add them here
     schema_upgrade_paths = {
-        ("v1", "v2"): DartLayerV2Schema.upgrade_from_previous_version,
+        ("v1", "v2"): GeoSetLayerV2Schema.upgrade_from_previous_version,
     }
 
     method_permission_name = MODEL_API_RW_METHOD_PERMISSION_MAP
     allow_browser_login = True
-    class_permission_name = "DartMap"
-    resource_name = "dart_map"
-    openapi_spec_tag = "DART Map"
+    class_permission_name = "GeoSetMap"
+    resource_name = "geoset_map"
+    openapi_spec_tag = "GeoSet Map"
     openapi_spec_component_schemas = (
-        DartLayerV1Schema,
-        DartLayerV2Schema,
+        GeoSetLayerV1Schema,
+        GeoSetLayerV2Schema,
         MapboxApiKeySchema,
     )
 
@@ -99,10 +99,10 @@ class DartMapRestApi(BaseSupersetApi):
     @requires_json
     def validate_schema(self, version: str) -> Response:
         """
-        Validate a DartLayer JSON payload against a specific DART layer schema.
+        Validate a GeoSetLayer JSON payload against a specific GeoSet layer schema.
         ---
         post:
-          summary: Validate JSON against a DART layer schema
+          summary: Validate JSON against a GeoSet layer schema
           parameters:
             - in: path
               name: version
@@ -125,7 +125,7 @@ class DartMapRestApi(BaseSupersetApi):
                     type: object
                     properties:
                       result:
-                        $ref: '#/components/schemas/DartLayerV1Schema'
+                        $ref: '#/components/schemas/GeoSetLayerV1Schema'
             400:
               $ref: '#/components/responses/400'
             401:
@@ -145,7 +145,7 @@ class DartMapRestApi(BaseSupersetApi):
                         type: object
                         description: Validation error details
         """
-        schema = self.dart_layer_schemas.get(version)
+        schema = self.geoset_layer_schemas.get(version)
         if schema is None:
             return self.response_404()
 
@@ -170,10 +170,10 @@ class DartMapRestApi(BaseSupersetApi):
     @requires_json
     def convert_schema(self, from_version: str, to_version: str) -> Response:
         """
-        Convert a DartLayer JSON payload from one schema version to another.
+        Convert a GeoSetLayer JSON payload from one schema version to another.
         ---
         post:
-          summary: Convert JSON from one DART layer schema version to another
+          summary: Convert JSON from one GeoSet layer schema version to another
           parameters:
             - in: path
               name: from_version
@@ -252,8 +252,8 @@ class DartMapRestApi(BaseSupersetApi):
             )
 
         # Validate versions exist
-        from_schema = self.dart_layer_schemas.get(from_version)
-        to_schema = self.dart_layer_schemas.get(to_version)
+        from_schema = self.geoset_layer_schemas.get(from_version)
+        to_schema = self.geoset_layer_schemas.get(to_version)
 
         if from_schema is None or to_schema is None:
             logger.error("[Migration] Error: schema not found")

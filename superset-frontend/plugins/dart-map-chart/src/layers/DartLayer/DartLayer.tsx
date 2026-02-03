@@ -201,7 +201,7 @@ function setTooltipContent(o: JsonObject, hoverColumnNames?: string[]) {
     });
 
   return content.length === 0 ? null : (
-    <div className="dart-map-deckgl-tooltip">{content}</div>
+    <div className="geoset-map-deckgl-tooltip">{content}</div>
   );
 }
 
