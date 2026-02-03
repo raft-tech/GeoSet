@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import MapIcon from '@material-ui/icons/MapTwoTone';
 import { RGBAColor } from '../utils/colors';
 import { Swatch } from '../utils/legendSwatch';
+import { formatLegendNumber } from '../utils/formatNumber';
 
 export type CategoryEntry = {
   label: string;
@@ -383,8 +384,8 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
                           )`}
                         />
                         <Bounds>
-                          <div>{group.metric.lower}</div>
-                          <div>{`${group.metric.upper}+`}</div>
+                          <div>{formatLegendNumber(group.metric.lower)}</div>
+                          <div>{`${formatLegendNumber(group.metric.upper)}+`}</div>
                         </Bounds>
                       </>
                     )}

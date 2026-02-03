@@ -3,7 +3,8 @@
     "fillColor": [40, 147, 179, 255],
     "strokeColor": [0, 0, 0, 255],
     "strokeWidth": 2,
-    "iconType": "circle",
+    "pointType": "circle",
+    "pointSize": 6,
     "lineStyle": "solid", 
     "fillPattern": "solid"
   },  
@@ -11,15 +12,15 @@
     "dimension": "category_field",
     "categoricalColors": [
         {
-            "Heavy Water Coverage": {
+            "example_category_1": {
                 "fillColor": [0, 0, 255, 255],
-                "legend_entry_name": "Heavy Water Coverage"
+                "legend_entry_name": "category_1"
             }
         },
         {
-            "Low Water Coverage": {
+            "example_category_2": {
                 "fillColor": [255, 0, 0, 255],
-                "legend_entry_name": "Low Water Coverage"
+                "legend_entry_name": "category_2"
             }
         }
     ],
@@ -34,6 +35,7 @@
     "breakpoints": []
   },
   "legend": {
-    "name": "human_readable_legend_chart_title"
+    "name": "human_readable_legend_chart_title",
+    "title": "title_for_legend_section"
   }
 }
