@@ -56,8 +56,7 @@ export default function buildQuery(formData: QueryFormData) {
     metricColumn,
   ].filter(Boolean);
 
-  // Dedupe only exact duplicates (same string or same object by label)
-  // Prevents backend errors when querying same column with different labels
+  // Dedupe by label to prevent backend errors
   const seen = new Set<string>();
   const uniqueColumns = columns.filter(col => {
     const key =
