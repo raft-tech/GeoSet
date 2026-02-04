@@ -1,6 +1,9 @@
 /* eslint-disable no-console */
 import { buildQueryContext, QueryFormData } from '@superset-ui/core';
 
+/**
+ * Builds the query for the DART Map chart.
+ */
 export default function buildQuery(formData: QueryFormData) {
   const geojsonCol =
     typeof formData.geojson === 'string'
@@ -9,10 +12,10 @@ export default function buildQuery(formData: QueryFormData) {
 
   if (!geojsonCol) {
     console.warn('Missing geojson column — skipping query.');
-    return buildQueryContext(formData, () => []); // return no queries
+    return buildQueryContext(formData, () => []);
   }
 
-  // Parse geojsonConfig JSON blob safely
+  // Parse geojsonConfig JSON blob
   let geojsonConfig: any = {};
   try {
     geojsonConfig =
@@ -25,52 +28,28 @@ export default function buildQuery(formData: QueryFormData) {
 
   const colorByCategory = geojsonConfig?.colorByCategory ?? {};
   const colorByValue = geojsonConfig?.colorByValue ?? {};
-
   const dimension = colorByCategory.dimension || formData.dimension;
+  const metricColumn = colorByValue.valueColumn;
+  const hoverCols = (formData.hoverDataColumns ?? []) as string[];
+  const featureCols = (formData.featureInfoColumns ?? []) as string[];
+
+  // Collect all columns, then dedupe (preserves first occurrence)
+  const allCols = [
+    dimension,
+    ...hoverCols,
+    ...featureCols,
+    metricColumn,
+  ].filter(Boolean);
+  const uniqueCols = [...new Set(allCols)];
+
   const columns: any[] = [
     {
       label: 'geojson',
       sqlExpression: `ST_AsGeoJSON(${geojsonCol})`,
       expressionType: 'SQL',
     },
+    ...uniqueCols,
   ];
-
-  // Add dimension column if defined
-  if (dimension) {
-    columns.push(dimension);
-  }
-
-  // Helper to find all duplicates in an array
-  const findDuplicates = (arr: string[]): string[] => [
-    ...new Set(arr.filter((col, i) => arr.indexOf(col) !== i)),
-  ];
-
-  // Add hover tooltip columns
-  const hoverCols = (formData.hoverDataColumns ?? []) as string[];
-  const hoverDupes = findDuplicates(hoverCols);
-  if (hoverDupes.length) {
-    throw new Error(
-      `Duplicate column labels in Hover-Over Data: ${hoverDupes.map(d => `"${d}"`).join(', ')}. Please make sure all columns have a unique label.`,
-    );
-  }
-  columns.push(...hoverCols);
-
-  // Add Feature Info popup columns
-  const featureCols = (formData.featureInfoColumns ?? []) as string[];
-  const featureDupes = findDuplicates(featureCols);
-  if (featureDupes.length) {
-    throw new Error(
-      `Duplicate column labels in Additional Details: ${featureDupes.map(d => `"${d}"`).join(', ')}. Please make sure all columns have a unique label.`,
-    );
-  }
-  const newFeatureCols = featureCols.filter(col => !hoverCols.includes(col));
-  columns.push(...newFeatureCols);
-
-  // Handle metric config properly
-  const metricConfig = colorByValue.valueColumn;
-  if (metricConfig) {
-    columns.push(metricConfig);
-  }
 
   return buildQueryContext(formData, baseQueryObject => [
     {
