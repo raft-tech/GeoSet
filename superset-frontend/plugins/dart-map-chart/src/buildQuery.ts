@@ -25,57 +25,52 @@ export default function buildQuery(formData: QueryFormData) {
 
   const colorByCategory = geojsonConfig?.colorByCategory ?? {};
   const colorByValue = geojsonConfig?.colorByValue ?? {};
-
   const dimension = colorByCategory.dimension || formData.dimension;
+  const metricColumn = colorByValue.valueColumn;
+  const hoverCols = (formData.hoverDataColumns ?? []) as any[];
+  const featureCols = (formData.featureInfoColumns ?? []) as any[];
+
+  // Throw if duplicates within a column group
+  const checkDupes = (cols: any[], label: string) => {
+    const names = cols.map(c => (typeof c === 'string' ? c : c?.sqlExpression));
+    const dupes = names.filter((n, i) => names.indexOf(n) !== i);
+    if (dupes.length) {
+      throw new Error(
+        `Duplicate columns in ${label}: ${[...new Set(dupes)].map(d => `"${d}"`).join(', ')}`,
+      );
+    }
+  };
+  checkDupes(hoverCols, 'Hover-Over Data');
+  checkDupes(featureCols, 'Additional Details');
+
+  // Build columns array
   const columns: any[] = [
     {
       label: 'geojson',
       sqlExpression: `ST_AsGeoJSON(${geojsonCol})`,
       expressionType: 'SQL',
     },
-  ];
+    dimension,
+    ...hoverCols,
+    ...featureCols,
+    metricColumn,
+  ].filter(Boolean);
 
-  // Add dimension column if defined
-  if (dimension) {
-    columns.push(dimension);
-  }
-
-  // Helper to find all duplicates in an array
-  const findDuplicates = (arr: string[]): string[] => [
-    ...new Set(arr.filter((col, i) => arr.indexOf(col) !== i)),
-  ];
-
-  // Add hover tooltip columns
-  const hoverCols = (formData.hoverDataColumns ?? []) as string[];
-  const hoverDupes = findDuplicates(hoverCols);
-  if (hoverDupes.length) {
-    throw new Error(
-      `Duplicate column labels in Hover-Over Data: ${hoverDupes.map(d => `"${d}"`).join(', ')}. Please make sure all columns have a unique label.`,
-    );
-  }
-  columns.push(...hoverCols);
-
-  // Add Feature Info popup columns
-  const featureCols = (formData.featureInfoColumns ?? []) as string[];
-  const featureDupes = findDuplicates(featureCols);
-  if (featureDupes.length) {
-    throw new Error(
-      `Duplicate column labels in Additional Details: ${featureDupes.map(d => `"${d}"`).join(', ')}. Please make sure all columns have a unique label.`,
-    );
-  }
-  const newFeatureCols = featureCols.filter(col => !hoverCols.includes(col));
-  columns.push(...newFeatureCols);
-
-  // Handle metric config properly
-  const metricConfig = colorByValue.valueColumn;
-  if (metricConfig) {
-    columns.push(metricConfig);
-  }
+  // Dedupe only exact duplicates (same string or same object by label)
+  // Prevents backend errors when querying same column with different labels
+  const seen = new Set<string>();
+  const uniqueColumns = columns.filter(col => {
+    const key =
+      typeof col === 'string' ? col : col?.label || JSON.stringify(col);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 
   return buildQueryContext(formData, baseQueryObject => [
     {
       ...baseQueryObject,
-      columns,
+      columns: uniqueColumns,
       metrics: [],
       groupby: [],
       row_limit: Number(formData.row_limit) || 10000,
