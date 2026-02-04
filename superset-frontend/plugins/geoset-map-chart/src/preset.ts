@@ -18,7 +18,7 @@
  */
 import { Preset } from '@superset-ui/core';
 import GeoSetMapGeoJsonChartPlugin from './layers/GeoSetLayer';
-import MultiChartPlugin from './GeoSetMap';
+import MultiChartPlugin from './GeoSetMultiMap';
 
 export default class GeoSetMapChartPreset extends Preset {
   constructor() {

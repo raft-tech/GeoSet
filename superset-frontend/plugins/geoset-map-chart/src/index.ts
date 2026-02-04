@@ -21,4 +21,4 @@ import './utils/mapboxApi';
 
 export { default as GeoSetMapChartPreset } from './preset';
 export { default as GeoSetMapGeoJsonChartPlugin } from './layers/GeoSetLayer';
-export { default as MultiChartPlugin } from './GeoSetMap';
+export { default as MultiChartPlugin } from './GeoSetMultiMap';
