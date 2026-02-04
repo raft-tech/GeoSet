@@ -39,7 +39,7 @@ const metadata = new ChartMetadata({
 export default class GeoSetMapGeojsonChartPlugin extends ChartPlugin {
   constructor() {
     super({
-      loadChart: () => import('./DartLayer'),
+      loadChart: () => import('./GeoSetLayer'),
       controlPanel,
       metadata,
       buildQuery,

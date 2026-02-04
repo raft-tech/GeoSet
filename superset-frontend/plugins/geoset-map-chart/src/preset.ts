@@ -16,9 +16,20 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-// Pre-fetch Mapbox API key as early as possible (when plugin loads)
-import './utils/mapboxApi';
+import { Preset } from '@superset-ui/core';
+import GeoSetMapGeoJsonChartPlugin from './layers/GeoSetLayer';
+import MultiChartPlugin from './GeoSetMap';
 
-export { default as GeoSetMapChartPreset } from './preset';
-export { default as GeoSetMapGeoJsonChartPlugin } from './layers/DartLayer';
-export { default as MultiChartPlugin } from './DartMap';
+export default class GeoSetMapChartPreset extends Preset {
+  constructor() {
+    super({
+      name: 'geoset map charts',
+      plugins: [
+        new GeoSetMapGeoJsonChartPlugin().configure({
+          key: 'deck_dart_map_layer',
+        }),
+        new MultiChartPlugin().configure({ key: 'deck_dart_map' }),
+      ],
+    });
+  }
+}

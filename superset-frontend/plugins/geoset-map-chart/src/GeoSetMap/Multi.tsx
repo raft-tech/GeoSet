@@ -38,7 +38,7 @@ import {
 import {
   getLayer as getGeoSetMapLayer,
   getLayerState as layerStateGenerator,
-} from '../layers/DartLayer/DartLayer';
+} from '../layers/GeoSetLayer/GeoSetLayer';
 import { calculateAutozoomViewport, Viewport } from '../utils/fitViewport';
 import { TooltipProps } from '../components/Tooltip';
 import { LayerState } from '../types';

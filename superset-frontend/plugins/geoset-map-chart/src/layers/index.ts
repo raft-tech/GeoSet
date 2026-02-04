@@ -16,20 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { Preset } from '@superset-ui/core';
-import GeoSetMapGeoJsonChartPlugin from './layers/DartLayer';
-import MultiChartPlugin from './DartMap';
+/* eslint camelcase: 0 */
+import { getLayer as deck_dart_map_layer } from './GeoSetLayer/GeoSetLayer';
 
-export default class GeoSetMapChartPreset extends Preset {
-  constructor() {
-    super({
-      name: 'geoset map charts',
-      plugins: [
-        new GeoSetMapGeoJsonChartPlugin().configure({
-          key: 'deck_dart_map_layer',
-        }),
-        new MultiChartPlugin().configure({ key: 'deck_dart_map' }),
-      ],
-    });
-  }
-}
+const layerGenerators = {
+  deck_dart_map_layer,
+};
+
+export default layerGenerators;

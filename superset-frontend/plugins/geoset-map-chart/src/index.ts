@@ -16,11 +16,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/* eslint camelcase: 0 */
-import { getLayer as deck_dart_map_layer } from './DartLayer/DartLayer';
+// Pre-fetch Mapbox API key as early as possible (when plugin loads)
+import './utils/mapboxApi';
 
-const layerGenerators = {
-  deck_dart_map_layer,
-};
-
-export default layerGenerators;
+export { default as GeoSetMapChartPreset } from './preset';
+export { default as GeoSetMapGeoJsonChartPlugin } from './layers/GeoSetLayer';
+export { default as MultiChartPlugin } from './GeoSetMap';

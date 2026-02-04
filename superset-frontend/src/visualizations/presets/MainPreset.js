@@ -41,7 +41,7 @@ import {
   TimePivotChartPlugin,
 } from '@superset-ui/legacy-preset-chart-nvd3';
 import { DeckGLChartPreset } from '@superset-ui/legacy-preset-chart-deckgl';
-import { DartMapChartPreset } from '@superset-ui/dart-map-chart';
+import { GeoSetMapChartPreset } from '@superset-ui/geoset-map-chart';
 import { CartodiagramPlugin } from '@superset-ui/plugin-chart-cartodiagram';
 import {
   BigNumberChartPlugin,
@@ -104,7 +104,7 @@ export default class MainPreset extends Preset {
       name: 'Legacy charts',
       presets: [
         new DeckGLChartPreset(),
-        new DartMapChartPreset(),
+        new GeoSetMapChartPreset(),
       ],
       plugins: [
         new BigNumberChartPlugin().configure({ key: VizType.BigNumber }),
