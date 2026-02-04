@@ -1,6 +1,27 @@
 /* eslint-disable no-console */
 import { buildQueryContext, QueryFormData } from '@superset-ui/core';
 
+/** Extract column name from string or object format */
+const getColName = (col: any): string =>
+  typeof col === 'string' ? col : col?.sqlExpression || col?.column_name || '';
+
+/** Throw if duplicate column names exist in the array */
+const assertNoDuplicates = (cols: any[], label: string): void => {
+  const names = cols.map(getColName).filter(Boolean);
+  const seen = new Set<string>();
+  const dupes: string[] = [];
+  for (const name of names) {
+    if (seen.has(name)) dupes.push(name);
+    seen.add(name);
+  }
+  if (dupes.length) {
+    throw new Error(
+      `Duplicate columns in ${label}: ${[...new Set(dupes)].map(d => `"${d}"`).join(', ')}. ` +
+        'Please remove duplicate columns.',
+    );
+  }
+};
+
 /**
  * Builds the query for the DART Map chart.
  */
@@ -33,7 +54,11 @@ export default function buildQuery(formData: QueryFormData) {
   const hoverCols = (formData.hoverDataColumns ?? []) as string[];
   const featureCols = (formData.featureInfoColumns ?? []) as string[];
 
-  // Collect all columns, then dedupe (preserves first occurrence)
+  // Validate no duplicates within each column group
+  assertNoDuplicates(hoverCols, 'Hover-Over Data');
+  assertNoDuplicates(featureCols, 'Additional Details');
+
+  // Collect all columns, then dedupe (preserves first occurrence, avoids backend error querying same column)
   const allCols = [
     dimension,
     ...hoverCols,
