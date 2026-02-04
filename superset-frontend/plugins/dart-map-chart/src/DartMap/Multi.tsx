@@ -112,6 +112,7 @@ type SubsliceLayerEntry = {
     categories: Record<string, CategoryState>;
     visualConfig: any;
     hoverColumnNames: string[];
+    featureInfoColumnNames: string[];
   };
   zoomSliderOptions: { minZoom: number; maxZoom: number };
   initiallyHidden: boolean; // Whether this layer starts hidden
@@ -465,6 +466,8 @@ const DeckMulti = (props: DeckMultiProps) => {
                     categories: transformedProps.categories || {},
                     visualConfig: transformedProps.visualConfig,
                     hoverColumnNames: transformedProps.hoverColumnNames,
+                    featureInfoColumnNames:
+                      transformedProps.featureInfoColumnNames || [],
                   },
                   zoomSliderOptions: newLayerStateOptions,
                   initiallyHidden: sliceInitiallyHidden,
@@ -662,6 +665,11 @@ const DeckMulti = (props: DeckMultiProps) => {
           updatedCategories,
           entry.transformedProps.visualConfig,
           entry.transformedProps.hoverColumnNames,
+          (info: any) =>
+            handleFeatureClick(
+              info,
+              entry.transformedProps.featureInfoColumnNames,
+            ),
         );
 
         if (!newLayer) {
@@ -702,7 +710,7 @@ const DeckMulti = (props: DeckMultiProps) => {
 
       return anyChanged ? updatedLayers : currentLayers;
     });
-  }, [categoryVisibility, props.onAddFilter, setTooltip]);
+  }, [categoryVisibility, props.onAddFilter, setTooltip, handleFeatureClick]);
 
   // Sync layer visibility with category visibility
   // If all categories are off, hide the layer; if any category is on, show the layer
