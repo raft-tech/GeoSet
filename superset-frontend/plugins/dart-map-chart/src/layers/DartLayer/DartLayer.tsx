@@ -49,7 +49,6 @@ import {
   getCategories,
   MetricLegend,
   normalizeCategoryColorMapping,
-  rgbaArrayToHex,
 } from '../../utils/colors';
 import sandboxedEval from '../../utils/sandbox';
 import { commonLayerProps } from '../common';
@@ -177,12 +176,7 @@ const recurseGeoJson = (
   return localFeatures;
 };
 
-function setTooltipContent(
-  o: JsonObject,
-  hoverColumnNames?: string[],
-  metric?: ColorByValueConfig,
-  metricName?: string,
-) {
+function setTooltipContent(o: JsonObject, hoverColumnNames?: string[]) {
   const props = o.object?.properties;
   if (!props) return null;
 
@@ -193,26 +187,9 @@ function setTooltipContent(
 
   const content: JSX.Element[] = [];
 
-  // Add metric first if available
-  if (metric) {
-    // Render metric first (in order)
-    if (props[`color_${metric.valueColumn}`] !== undefined) {
-      const colorArr = props[`color_${metric.valueColumn}`];
-      const hexColor = rgbaArrayToHex(colorArr);
-      content.push(
-        <TooltipRow
-          key={`metric-${metric.valueColumn}`}
-          label={`${metric.valueColumn}: `}
-          value={`${props[metric.valueColumn]}`}
-          color={hexColor}
-        />,
-      );
-    }
-  }
-
-  // Add all other properties except ones in propertyKeys
+  // Show only the columns the user selected in hover data
   Object.keys(props)
-    .filter(key => hoverColumnNames.includes(key) && metricName !== key)
+    .filter(key => hoverColumnNames.includes(key))
     .forEach((prop, index) => {
       content.push(
         <TooltipRow
@@ -362,12 +339,7 @@ export function getLayer(
 
   // Create tooltip content generator with hover column filtering
   const tooltipContentGenerator = (o: JsonObject) =>
-    setTooltipContent(
-      o,
-      hoverColumnNames,
-      metric,
-      payload.data.metricLabels?.[0],
-    );
+    setTooltipContent(o, hoverColumnNames);
 
   // Shared props for all layer types
   const baseLayerProps = {
