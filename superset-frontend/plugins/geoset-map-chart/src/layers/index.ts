@@ -17,10 +17,10 @@
  * under the License.
  */
 /* eslint camelcase: 0 */
-import { getLayer as deck_dart_map_layer } from './GeoSetLayer/GeoSetLayer';
+import { getLayer as deck_geoset_map_layer } from './GeoSetLayer/GeoSetLayer';
 
 const layerGenerators = {
-  deck_dart_map_layer,
+  deck_geoset_map_layer,
 };
 
 export default layerGenerators;

@@ -96,7 +96,6 @@
     "@superset-ui/chart-controls": "file:./packages/superset-ui-chart-controls",
     "@superset-ui/core": "file:./packages/superset-ui-core",
     "@superset-ui/geoset-map-chart": "file:./plugins/geoset-map-chart",
-    "@superset-ui/dart-preset-chart": "file:./plugins/dart-preset-chart",
     "@superset-ui/legacy-plugin-chart-calendar": "file:./plugins/legacy-plugin-chart-calendar",
     "@superset-ui/legacy-plugin-chart-chord": "file:./plugins/legacy-plugin-chart-chord",
     "@superset-ui/legacy-plugin-chart-country-map": "file:./plugins/legacy-plugin-chart-country-map",

@@ -26,9 +26,9 @@ export default class GeoSetMapChartPreset extends Preset {
       name: 'geoset map charts',
       plugins: [
         new GeoSetMapGeoJsonChartPlugin().configure({
-          key: 'deck_dart_map_layer',
+          key: 'deck_geoset_map_layer',
         }),
-        new MultiChartPlugin().configure({ key: 'deck_dart_map' }),
+        new MultiChartPlugin().configure({ key: 'deck_geoset_map' }),
       ],
     });
   }

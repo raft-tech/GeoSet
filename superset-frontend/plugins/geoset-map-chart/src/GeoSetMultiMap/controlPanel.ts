@@ -39,7 +39,7 @@ export default {
                 'Pick a set of GeoSet Layer charts to layer on top of one another',
               ),
               dataEndpoint:
-                'api/v1/chart/?q=(filters:!((col:viz_type,opr:eq,value:deck_dart_map_layer)),page_size:1000)',
+                'api/v1/chart/?q=(filters:!((col:viz_type,opr:eq,value:deck_geoset_map_layer)),page_size:1000)',
             },
           },
           null,
