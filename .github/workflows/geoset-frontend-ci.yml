@@ -1,4 +1,4 @@
-name: "DART Frontend CI"
+name: "GeoSet Frontend CI"
 
 on:
   push:
