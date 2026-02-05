@@ -1,4 +1,4 @@
-"""Tests for DartLayerV1Schema validation logic."""
+"""Tests for GeoSetLayerV1Schema validation logic."""
 
 import copy
 import json
@@ -7,10 +7,10 @@ from pathlib import Path
 import pytest
 from marshmallow import ValidationError
 
-from superset.dart_map.schemas.DartLayerV1Schema import (
+from superset.geoset_map.schemas.GeoSetLayerV1Schema import (
     ColorByCategorySchema,
     ColorByValueSchema,
-    DartLayerV1Schema,
+    GeoSetLayerV1Schema,
     GlobalColoringSchema,
 )
 
@@ -461,7 +461,7 @@ class TestColoringMutualExclusivity:
 
     def test_valid_with_only_color_by_category(self, base_schema_data):
         """Schema with only colorByCategory should pass validation."""
-        schema = DartLayerV1Schema()
+        schema = GeoSetLayerV1Schema()
         data = copy.deepcopy(base_schema_data)
         del data["colorByValue"]
         result = schema.load(data)
@@ -471,7 +471,7 @@ class TestColoringMutualExclusivity:
 
     def test_valid_with_only_color_by_value(self, base_schema_data):
         """Schema with only colorByValue should pass validation."""
-        schema = DartLayerV1Schema()
+        schema = GeoSetLayerV1Schema()
         data = copy.deepcopy(base_schema_data)
         del data["colorByCategory"]
         result = schema.load(data)
@@ -481,7 +481,7 @@ class TestColoringMutualExclusivity:
 
     def test_valid_with_neither_coloring_option(self, minimal_valid_schema):
         """Schema with neither colorByCategory nor colorByValue should pass."""
-        schema = DartLayerV1Schema()
+        schema = GeoSetLayerV1Schema()
         result = schema.load(minimal_valid_schema)
         assert isinstance(result, dict)
         assert result["color_by_category"] is None
@@ -489,7 +489,7 @@ class TestColoringMutualExclusivity:
 
     def test_invalid_with_both_coloring_options(self, base_schema_data):
         """Schema with both colorByCategory and colorByValue should fail."""
-        schema = DartLayerV1Schema()
+        schema = GeoSetLayerV1Schema()
         data = copy.deepcopy(base_schema_data)
         with pytest.raises(ValidationError) as exc_info:
             schema.load(data)

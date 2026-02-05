@@ -1,4 +1,4 @@
-"""Tests for DartLayerV2Schema validation logic."""
+"""Tests for GeoSetLayerV2Schema validation logic."""
 
 import copy
 import json
@@ -7,8 +7,8 @@ from pathlib import Path
 import pytest
 from marshmallow import ValidationError
 
-from superset.dart_map.schemas.DartLayerV2Schema import (
-    DartLayerV2Schema,
+from superset.geoset_map.schemas.GeoSetLayerV2Schema import (
+    GeoSetLayerV2Schema,
     LegendSchemaV2,
 )
 
@@ -96,7 +96,7 @@ class TestColoringMutualExclusivity:
 
     def test_valid_with_only_color_by_category(self, base_schema_data):
         """Schema with only colorByCategory should pass validation."""
-        schema = DartLayerV2Schema()
+        schema = GeoSetLayerV2Schema()
         data = copy.deepcopy(base_schema_data)
         del data["colorByValue"]
         data["legend"]["name"] = None
@@ -107,7 +107,7 @@ class TestColoringMutualExclusivity:
 
     def test_valid_with_only_color_by_value(self, base_schema_data):
         """Schema with only colorByValue should pass validation."""
-        schema = DartLayerV2Schema()
+        schema = GeoSetLayerV2Schema()
         data = copy.deepcopy(base_schema_data)
         del data["colorByCategory"]
         data["legend"]["name"] = None
@@ -118,7 +118,7 @@ class TestColoringMutualExclusivity:
 
     def test_valid_with_neither_coloring_option(self, minimal_valid_schema):
         """Schema with neither colorByCategory nor colorByValue should pass."""
-        schema = DartLayerV2Schema()
+        schema = GeoSetLayerV2Schema()
         result = schema.load(minimal_valid_schema)
         assert isinstance(result, dict)
         assert result["color_by_category"] is None
@@ -126,7 +126,7 @@ class TestColoringMutualExclusivity:
 
     def test_dump_excludes_none_values_at_top_level(self, minimal_valid_schema):
         """Dumped schema should not include top-level keys with None values."""
-        schema = DartLayerV2Schema()
+        schema = GeoSetLayerV2Schema()
         result = schema.load(minimal_valid_schema)
         dumped = schema.dump(result)
 
@@ -135,7 +135,7 @@ class TestColoringMutualExclusivity:
 
     def test_dump_excludes_none_values_in_nested_schemas(self, minimal_valid_schema):
         """Dumped schema should not include nested keys with None values."""
-        schema = DartLayerV2Schema()
+        schema = GeoSetLayerV2Schema()
         # minimal_valid_schema has globalColoring without pointType, pointSize, lineStyle
         result = schema.load(minimal_valid_schema)
         dumped = schema.dump(result)
@@ -148,7 +148,7 @@ class TestColoringMutualExclusivity:
 
     def test_dump_excludes_none_values_in_color_by_value(self, valid_global_coloring):
         """Dumped schema should not include null bounds in colorByValue."""
-        schema = DartLayerV2Schema()
+        schema = GeoSetLayerV2Schema()
         data = {
             "globalColoring": valid_global_coloring,
             "colorByValue": {
@@ -168,7 +168,7 @@ class TestColoringMutualExclusivity:
 
     def test_dump_excludes_null_legend_name(self, valid_global_coloring):
         """Dumped schema should not include null legend.name."""
-        schema = DartLayerV2Schema()
+        schema = GeoSetLayerV2Schema()
         data = {
             "globalColoring": valid_global_coloring,
             "legend": {"title": "test_title", "name": None},
@@ -181,7 +181,7 @@ class TestColoringMutualExclusivity:
 
     def test_invalid_with_both_coloring_options(self, base_schema_data):
         """Schema with both colorByCategory and colorByValue should fail."""
-        schema = DartLayerV2Schema()
+        schema = GeoSetLayerV2Schema()
         data = copy.deepcopy(base_schema_data)
         data["legend"]["name"] = None
         with pytest.raises(ValidationError) as exc_info:
@@ -199,7 +199,7 @@ class TestLegendNameNullRequirement:
 
     def test_valid_legend_name_null_with_color_by_category(self, base_schema_data):
         """legend.name null with colorByCategory should pass validation."""
-        schema = DartLayerV2Schema()
+        schema = GeoSetLayerV2Schema()
         data = copy.deepcopy(base_schema_data)
         del data["colorByValue"]
         data["legend"]["name"] = None
@@ -209,7 +209,7 @@ class TestLegendNameNullRequirement:
 
     def test_valid_legend_name_null_with_color_by_value(self, base_schema_data):
         """legend.name null with colorByValue should pass validation."""
-        schema = DartLayerV2Schema()
+        schema = GeoSetLayerV2Schema()
         data = copy.deepcopy(base_schema_data)
         del data["colorByCategory"]
         data["legend"]["name"] = None
@@ -219,7 +219,7 @@ class TestLegendNameNullRequirement:
 
     def test_valid_legend_name_set_without_coloring_options(self, minimal_valid_schema):
         """legend.name can be set when no coloring options are used."""
-        schema = DartLayerV2Schema()
+        schema = GeoSetLayerV2Schema()
         data = copy.deepcopy(minimal_valid_schema)
         data["legend"]["name"] = "my_legend_name"
         result = schema.load(data)
@@ -228,7 +228,7 @@ class TestLegendNameNullRequirement:
 
     def test_invalid_legend_name_set_with_color_by_category(self, base_schema_data):
         """legend.name set with colorByCategory should fail validation."""
-        schema = DartLayerV2Schema()
+        schema = GeoSetLayerV2Schema()
         data = copy.deepcopy(base_schema_data)
         del data["colorByValue"]
         data["legend"]["name"] = "should_be_null"
@@ -238,7 +238,7 @@ class TestLegendNameNullRequirement:
 
     def test_invalid_legend_name_set_with_color_by_value(self, base_schema_data):
         """legend.name set with colorByValue should fail validation."""
-        schema = DartLayerV2Schema()
+        schema = GeoSetLayerV2Schema()
         data = copy.deepcopy(base_schema_data)
         del data["colorByCategory"]
         data["legend"]["name"] = "should_be_null"
@@ -268,7 +268,7 @@ class TestSchemaUpgrade:
             "legend": {"name": "my_legend_name"},
         }
 
-        v2_data = DartLayerV2Schema.upgrade_from_previous_version(v1_data)
+        v2_data = GeoSetLayerV2Schema.upgrade_from_previous_version(v1_data)
 
         assert v2_data["legend"]["title"] == "my_legend_name"
         assert v2_data["legend"]["name"] == "my_legend_name"
@@ -291,7 +291,7 @@ class TestSchemaUpgrade:
             "legend": {"name": "my_legend_name"},
         }
 
-        v2_data = DartLayerV2Schema.upgrade_from_previous_version(v1_data)
+        v2_data = GeoSetLayerV2Schema.upgrade_from_previous_version(v1_data)
 
         assert v2_data["legend"]["title"] == "my_legend_name"
         assert v2_data["legend"]["name"] is None
@@ -317,7 +317,7 @@ class TestSchemaUpgrade:
             "legend": {"name": "my_legend_name"},
         }
 
-        v2_data = DartLayerV2Schema.upgrade_from_previous_version(v1_data)
+        v2_data = GeoSetLayerV2Schema.upgrade_from_previous_version(v1_data)
 
         assert v2_data["legend"]["title"] == "my_legend_name"
         assert v2_data["legend"]["name"] is None
@@ -340,7 +340,7 @@ class TestSchemaUpgrade:
             "legend": {"name": "my_legend_name"},
         }
 
-        v2_data = DartLayerV2Schema.upgrade_from_previous_version(v1_data)
+        v2_data = GeoSetLayerV2Schema.upgrade_from_previous_version(v1_data)
 
         assert v2_data["globalColoring"] == v1_data["globalColoring"]
         assert v2_data["colorByCategory"] == v1_data["colorByCategory"]
@@ -358,8 +358,8 @@ class TestSchemaUpgrade:
             "legend": {"name": "my_legend_name"},
         }
 
-        v2_data = DartLayerV2Schema.upgrade_from_previous_version(v1_data)
-        schema = DartLayerV2Schema()
+        v2_data = GeoSetLayerV2Schema.upgrade_from_previous_version(v1_data)
+        schema = GeoSetLayerV2Schema()
         result = schema.load(v2_data)
 
         assert isinstance(result, dict)
@@ -384,8 +384,8 @@ class TestSchemaUpgrade:
             "legend": {"name": "my_legend_name"},
         }
 
-        v2_data = DartLayerV2Schema.upgrade_from_previous_version(v1_data)
-        schema = DartLayerV2Schema()
+        v2_data = GeoSetLayerV2Schema.upgrade_from_previous_version(v1_data)
+        schema = GeoSetLayerV2Schema()
         result = schema.load(v2_data)
 
         assert isinstance(result, dict)

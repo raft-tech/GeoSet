@@ -1,8 +1,8 @@
-"""Tests for schema version validation in the DART map API."""
+"""Tests for schema version validation in the GeoSet map API."""
 
 import pytest
 
-from superset.dart_map.api import parse_version_number
+from superset.geoset_map.api import parse_version_number
 
 
 class TestParseVersionNumber:
