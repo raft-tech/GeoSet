@@ -27,11 +27,8 @@ import { rgbaArrayToCssString } from '../utils/colorsFallback';
 import { Swatch } from '../utils/legendSwatch';
 import { formatLegendNumber } from '../utils/formatNumber';
 
-// MapControls: top 12px + height 32px + padding 12px = 56px from top
-const MAP_CONTROLS_OFFSET = 56;
-
-const StyledLegend = styled.div<{ $isTopLeft?: boolean }>`
-  ${({ theme, $isTopLeft }) => `
+const StyledLegend = styled.div`
+  ${({ theme }) => `
     font-size: ${theme.fontSize}px;
     position: absolute;
     background: ${theme.colorBgElevated};
@@ -43,9 +40,7 @@ const StyledLegend = styled.div<{ $isTopLeft?: boolean }>`
     max-width: 220px;
     border-radius: 6px;
     z-index: 10;
-
-    /* For top-left position (same corner as MapControls), limit max-height to avoid overlap */
-    max-height: ${$isTopLeft ? `calc(100% - ${MAP_CONTROLS_OFFSET + 24}px)` : 'calc(100% - 24px)'};
+    max-height: calc(100% - 24px);
 
     & ul {
       list-style: none;
@@ -222,23 +217,14 @@ const Legend = ({
   const vertical = isTop ? 'top' : 'bottom';
   const horizontal = isLeft ? 'left' : 'right';
 
-  // Check if legend is in top-left corner (same as MapControls)
-  const isTopLeft = isTop && isLeft;
-
   const style: React.CSSProperties = {
     position: 'absolute',
     [horizontal]: '10px',
+    [vertical]: '0px',
   };
 
-  // For top-left, offset below MapControls; otherwise use standard positioning
-  if (isTopLeft) {
-    style.top = `${MAP_CONTROLS_OFFSET}px`;
-  } else {
-    style[vertical] = '0px';
-  }
-
   return (
-    <StyledLegend $isTopLeft={isTopLeft} style={style}>
+    <StyledLegend style={style}>
       {metricLegendContent}
       <ul>{categories}</ul>
     </StyledLegend>

@@ -1125,7 +1125,7 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
         categories={categories}
         metricLegend={metricLegend}
         format={props.formData.legend_format}
-        position={props.formData.legend_position}
+        position="tl"
         showSingleCategory={showSingleCategory}
         toggleCategory={toggleCategory}
         icon={propVisualConfig?.pointType}
@@ -1137,6 +1137,7 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
         onResetView={handleResetView}
         onRulerToggle={handleRulerToggle}
         isRulerActive={measureState.isActive}
+        position="top-right"
       />
       <MeasureOverlay
         measureState={measureState}
@@ -1150,7 +1151,7 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
           feature={clickedFeature}
           onClose={handleClosePopup}
           featureInfoColumnNames={featureInfoColumnNames}
-          position="left"
+          position="right"
         />
       )}
       {limitReached && (
