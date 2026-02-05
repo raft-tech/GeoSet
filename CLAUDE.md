@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-This is a customized Apache Superset deployment for DART (Disaster Awareness and Response Tool), an ACF tool for disaster response and service delivery monitoring. It includes custom geospatial visualization plugins and DART-specific configurations.
+This is a customized Apache Superset deployment for GeoSet, a tool for geospatial data monitoring. It includes custom geospatial visualization plugins.
 
 ## Backend
 
