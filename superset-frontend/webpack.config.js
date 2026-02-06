@@ -450,6 +450,11 @@ const config = {
         type: 'asset',
       },
       {
+        test: /\.svg$/,
+        resourceQuery: /raw/, // Import as raw text when using ?raw
+        type: 'asset/source',
+      },
+      {
         test: /\.svg(\?v=\d+\.\d+\.\d+)?$/,
         issuer: /\.([jt])sx?$/,
         use: [
