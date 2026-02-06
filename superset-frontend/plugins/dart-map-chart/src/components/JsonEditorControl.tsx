@@ -11,6 +11,7 @@ import {
 } from '@ant-design/icons';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-json';
+import { prettyStringify } from '../utils/safeStringify';
 
 const { Text } = Typography;
 
@@ -217,6 +218,20 @@ type JsonEditorControlProps = {
   defaultValue: string;
 };
 
+/**
+ * Normalize JSON string: parse then re-stringify with prettyStringify
+ * so small arrays (like RGBA values) stay on one line.
+ * Returns the original string if parsing fails (e.g. invalid JSON while editing).
+ */
+function normalizeJson(raw: string): string {
+  if (!raw || !raw.trim().startsWith('{')) return raw;
+  try {
+    return prettyStringify(JSON.parse(raw));
+  } catch {
+    return raw;
+  }
+}
+
 export default function JsonEditorControl({
   label,
   value,
@@ -224,7 +239,7 @@ export default function JsonEditorControl({
   defaultValue,
 }: JsonEditorControlProps) {
   const [localValue, setLocalValue] = useState<string>(() => {
-    if (value != null && value !== '') return value;
+    if (value != null && value !== '') return normalizeJson(value);
     if (defaultValue != null) return defaultValue;
     return '';
   });
@@ -232,13 +247,21 @@ export default function JsonEditorControl({
 
   useEffect(() => {
     if (value != null && value !== '' && value !== localValue) {
-      setLocalValue(value);
+      setLocalValue(normalizeJson(value));
     }
   }, [value]);
 
   const handleChange = (newCode: string) => {
     setLocalValue(newCode);
     onChange?.(newCode);
+  };
+
+  const handleBlur = () => {
+    const normalized = normalizeJson(localValue);
+    if (normalized !== localValue) {
+      setLocalValue(normalized);
+      onChange?.(normalized);
+    }
   };
 
   const handleCopy = async () => {
@@ -303,7 +326,7 @@ export default function JsonEditorControl({
           </Popover>
         </LabelRow>
       )}
-      <EditorWrapper>
+      <EditorWrapper onBlur={handleBlur}>
         <Editor
           value={localValue}
           onValueChange={handleChange}
