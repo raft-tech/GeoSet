@@ -986,6 +986,7 @@ const DeckMulti = (props: DeckMultiProps) => {
         layerStates={layerStatesWithVisibility}
         mapStyle={mapStyle}
         setControlValue={setControlValue}
+        disableViewportSync={props.enableStaticViewport}
         height={height}
         width={width}
         measureState={measureState}
