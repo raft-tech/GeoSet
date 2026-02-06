@@ -25,7 +25,9 @@ import {
   featureInfoColumns,
   hoverDataColumns,
   minMaxZoomSlider,
-  viewport,
+  viewportControl,
+  mapboxStyle,
+  autozoom,
   enableClustering,
   clusterMaxZoom,
   clusterMinPoints,
@@ -82,6 +84,11 @@ const defaultGeojsonConfig = JSON.stringify(
 
 const config: ControlPanelConfig = {
   controlPanelSections: [
+    {
+      label: t('Map'),
+      expanded: true,
+      controlSetRows: [[mapboxStyle], [viewportControl], [autozoom]],
+    },
     {
       label: t('Map Configuration'),
       expanded: true,
@@ -157,7 +164,6 @@ const config: ControlPanelConfig = {
           },
         ],
         ['adhoc_filters'],
-        [viewport],
         [minMaxZoomSlider],
         [hoverDataColumns],
         [featureInfoColumns],

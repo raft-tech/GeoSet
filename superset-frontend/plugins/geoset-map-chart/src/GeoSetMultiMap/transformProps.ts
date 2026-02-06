@@ -38,7 +38,9 @@ export default function transformProps(chartProps: ChartProps) {
   const mapStyle =
     rawFormData.mapbox_style ||
     rawFormData.mapboxStyle ||
-    'mapbox://styles/mapbox/light-v10';
+    'mapbox://styles/acf-dart/cm8ov8yl4001401s365rs672z';
+
+  const enableStaticViewport = rawFormData.enable_static_viewport || false;
 
   return {
     datasource,
@@ -49,6 +51,7 @@ export default function transformProps(chartProps: ChartProps) {
     setControlValue,
     mapboxApiKey: MAPBOX_API_TOKEN,
     mapStyle,
+    enableStaticViewport,
     viewport: {
       ...rawFormData.viewport,
       height,
