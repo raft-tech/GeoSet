@@ -54,6 +54,7 @@ export type DeckGLContainerProps = {
   width: number;
   height: number;
   layerStates: LayerState[];
+  disableViewportSync?: boolean;
   measureState?: MeasureState;
   onMeasureClick?: (coordinate: Coordinate) => void;
   onMeasureDragStart?: (coordinate: Coordinate) => void;
@@ -281,18 +282,20 @@ export const DeckGLContainer = memo(
 
     const tick = useCallback(() => {
       // Rate limiting updating viewport controls as it triggers lots of renders
+      // Skip sync when static viewport is enabled so the control panel value
+      // is only set via the ViewportControl popover
       if (
         pendingSaveTime.current &&
         Date.now() - pendingSaveTime.current > TICK
       ) {
         const setCV = props.setControlValue;
-        if (setCV) {
+        if (setCV && !props.disableViewportSync) {
           // Use the ref which always has the latest viewport (even during interaction)
           setCV('viewport', currentViewport.current);
         }
         pendingSaveTime.current = null;
       }
-    }, [props.setControlValue]);
+    }, [props.setControlValue, props.disableViewportSync]);
 
     useEffect(() => {
       const timer = setInterval(tick, TICK);
