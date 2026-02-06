@@ -27,7 +27,6 @@ import { JsonObject } from '@superset-ui/core';
  * @param object any JSON object to be stringified
  */
 
-// eslint-disable-next-line import/prefer-default-export
 export function safeStringify(object: JsonObject) {
   const cache = new Set();
 
@@ -49,4 +48,15 @@ export function safeStringify(object: JsonObject) {
 
     return value;
   });
+}
+
+/**
+ * JSON.stringify with 2-space indent, but collapses small primitive arrays
+ * (like RGBA values) onto a single line.
+ */
+export function prettyStringify(obj: unknown): string {
+  return JSON.stringify(obj, null, 2).replace(
+    /\[\s*\n\s*((?:-?\d+(?:\.\d+)?|null|true|false|"[^"]*")(?:,\s*\n\s*(?:-?\d+(?:\.\d+)?|null|true|false|"[^"]*"))*)\s*\n\s*\]/g,
+    (_, inner: string) => `[${inner.replace(/\s*\n\s*/g, ' ')}]`,
+  );
 }
