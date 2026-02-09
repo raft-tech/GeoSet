@@ -32,35 +32,6 @@ export class CircleSvg extends CustomSvg {
     this.svg = loadSvgTemplate('circle', fillHexColor, this.width, this.height);
   }
 }
-
-export class FemaSvg extends CustomSvg {
-  constructor(fillHexColor: string, width = -1, height = -1) {
-    super(fillHexColor, width, height);
-    if (width === -1) {
-      this.width = 128;
-    }
-    if (height === -1) {
-      this.height = 128;
-    }
-
-    this.svg = loadSvgTemplate('fema', fillHexColor, this.width, this.height);
-  }
-}
-
-export class FireSvg extends CustomSvg {
-  constructor(fillHexColor: string, width = -1, height = -1) {
-    super(fillHexColor, width, height);
-    if (width === -1) {
-      this.width = 128;
-    }
-    if (height === -1) {
-      this.height = 128;
-    }
-
-    this.svg = loadSvgTemplate('fire', fillHexColor, this.width, this.height);
-  }
-}
-
 export class PointSvg extends CustomSvg {
   constructor(fillHexColor: string, width = -1, height = -1) {
     super(fillHexColor, width, height);
@@ -110,10 +81,6 @@ export function getSvg(
   height = -1,
 ): string {
   switch (name) {
-    case 'fema':
-      return new FemaSvg(fillHexColor, width, height).svg;
-    case 'fire':
-      return new FireSvg(fillHexColor, width, height).svg;
     case 'point':
       return new PointSvg(fillHexColor, width, height).svg;
     case 'line':

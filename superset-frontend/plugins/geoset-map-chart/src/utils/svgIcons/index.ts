@@ -1,16 +1,21 @@
+/* eslint-disable import/no-webpack-loader-syntax */
 // Import SVG files as raw text strings using require for better compatibility
-const circleTemplate: string = require('!!raw-loader!./circle.svg').default || require('!!raw-loader!./circle.svg');
-const femaTemplate: string = require('!!raw-loader!./fema.svg').default || require('!!raw-loader!./fema.svg');
-const fireTemplate: string = require('!!raw-loader!./fire.svg').default || require('!!raw-loader!./fire.svg');
-const pointTemplate: string = require('!!raw-loader!./point.svg').default || require('!!raw-loader!./point.svg');
-const lineTemplate: string = require('!!raw-loader!./line.svg').default || require('!!raw-loader!./line.svg');
-const markerTemplate: string = require('!!raw-loader!./marker.svg').default || require('!!raw-loader!./marker.svg');
+const circleTemplate: string =
+  require('!!raw-loader!./circle.svg').default ||
+  require('!!raw-loader!./circle.svg');
+const pointTemplate: string =
+  require('!!raw-loader!./point.svg').default ||
+  require('!!raw-loader!./point.svg');
+const lineTemplate: string =
+  require('!!raw-loader!./line.svg').default ||
+  require('!!raw-loader!./line.svg');
+const markerTemplate: string =
+  require('!!raw-loader!./marker.svg').default ||
+  require('!!raw-loader!./marker.svg');
 
 // Map icon names to templates
 const svgTemplates: Record<string, string> = {
   circle: circleTemplate,
-  fema: femaTemplate,
-  fire: fireTemplate,
   point: pointTemplate,
   line: lineTemplate,
   marker: markerTemplate,
