@@ -123,6 +123,12 @@ interface ClickedFeatureWithColumns extends ClickedFeatureInfo {
   featureInfoColumnNames?: string[];
 }
 
+// Module-level variable to track the last known map viewport.
+// Survives component remounts caused by renderTrigger checkbox toggles,
+// which reset all refs/state. Without this, props.viewport reverts to
+// DEFAULT_VIEWPORT on remount and the map jumps.
+let lastKnownViewport: Viewport | null = null;
+
 const DeckMulti = (props: DeckMultiProps) => {
   const containerRef = useRef<DeckGLContainerHandle>(null);
   // Ref to track measure state for use in callbacks without creating dependencies
@@ -812,19 +818,34 @@ const DeckMulti = (props: DeckMultiProps) => {
     [sortedLayers, categoryVisibility],
   );
 
-  // Reset autozoom viewport cache when static viewport is toggled off
+  // Keep lastKnownViewport in sync with the real map position in real-time
+  // so it's always current when the checkbox triggers a remount/re-render
+  const handleViewportChange = useCallback((vp: Viewport) => {
+    lastKnownViewport = vp;
+  }, []);
+
   useEffect(() => {
-    if (!props.enableStaticViewport) {
+    if (props.enableStaticViewport) {
+      const currentVP = containerRef.current?.getCurrentViewport?.();
+      if (currentVP && setControlValue) {
+        lastKnownViewport = currentVP;
+        setControlValue('viewport', currentVP);
+      }
+    } else {
       initialAutozoomViewportRef.current = null;
     }
-  }, [props.enableStaticViewport]);
+  }, [props.enableStaticViewport, setControlValue]);
 
   // Calculate autozoom viewport from layers with autozoom enabled
   // Only calculate once on initial load to prevent view reset on category toggle
   // When static viewport is enabled, use the user-set viewport directly
   const viewport: Viewport = useMemo(() => {
+    // When static viewport is on, use the last known map position since
+    // props.viewport can revert to DEFAULT_VIEWPORT on renderTrigger re-renders
+    const effectiveViewport = lastKnownViewport ?? props.viewport;
+
     if (props.enableStaticViewport) {
-      return props.viewport;
+      return effectiveViewport;
     }
 
     // If we already calculated autozoom, use the stored viewport
@@ -833,12 +854,12 @@ const DeckMulti = (props: DeckMultiProps) => {
     }
 
     const autozoomLayers = sortedLayers.filter(entry => entry.autozoom);
-    if (!autozoomLayers.length) return props.viewport;
+    if (!autozoomLayers.length) return effectiveViewport;
 
     const allFeatures = autozoomLayers.flatMap(entry => entry.features);
     const calculatedViewport = calculateAutozoomViewport(
       allFeatures,
-      props.viewport,
+      effectiveViewport,
       width,
       height,
     );
@@ -846,7 +867,7 @@ const DeckMulti = (props: DeckMultiProps) => {
     // Store the initial autozoom viewport
     initialAutozoomViewportRef.current = calculatedViewport;
     return calculatedViewport;
-  }, [sortedLayers, props.viewport, width, height, props.enableStaticViewport]);
+  }, [sortedLayers, width, height, props.enableStaticViewport]);
 
   // Map control handlers - must be defined before any conditional returns
   const handleZoomIn = useCallback(() => {
@@ -987,6 +1008,7 @@ const DeckMulti = (props: DeckMultiProps) => {
         mapStyle={mapStyle}
         setControlValue={setControlValue}
         disableViewportSync={props.enableStaticViewport}
+        onViewportChange={handleViewportChange}
         height={height}
         width={width}
         measureState={measureState}

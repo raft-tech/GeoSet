@@ -55,6 +55,7 @@ export type DeckGLContainerProps = {
   height: number;
   layerStates: LayerState[];
   disableViewportSync?: boolean;
+  onViewportChange?: (viewport: Viewport) => void;
   measureState?: MeasureState;
   onMeasureClick?: (coordinate: Coordinate) => void;
   onMeasureDragStart?: (coordinate: Coordinate) => void;
@@ -276,7 +277,7 @@ export const DeckGLContainer = memo(
 
     useImperativeHandle(
       ref,
-      () => ({ setTooltip, zoomIn, zoomOut, resetView }),
+      () => ({ setTooltip, zoomIn, zoomOut, resetView, getCurrentViewport: () => currentViewport.current }),
       [zoomIn, zoomOut, resetView],
     );
 
@@ -290,7 +291,6 @@ export const DeckGLContainer = memo(
       ) {
         const setCV = props.setControlValue;
         if (setCV && !props.disableViewportSync) {
-          // Use the ref which always has the latest viewport (even during interaction)
           setCV('viewport', currentViewport.current);
         }
         pendingSaveTime.current = null;
@@ -317,15 +317,17 @@ export const DeckGLContainer = memo(
     }, [props.width, props.height]);
 
     // Sync React state on view changes (needed for scale control updates)
+    const { onViewportChange } = props;
     const onViewStateChange = useCallback(
       ({ viewState: newViewState }: { viewState: JsonObject }) => {
         const newVS = newViewState as Viewport;
         currentViewport.current = newVS;
         setViewState(newVS);
+        onViewportChange?.(newVS);
         // Always mark for save so viewport persists, but rate-limited by tick()
         pendingSaveTime.current = Date.now();
       },
-      [],
+      [onViewportChange],
     );
 
     // Project function for converting geo coords to screen coords
@@ -737,4 +739,5 @@ export type DeckGLContainerHandle = typeof DeckGLContainer & {
   zoomIn: () => void;
   zoomOut: () => void;
   resetView: () => void;
+  getCurrentViewport: () => Viewport;
 };
