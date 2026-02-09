@@ -45,10 +45,10 @@ export function loadSvgTemplate(
   // Replace color placeholder
   svg = svg.replace(/\{\{fillColor\}\}/g, fillColor);
 
-  // Replace dimensions if provided
+  // Replace dimensions on the root <svg> element only
   if (width !== undefined && height !== undefined) {
-    svg = svg.replace(/width="[^"]+"/g, `width="${width}"`);
-    svg = svg.replace(/height="[^"]+"/g, `height="${height}"`);
+    svg = svg.replace(/^(<svg\s[^>]*?)width="[^"]+"/, `$1width="${width}"`);
+    svg = svg.replace(/^(<svg\s[^>]*?)height="[^"]+"/, `$1height="${height}"`);
   }
 
   return svg;
