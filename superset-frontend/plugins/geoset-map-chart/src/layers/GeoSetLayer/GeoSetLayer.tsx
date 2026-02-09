@@ -667,6 +667,10 @@ export type DeckGLGeoJsonProps = {
   };
 };
 
+// Module-level variable to track the last known map viewport.
+// Survives component remounts caused by renderTrigger checkbox toggles.
+let lastKnownViewport: Viewport | null = null;
+
 const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
   const {
     formData,
@@ -690,6 +694,55 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
       current.setTooltip(tooltip);
     }
   }, []);
+
+  // Ref tracks the live viewport position (no per-frame re-renders)
+  const currentViewportRef = useRef<Viewport>(
+    lastKnownViewport ?? props.viewport,
+  );
+
+  // Accept props.viewport when it's an intentional user change (e.g. from the
+  // ViewportControl popover), but ignore when Superset reverts it to the default
+  const DEFAULT_ZOOM = 1;
+  const DEFAULT_LNG = 6.85236157047845;
+  useEffect(() => {
+    const vp = props.viewport;
+    const isDefault =
+      vp.zoom === DEFAULT_ZOOM && vp.longitude === DEFAULT_LNG;
+    if (!isDefault) {
+      currentViewportRef.current = vp;
+      lastKnownViewport = vp;
+    }
+  }, [props.viewport]);
+
+  // Called by DeckGLContainer on every pan/zoom frame
+  const handleViewportChange = useCallback((vp: Viewport) => {
+    lastKnownViewport = vp;
+    currentViewportRef.current = vp;
+  }, []);
+
+  // Debounced persistence to control panel (for chart save)
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debouncedPersist = useCallback(() => {
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(() => {
+      setControlValue('viewport', currentViewportRef.current);
+    }, 300);
+  }, [setControlValue]);
+
+  useEffect(
+    () => () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    },
+    [],
+  );
+
+  const handleViewportChangeWithPersist = useCallback(
+    (vp: Viewport) => {
+      handleViewportChange(vp);
+      debouncedPersist();
+    },
+    [handleViewportChange, debouncedPersist],
+  );
 
   // State for clicked feature popup
   const [clickedFeature, setClickedFeature] =
@@ -983,12 +1036,13 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
   }, [measureState.isActive]);
 
   const viewport: Viewport = useMemo(() => {
+    const baseViewport = currentViewportRef.current;
     if (!formData.autozoom || !payload?.data?.features?.length) {
-      return props.viewport;
+      return baseViewport;
     }
     return calculateAutozoomViewport(
       payload.data.features,
-      props.viewport,
+      baseViewport,
       width,
       height,
     );
@@ -996,7 +1050,6 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
     formData.autozoom,
     height,
     payload?.data?.features,
-    props.viewport,
     width,
   ]);
 
@@ -1110,7 +1163,7 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
         initialViewport={viewport}
         layerStates={layerState ? [layerState] : []}
         mapStyle={mapStyle || formData.mapbox_style}
-        setControlValue={setControlValue}
+        onViewportChange={handleViewportChangeWithPersist}
         height={mapHeight}
         width={width}
         measureState={measureState}

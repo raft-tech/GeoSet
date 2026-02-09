@@ -818,18 +818,63 @@ const DeckMulti = (props: DeckMultiProps) => {
     [sortedLayers, categoryVisibility],
   );
 
-  // Keep lastKnownViewport in sync with the real map position in real-time
-  // so it's always current when the checkbox triggers a remount/re-render
+  // Ref tracks the live viewport position (no per-frame re-renders)
+  const currentViewportRef = useRef<Viewport>(
+    lastKnownViewport ?? props.viewport,
+  );
+
+  // Accept props.viewport when it's an intentional user change (e.g. from the
+  // ViewportControl popover), but ignore when Superset reverts it to the default
+  const DEFAULT_ZOOM = 1;
+  const DEFAULT_LNG = 6.85236157047845;
+  useEffect(() => {
+    const vp = props.viewport;
+    const isDefault =
+      vp.zoom === DEFAULT_ZOOM && vp.longitude === DEFAULT_LNG;
+    if (!isDefault) {
+      currentViewportRef.current = vp;
+      lastKnownViewport = vp;
+    }
+  }, [props.viewport]);
+
+  // Called by DeckGLContainer on every pan/zoom frame
   const handleViewportChange = useCallback((vp: Viewport) => {
     lastKnownViewport = vp;
+    currentViewportRef.current = vp;
   }, []);
 
+  // Debounced persistence to control panel (for chart save)
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debouncedPersist = useCallback(() => {
+    if (props.enableStaticViewport) return;
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(() => {
+      setControlValue('viewport', currentViewportRef.current);
+    }, 300);
+  }, [setControlValue, props.enableStaticViewport]);
+
+  // Clean up debounce timer on unmount
+  useEffect(
+    () => () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    },
+    [],
+  );
+
+  // Wire up persistence to viewport changes
+  const handleViewportChangeWithPersist = useCallback(
+    (vp: Viewport) => {
+      handleViewportChange(vp);
+      debouncedPersist();
+    },
+    [handleViewportChange, debouncedPersist],
+  );
+
+  // When static viewport is toggled, snapshot or clear autozoom cache
   useEffect(() => {
     if (props.enableStaticViewport) {
-      const currentVP = containerRef.current?.getCurrentViewport?.();
-      if (currentVP && setControlValue) {
-        lastKnownViewport = currentVP;
-        setControlValue('viewport', currentVP);
+      if (setControlValue) {
+        setControlValue('viewport', currentViewportRef.current);
       }
     } else {
       initialAutozoomViewportRef.current = null;
@@ -838,14 +883,11 @@ const DeckMulti = (props: DeckMultiProps) => {
 
   // Calculate autozoom viewport from layers with autozoom enabled
   // Only calculate once on initial load to prevent view reset on category toggle
-  // When static viewport is enabled, use the user-set viewport directly
   const viewport: Viewport = useMemo(() => {
-    // When static viewport is on, use the last known map position since
-    // props.viewport can revert to DEFAULT_VIEWPORT on renderTrigger re-renders
-    const effectiveViewport = lastKnownViewport ?? props.viewport;
+    const baseViewport = currentViewportRef.current;
 
     if (props.enableStaticViewport) {
-      return effectiveViewport;
+      return baseViewport;
     }
 
     // If we already calculated autozoom, use the stored viewport
@@ -854,12 +896,12 @@ const DeckMulti = (props: DeckMultiProps) => {
     }
 
     const autozoomLayers = sortedLayers.filter(entry => entry.autozoom);
-    if (!autozoomLayers.length) return effectiveViewport;
+    if (!autozoomLayers.length) return baseViewport;
 
     const allFeatures = autozoomLayers.flatMap(entry => entry.features);
     const calculatedViewport = calculateAutozoomViewport(
       allFeatures,
-      effectiveViewport,
+      baseViewport,
       width,
       height,
     );
@@ -1006,9 +1048,7 @@ const DeckMulti = (props: DeckMultiProps) => {
         initialViewport={viewport}
         layerStates={layerStatesWithVisibility}
         mapStyle={mapStyle}
-        setControlValue={setControlValue}
-        disableViewportSync={props.enableStaticViewport}
-        onViewportChange={handleViewportChange}
+        onViewportChange={handleViewportChangeWithPersist}
         height={height}
         width={width}
         measureState={measureState}

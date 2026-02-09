@@ -34,7 +34,7 @@ import {
 import { StaticMap, MapRef } from 'react-map-gl';
 import DeckGL from '@deck.gl/react';
 import type { Deck, Layer } from '@deck.gl/core';
-import { JsonObject, JsonValue, styled } from '@superset-ui/core';
+import { JsonObject, styled } from '@superset-ui/core';
 import Tooltip, { TooltipProps } from './components/Tooltip';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Viewport } from './utils/fitViewport';
@@ -42,20 +42,16 @@ import { LayerState } from './types';
 import { MeasureState, useMeasureLayers } from './components/MeasureOverlay';
 import { Coordinate } from './utils/measureDistance';
 
-const TICK = 250; // milliseconds
-
 export type DeckGLContainerProps = {
   viewport: Viewport;
   initialViewport?: Viewport;
-  setControlValue?: (control: string, value: JsonValue) => void;
+  onViewportChange?: (viewport: Viewport) => void;
   mapStyle?: string;
   mapboxApiAccessToken: string;
   children?: ReactNode;
   width: number;
   height: number;
   layerStates: LayerState[];
-  disableViewportSync?: boolean;
-  onViewportChange?: (viewport: Viewport) => void;
   measureState?: MeasureState;
   onMeasureClick?: (coordinate: Coordinate) => void;
   onMeasureDragStart?: (coordinate: Coordinate) => void;
@@ -173,14 +169,14 @@ const getRoundNum = (num: number): number => {
 
 /**
  * Uses DeckGL "uncontrolled mode" (initialViewState) to avoid re-renders during pan/zoom.
- * Refs track view state internally; use setDeckViewState() for programmatic updates.
+ * Parent owns viewport state; this component receives it via props and reports
+ * user interactions back via onViewportChange.
  */
 export const DeckGLContainer = memo(
   forwardRef((props: DeckGLContainerProps, ref) => {
     const mapRef = useRef<MapRef>(null);
     const deckRef = useRef<Deck>(null);
     const currentViewport = useRef<Viewport>(props.viewport);
-    const pendingSaveTime = useRef<number | null>(null);
     const [tooltip, setTooltip] = useState<TooltipProps['tooltip']>(null);
     const [viewState, setViewState] = useState(() => props.viewport);
     const [mapReady, setMapReady] = useState(false);
@@ -239,11 +235,17 @@ export const DeckGLContainer = memo(
       }
     }, [props.initialViewport]);
 
+    // Stable ref for onViewportChange to avoid recreating callbacks
+    const onViewportChangeRef = useRef(props.onViewportChange);
+    useEffect(() => {
+      onViewportChangeRef.current = props.onViewportChange;
+    }, [props.onViewportChange]);
+
     const ZOOM_INCREMENT = 0.5;
 
-    // Programmatically set view state in uncontrolled mode via deck.setProps
-    // transitionDuration forces DeckGL to actually move to the new viewport
-    const setDeckViewState = useCallback((newViewState: Viewport) => {
+    // Internal: set deck view state without notifying parent (avoids infinite loop
+    // when syncing from props.viewport changes)
+    const setDeckViewStateInternal = useCallback((newViewState: Viewport) => {
       setViewState(newViewState);
       currentViewport.current = newViewState;
       (deckRef.current as any)?.deck?.setProps({
@@ -252,8 +254,16 @@ export const DeckGLContainer = memo(
           transitionDuration: 100,
         },
       });
-      pendingSaveTime.current = Date.now();
     }, []);
+
+    // Programmatically set view state and notify parent (used by zoom/reset)
+    const setDeckViewState = useCallback(
+      (newViewState: Viewport) => {
+        setDeckViewStateInternal(newViewState);
+        onViewportChangeRef.current?.(newViewState);
+      },
+      [setDeckViewStateInternal],
+    );
 
     const zoomIn = useCallback(() => {
       const currentZoom = currentViewport.current.zoom ?? 1;
@@ -277,35 +287,22 @@ export const DeckGLContainer = memo(
 
     useImperativeHandle(
       ref,
-      () => ({ setTooltip, zoomIn, zoomOut, resetView, getCurrentViewport: () => currentViewport.current }),
+      () => ({ setTooltip, zoomIn, zoomOut, resetView }),
       [zoomIn, zoomOut, resetView],
     );
 
-    const tick = useCallback(() => {
-      // Rate limiting updating viewport controls as it triggers lots of renders
-      // Skip sync when static viewport is enabled so the control panel value
-      // is only set via the ViewportControl popover
+    // Sync viewport from props when parent changes it (e.g., autozoom)
+    // Guard against no-op updates to avoid fighting with ongoing pan/zoom
+    useEffect(() => {
+      const curr = currentViewport.current;
       if (
-        pendingSaveTime.current &&
-        Date.now() - pendingSaveTime.current > TICK
+        props.viewport.longitude !== curr.longitude ||
+        props.viewport.latitude !== curr.latitude ||
+        props.viewport.zoom !== curr.zoom
       ) {
-        const setCV = props.setControlValue;
-        if (setCV && !props.disableViewportSync) {
-          setCV('viewport', currentViewport.current);
-        }
-        pendingSaveTime.current = null;
+        setDeckViewStateInternal(props.viewport);
       }
-    }, [props.setControlValue, props.disableViewportSync]);
-
-    useEffect(() => {
-      const timer = setInterval(tick, TICK);
-      return () => clearInterval(timer);
-    }, [tick]);
-
-    // Sync viewport from props when it changes (e.g., autozoom from parent)
-    useEffect(() => {
-      setDeckViewState(props.viewport);
-    }, [props.viewport, setDeckViewState]);
+    }, [props.viewport, setDeckViewStateInternal]);
 
     // Force DeckGL resize when container dimensions change
     useEffect(() => {
@@ -317,17 +314,14 @@ export const DeckGLContainer = memo(
     }, [props.width, props.height]);
 
     // Sync React state on view changes (needed for scale control updates)
-    const { onViewportChange } = props;
     const onViewStateChange = useCallback(
       ({ viewState: newViewState }: { viewState: JsonObject }) => {
         const newVS = newViewState as Viewport;
         currentViewport.current = newVS;
         setViewState(newVS);
-        onViewportChange?.(newVS);
-        // Always mark for save so viewport persists, but rate-limited by tick()
-        pendingSaveTime.current = Date.now();
+        onViewportChangeRef.current?.(newVS);
       },
-      [onViewportChange],
+      [],
     );
 
     // Project function for converting geo coords to screen coords
@@ -739,5 +733,4 @@ export type DeckGLContainerHandle = typeof DeckGLContainer & {
   zoomIn: () => void;
   zoomOut: () => void;
   resetView: () => void;
-  getCurrentViewport: () => Viewport;
 };
