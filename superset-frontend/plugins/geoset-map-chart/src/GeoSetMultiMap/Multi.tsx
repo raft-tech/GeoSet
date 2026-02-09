@@ -92,6 +92,7 @@ export type DeckMultiProps = {
   mapboxApiKey: string;
   mapStyle: string;
   viewport: Viewport;
+  enableStaticViewport: boolean;
   onAddFilter: HandlerFunction;
   height: number;
   width: number;
@@ -814,6 +815,11 @@ const DeckMulti = (props: DeckMultiProps) => {
   // Calculate autozoom viewport from layers with autozoom enabled
   // Only calculate once on initial load to prevent view reset on category toggle
   const viewport: Viewport = useMemo(() => {
+    // When static viewport is enabled, skip autozoom entirely
+    if (props.enableStaticViewport) {
+      return props.viewport;
+    }
+
     // If we already calculated autozoom, use the stored viewport
     if (initialAutozoomViewportRef.current) {
       return initialAutozoomViewportRef.current;
@@ -833,7 +839,7 @@ const DeckMulti = (props: DeckMultiProps) => {
     // Store the initial autozoom viewport
     initialAutozoomViewportRef.current = calculatedViewport;
     return calculatedViewport;
-  }, [sortedLayers, props.viewport, width, height]);
+  }, [sortedLayers, props.viewport, width, height, props.enableStaticViewport]);
 
   // Map control handlers - must be defined before any conditional returns
   const handleZoomIn = useCallback(() => {
