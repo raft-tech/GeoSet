@@ -400,10 +400,7 @@ export default function transformProps(chartProps: ChartProps) {
   const mapboxApiKey =
     geojsonPayload.data?.mapboxApiKey || process.env.MAPBOX_API_KEY || '';
 
-  const mapStyle =
-    formData.mapboxStyle ||
-    formData.mapbox_style ||
-    'mapbox://styles/acf-dart/cm8ov8yl4001401s365rs672z';
+  const mapStyle = formData.mapboxStyle || 'mapbox://styles/mapbox/light-v10';
 
   const enableStaticViewport = formData.enableStaticViewport || false;
 
