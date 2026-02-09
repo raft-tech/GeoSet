@@ -405,10 +405,13 @@ export default function transformProps(chartProps: ChartProps) {
     formData.mapbox_style ||
     'mapbox://styles/acf-dart/cm8ov8yl4001401s365rs672z';
 
+  const enableStaticViewport = formData.enableStaticViewport || false;
+
   return {
     width,
     height,
     formData,
+    enableStaticViewport,
     geoJsonLayer: layerType,
     payload: {
       data: {
