@@ -89,7 +89,8 @@ export default class ViewportControl extends Component {
   }
 
   renderLabel() {
-    if (this.props.value.longitude && this.props.value.latitude) {
+    // Use != null (not truthiness) so longitude/latitude of 0 are valid (prime meridian / equator)
+    if (this.props.value.longitude != null && this.props.value.latitude != null) {
       return `${decimal2sexagesimal(
         this.props.value.longitude,
       )} | ${decimal2sexagesimal(this.props.value.latitude)}`;
