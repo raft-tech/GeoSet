@@ -37,11 +37,7 @@ import type { Deck, Layer } from '@deck.gl/core';
 import { JsonObject, JsonValue, styled } from '@superset-ui/core';
 import Tooltip, { TooltipProps } from './components/Tooltip';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import {
-  Viewport,
-  isValidViewport,
-  toNumericViewport,
-} from './utils/fitViewport';
+import { Viewport, isValidViewport } from './utils/fitViewport';
 import { LayerState } from './types';
 import { MeasureState, useMeasureLayers } from './components/MeasureOverlay';
 import { Coordinate } from './utils/measureDistance';
@@ -309,7 +305,7 @@ export const DeckGLContainer = memo(
     // Skip update if any field is invalid (user mid-typing) to avoid jumping the map.
     useEffect(() => {
       if (isValidViewport(props.viewport)) {
-        setDeckViewState(toNumericViewport(props.viewport));
+        setDeckViewState(props.viewport);
       }
     }, [props.viewport, setDeckViewState]);
 
