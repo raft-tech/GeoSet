@@ -1,17 +1,8 @@
-/* eslint-disable import/no-webpack-loader-syntax */
-// Import SVG files as raw text strings using require for better compatibility
-const circleTemplate: string =
-  require('!!raw-loader!./circle.svg').default ||
-  require('!!raw-loader!./circle.svg');
-const pointTemplate: string =
-  require('!!raw-loader!./point.svg').default ||
-  require('!!raw-loader!./point.svg');
-const lineTemplate: string =
-  require('!!raw-loader!./line.svg').default ||
-  require('!!raw-loader!./line.svg');
-const markerTemplate: string =
-  require('!!raw-loader!./marker.svg').default ||
-  require('!!raw-loader!./marker.svg');
+// SVGs in svgIcons/ are loaded as raw strings via webpack asset/source rule
+import circleTemplate from './circle.svg';
+import pointTemplate from './point.svg';
+import lineTemplate from './line.svg';
+import markerTemplate from './marker.svg';
 
 // Map icon names to templates
 const svgTemplates: Record<string, string> = {

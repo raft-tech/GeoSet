@@ -451,12 +451,13 @@ const config = {
       },
       {
         test: /\.svg$/,
-        resourceQuery: /raw/, // Import as raw text when using ?raw
+        include: /svgIcons/,
         type: 'asset/source',
       },
       {
         test: /\.svg(\?v=\d+\.\d+\.\d+)?$/,
         issuer: /\.([jt])sx?$/,
+        exclude: /svgIcons/,
         use: [
           {
             loader: '@svgr/webpack',
