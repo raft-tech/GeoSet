@@ -551,7 +551,7 @@ const DeckMulti = (props: DeckMultiProps) => {
     }
   }, [subSlicesLayers, prevSubSlicesLayersLength]);
 
-  const { setControlValue, height, width } = props;
+  const { height, width } = props;
 
   // Toggle layer visibility callback
   const handleToggleLayerVisibility = useCallback(
@@ -978,7 +978,6 @@ const DeckMulti = (props: DeckMultiProps) => {
         initialViewport={viewport}
         layerStates={layerStatesWithVisibility}
         mapStyle={mapStyle}
-        setControlValue={setControlValue}
         height={height}
         width={width}
         measureState={measureState}

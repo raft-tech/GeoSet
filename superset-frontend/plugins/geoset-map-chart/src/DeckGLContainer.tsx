@@ -47,6 +47,8 @@ const TICK = 250; // milliseconds
 export type DeckGLContainerProps = {
   viewport: Viewport;
   initialViewport?: Viewport;
+  // When provided, syncs viewport changes (pan/zoom) back to the explore control panel.
+  // Omit to keep viewport one-way (control panel -> chart only).
   setControlValue?: (control: string, value: JsonValue) => void;
   mapStyle?: string;
   mapboxApiAccessToken: string;
