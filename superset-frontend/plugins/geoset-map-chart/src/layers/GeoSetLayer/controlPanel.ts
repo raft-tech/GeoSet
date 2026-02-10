@@ -85,14 +85,12 @@ const defaultGeojsonConfig = JSON.stringify(
 const config: ControlPanelConfig = {
   controlPanelSections: [
     {
-      label: t('Map'),
-      expanded: true,
-      controlSetRows: [[mapboxStyle], [viewportControl], [autozoom]],
-    },
-    {
       label: t('Map Configuration'),
       expanded: true,
       controlSetRows: [
+        [mapboxStyle],
+        [viewportControl],
+        [autozoom],
         [dndGeojsonColumn],
         ['row_limit'],
         [

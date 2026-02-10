@@ -386,10 +386,10 @@ export const viewportControl = {
   config: {
     type: 'ViewportControl',
     label: t('Viewport'),
-    renderTrigger: false,
+    renderTrigger: true,
     description: t('Parameters related to the view and perspective on the map'),
     default: DEFAULT_VIEWPORT,
-    dontRefreshOnChange: true,
+    dontRefreshOnChange: false,
   },
 };
 
