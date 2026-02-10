@@ -66,7 +66,7 @@ export default class TextControl<
       if (error) {
         errors.push(error);
       } else {
-        parsedValue = inputValue.match(/.*([.0])$/g)
+        parsedValue = inputValue.endsWith('.')
           ? inputValue
           : parseFloat(inputValue);
       }
