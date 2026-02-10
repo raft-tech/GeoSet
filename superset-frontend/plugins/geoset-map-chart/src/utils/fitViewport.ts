@@ -47,6 +47,15 @@ export const isValidViewport = (vp: unknown): vp is Viewport => {
   );
 };
 
+/** Coerces viewport values to numbers. Only call when isValidViewport is true. */
+export const toNumericViewport = (vp: Viewport): Viewport => ({
+  longitude: Number(vp.longitude),
+  latitude: Number(vp.latitude),
+  zoom: Number(vp.zoom),
+  bearing: Number(vp.bearing) || 0,
+  pitch: Number(vp.pitch) || 0,
+});
+
 export type FitViewportOptions = {
   points: Point[];
   width: number;
