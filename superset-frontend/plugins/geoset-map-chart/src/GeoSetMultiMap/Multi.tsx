@@ -812,6 +812,14 @@ const DeckMulti = (props: DeckMultiProps) => {
     [sortedLayers, categoryVisibility],
   );
 
+  // Clear cached autozoom when static viewport is enabled so autozoom
+  // recalculates fresh if the user toggles static back off
+  useEffect(() => {
+    if (props.enableStaticViewport) {
+      initialAutozoomViewportRef.current = null;
+    }
+  }, [props.enableStaticViewport]);
+
   // Calculate autozoom viewport from layers with autozoom enabled
   // Only calculate once on initial load to prevent view reset on category toggle
   const viewport: Viewport = useMemo(() => {
