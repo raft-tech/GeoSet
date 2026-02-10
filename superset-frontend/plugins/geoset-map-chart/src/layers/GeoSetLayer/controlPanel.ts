@@ -89,8 +89,17 @@ const config: ControlPanelConfig = {
       expanded: true,
       controlSetRows: [
         [mapboxStyle],
-        [viewportControl],
         [autozoom],
+        [
+          {
+            name: viewportControl.name,
+            config: {
+              ...viewportControl.config,
+              visibility: ({ controls }: { controls: any }) =>
+                controls?.autozoom?.value !== true,
+            },
+          },
+        ],
         [dndGeojsonColumn],
         ['row_limit'],
         [

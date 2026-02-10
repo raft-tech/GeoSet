@@ -302,7 +302,8 @@ const DeckMulti = (props: DeckMultiProps) => {
                 } as any;
 
                 // Use transformProps to process data (same logic as standalone chart)
-                const transformedProps = transformGeoSetMapLayerProps(chartProps);
+                const transformedProps =
+                  transformGeoSetMapLayerProps(chartProps);
 
                 const sliceHoverColumnNames = transformedProps.hoverColumnNames;
                 const sliceFeatureInfoColumnNames =
