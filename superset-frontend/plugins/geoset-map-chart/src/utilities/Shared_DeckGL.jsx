@@ -370,17 +370,6 @@ export const gridSize = {
   },
 };
 
-export const viewport = {
-  name: 'viewport',
-  config: {
-    type: 'HiddenControl',
-    // default is whole world mostly centered
-    default: DEFAULT_VIEWPORT,
-    // Viewport changes shouldn't prompt user to re-run query
-    dontRefreshOnChange: true,
-  },
-};
-
 export const viewportControl = {
   name: 'viewport',
   config: {
