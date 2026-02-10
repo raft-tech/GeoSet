@@ -28,6 +28,34 @@ export type Viewport = {
   pitch?: number;
 };
 
+/** Returns true only when longitude, latitude, and zoom are valid finite numbers within range. */
+export const isValidViewport = (vp: unknown): vp is Viewport => {
+  if (!vp || typeof vp !== 'object') return false;
+  const lng = Number((vp as Viewport).longitude);
+  const lat = Number((vp as Viewport).latitude);
+  const z = Number((vp as Viewport).zoom);
+  return (
+    Number.isFinite(lng) &&
+    Number.isFinite(lat) &&
+    Number.isFinite(z) &&
+    lng >= -180 &&
+    lng <= 180 &&
+    lat >= -90 &&
+    lat <= 90 &&
+    z >= 0 &&
+    z <= 24
+  );
+};
+
+/** Coerces viewport values to numbers. Only call when isValidViewport is true. */
+export const toNumericViewport = (vp: Viewport): Viewport => ({
+  longitude: Number(vp.longitude),
+  latitude: Number(vp.latitude),
+  zoom: Number(vp.zoom),
+  bearing: Number(vp.bearing) || 0,
+  pitch: Number(vp.pitch) || 0,
+});
+
 export type FitViewportOptions = {
   points: Point[];
   width: number;

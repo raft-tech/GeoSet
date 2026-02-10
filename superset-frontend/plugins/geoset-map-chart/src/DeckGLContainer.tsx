@@ -37,7 +37,11 @@ import type { Deck, Layer } from '@deck.gl/core';
 import { JsonObject, JsonValue, styled } from '@superset-ui/core';
 import Tooltip, { TooltipProps } from './components/Tooltip';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { Viewport } from './utils/fitViewport';
+import {
+  Viewport,
+  isValidViewport,
+  toNumericViewport,
+} from './utils/fitViewport';
 import { LayerState } from './types';
 import { MeasureState, useMeasureLayers } from './components/MeasureOverlay';
 import { Coordinate } from './utils/measureDistance';
@@ -301,9 +305,12 @@ export const DeckGLContainer = memo(
       return () => clearInterval(timer);
     }, [tick]);
 
-    // Sync viewport from props when it changes (e.g., autozoom from parent)
+    // Sync viewport from props when it changes (e.g., autozoom from parent).
+    // Skip update if any field is invalid (user mid-typing) to avoid jumping the map.
     useEffect(() => {
-      setDeckViewState(props.viewport);
+      if (isValidViewport(props.viewport)) {
+        setDeckViewState(toNumericViewport(props.viewport));
+      }
     }, [props.viewport, setDeckViewState]);
 
     // Force DeckGL resize when container dimensions change
