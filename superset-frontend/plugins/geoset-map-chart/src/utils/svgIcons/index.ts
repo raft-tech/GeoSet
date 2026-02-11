@@ -2,12 +2,16 @@
 import circleTemplate from './circle.svg';
 import pointTemplate from './point.svg';
 import markerTemplate from './marker.svg';
+import squareTemplate from './square.svg';
+import triangleTemplate from './triangle.svg';
 
 // Map icon names to templates
 const svgTemplates: Record<string, string> = {
   circle: circleTemplate,
   point: pointTemplate,
   marker: markerTemplate,
+  square: squareTemplate,
+  triangle: triangleTemplate,
 };
 
 /**

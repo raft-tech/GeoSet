@@ -46,17 +46,36 @@ export class PointSvg extends CustomSvg {
   }
 }
 
-export class LineSvg extends CustomSvg {
+export class SquareSvg extends CustomSvg {
   constructor(fillHexColor: string, width = -1, height = -1) {
     super(fillHexColor, width, height);
     if (width === -1) {
-      this.width = 26;
+      this.width = 24;
     }
     if (height === -1) {
-      this.height = 26;
+      this.height = 24;
     }
 
-    this.svg = loadSvgTemplate('line', fillHexColor, this.width, this.height);
+    this.svg = loadSvgTemplate('square', fillHexColor, this.width, this.height);
+  }
+}
+
+export class TriangleSvg extends CustomSvg {
+  constructor(fillHexColor: string, width = -1, height = -1) {
+    super(fillHexColor, width, height);
+    if (width === -1) {
+      this.width = 24;
+    }
+    if (height === -1) {
+      this.height = 24;
+    }
+
+    this.svg = loadSvgTemplate(
+      'triangle',
+      fillHexColor,
+      this.width,
+      this.height,
+    );
   }
 }
 
@@ -83,8 +102,10 @@ export function getSvg(
   switch (name) {
     case 'point':
       return new PointSvg(fillHexColor, width, height).svg;
-    case 'line':
-      return new LineSvg(fillHexColor, width, height).svg;
+    case 'square':
+      return new SquareSvg(fillHexColor, width, height).svg;
+    case 'triangle':
+      return new TriangleSvg(fillHexColor, width, height).svg;
     case 'marker':
       return new MarkerSvg(fillHexColor, width, height).svg;
     default:
