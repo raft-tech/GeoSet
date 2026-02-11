@@ -1,14 +1,12 @@
 // SVGs in svgIcons/ are loaded as raw strings via webpack asset/source rule
 import circleTemplate from './circle.svg';
 import pointTemplate from './point.svg';
-import lineTemplate from './line.svg';
 import markerTemplate from './marker.svg';
 
 // Map icon names to templates
 const svgTemplates: Record<string, string> = {
   circle: circleTemplate,
   point: pointTemplate,
-  line: lineTemplate,
   marker: markerTemplate,
 };
 
