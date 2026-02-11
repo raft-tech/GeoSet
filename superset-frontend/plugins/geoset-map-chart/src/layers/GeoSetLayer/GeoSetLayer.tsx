@@ -349,9 +349,6 @@ export function getLayer(
       _subLayerProps: {
         stroke: { pickable: false },
       },
-      transitions: {
-        getFillColor: 50,
-      },
       ...baseLayerProps,
     });
   }
@@ -699,9 +696,6 @@ export function getLayer(
         _subLayerProps: {
           stroke: { pickable: false },
         },
-        transitions: {
-          getFillColor: 50,
-        },
         ...baseLayerProps,
       });
     }
@@ -735,9 +729,6 @@ export function getLayer(
           getFillColor: [fillColorArray, categories],
           getLineColor: [strokeColorArray, categories],
         },
-        transitions: {
-          getFillColor: 50,
-        },
         ...baseLayerProps,
       });
     // if no match, default to GeoJSON layer
@@ -769,9 +760,6 @@ export function getLayer(
         updateTriggers: {
           getFillColor: [fillColorArray, categories],
           getLineColor: [strokeColorArray, categories],
-        },
-        transitions: {
-          getFillColor: 50,
         },
         ...baseLayerProps,
       });
