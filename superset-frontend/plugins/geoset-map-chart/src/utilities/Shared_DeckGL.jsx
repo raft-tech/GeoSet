@@ -370,14 +370,28 @@ export const gridSize = {
   },
 };
 
-export const viewport = {
+export const viewportControl = {
   name: 'viewport',
   config: {
-    type: 'HiddenControl',
-    // default is whole world mostly centered
+    type: 'ViewportControl',
+    label: t('Viewport'),
+    renderTrigger: true,
+    description: t('Parameters related to the view and perspective on the map'),
     default: DEFAULT_VIEWPORT,
-    // Viewport changes shouldn't prompt user to re-run query
-    dontRefreshOnChange: true,
+    dontRefreshOnChange: false,
+  },
+};
+
+export const staticViewport = {
+  name: 'enable_static_viewport',
+  config: {
+    type: 'CheckboxControl',
+    label: t('Enable Static Viewport'),
+    default: false,
+    renderTrigger: true,
+    description: t(
+      'When enabled, the map will use a fixed viewport instead of auto-zooming to layer data. Configure the viewport coordinates and zoom level below.',
+    ),
   },
 };
 

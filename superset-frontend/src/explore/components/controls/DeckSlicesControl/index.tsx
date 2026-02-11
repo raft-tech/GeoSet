@@ -55,6 +55,7 @@ export interface DeckSlicesControlProps {
   label?: string;
   description?: string;
   dataEndpoint: string;
+  staticViewportEnabled?: boolean;
 }
 
 const LabelText = styled.span`
@@ -107,6 +108,7 @@ interface SelectedSliceRowProps {
   onRemove: (sliceId: number) => void;
   onMoveLabel: (dragIndex: number, hoverIndex: number) => void;
   onUpdateSliceSettings: (sliceId: number, settings: SliceSettings) => void;
+  staticViewportEnabled?: boolean;
 }
 
 const SettingsButton = styled.div`
@@ -168,6 +170,7 @@ const SelectedSliceRow = ({
   onRemove,
   onMoveLabel,
   onUpdateSliceSettings,
+  staticViewportEnabled = false,
 }: SelectedSliceRowProps) => {
   const theme = useTheme();
   const dropRef = useRef<HTMLDivElement>(null);
@@ -239,14 +242,21 @@ const SelectedSliceRow = ({
 
   const settingsContent = (
     <SettingsPopoverContent onClick={e => e.stopPropagation()}>
-      <SettingsRow>
+      <SettingsRow style={staticViewportEnabled ? { opacity: 0.5 } : undefined}>
         <Checkbox
           checked={draftAutozoom}
           onChange={() => setDraftAutozoom(!draftAutozoom)}
+          disabled={staticViewportEnabled}
         />
         <SettingsLabel>{t('Auto Zoom')}</SettingsLabel>
         <Tooltip
-          title={t('Automatically zoom the map to fit this layer')}
+          title={
+            staticViewportEnabled
+              ? t(
+                  'Auto Zoom is disabled when Static Viewport is enabled on the map',
+                )
+              : t('Automatically zoom the map to fit this layer')
+          }
           mouseLeaveDelay={0}
         >
           <InfoIcon>
@@ -385,6 +395,7 @@ const DeckSlicesControl = ({
   value = [],
   onChange,
   dataEndpoint,
+  staticViewportEnabled = false,
   ...props
 }: DeckSlicesControlProps) => {
   const theme = useTheme();
@@ -561,6 +572,7 @@ const DeckSlicesControl = ({
             onRemove={handleRemove}
             onMoveLabel={moveLabel}
             onUpdateSliceSettings={handleUpdateSliceSettings}
+            staticViewportEnabled={staticViewportEnabled}
           />
         ))}
         <Popover

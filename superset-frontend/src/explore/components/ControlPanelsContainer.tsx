@@ -737,6 +737,11 @@ export const ControlPanelsContainer = (props: ControlPanelsContainerProps) => {
               <>
                 {showDatasourceAlert && <DatasourceAlert />}
                 <Collapse
+                  /*
+                   * Force Collapse to remount when chart type changes,
+                   * ensuring defaultActiveKey re-expands sections correctly.
+                   */
+                  key={form_data.viz_type}
                   defaultActiveKey={expandedQuerySections}
                   expandIconPosition="end"
                   ghost
@@ -753,6 +758,11 @@ export const ControlPanelsContainer = (props: ControlPanelsContainerProps) => {
                   label: t('Customize'),
                   children: (
                     <Collapse
+                      /*
+                       * Force Collapse to remount when chart type changes,
+                       * ensuring defaultActiveKey re-expands sections correctly.
+                       */
+                      key={form_data.viz_type}
                       defaultActiveKey={expandedCustomizeSections}
                       expandIconPosition="end"
                       ghost

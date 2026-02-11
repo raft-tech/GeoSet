@@ -25,7 +25,9 @@ import {
   featureInfoColumns,
   hoverDataColumns,
   minMaxZoomSlider,
-  viewport,
+  viewportControl,
+  mapboxStyle,
+  autozoom,
   enableClustering,
   clusterMaxZoom,
   clusterMinPoints,
@@ -86,6 +88,18 @@ const config: ControlPanelConfig = {
       label: t('Map Configuration'),
       expanded: true,
       controlSetRows: [
+        [mapboxStyle],
+        [autozoom],
+        [
+          {
+            name: viewportControl.name,
+            config: {
+              ...viewportControl.config,
+              visibility: ({ controls }: { controls: any }) =>
+                controls?.autozoom?.value !== true,
+            },
+          },
+        ],
         [dndGeojsonColumn],
         ['row_limit'],
         [
@@ -157,7 +171,6 @@ const config: ControlPanelConfig = {
           },
         ],
         ['adhoc_filters'],
-        [viewport],
         [minMaxZoomSlider],
         [hoverDataColumns],
         [featureInfoColumns],
