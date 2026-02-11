@@ -136,3 +136,4 @@ scratch/
 .vscode/tasks.json
 
 .claude/settings.local.json
+.claude/commands/local-*.md
