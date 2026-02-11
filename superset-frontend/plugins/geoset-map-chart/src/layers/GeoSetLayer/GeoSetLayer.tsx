@@ -63,7 +63,10 @@ import { normalizeRGBA } from '../../utils/colorsFallback';
 import { getColoredSvgUrl } from '../../utils/svgIcons';
 import { PointClusterLayer } from '../PointClusterLayer';
 import { validateLayerType } from '../../utilities/utils';
-import { expandPolygonFeatures } from '../../utils/expandPolygonFeatures';
+import {
+  expandPolygonFeatures,
+  ExpandedPolygon,
+} from '../../utils/expandPolygonFeatures';
 import {
   fetchMapboxApiKey,
   getCachedMapboxApiKey,
@@ -74,6 +77,12 @@ import { Coordinate } from '../../utils/measureDistance';
 import ClickPopupBox, {
   ClickedFeatureInfo,
 } from '../../components/ClickPopupBox';
+
+// Module-level cache: keeps expanded polygon geometry stable across re-renders
+// that only change category visibility or colors (not the underlying data).
+// When data reference (payload.data) stays the same, cache hits avoid
+// expensive polygon re-tessellation in deck.gl's PolygonLayer + PathLayer.
+const polygonDataCache = new WeakMap<object, ExpandedPolygon[]>();
 
 const LimitWarning = styled.div`
   background-color: ${({ theme }) => theme.colorWarningBg};
@@ -256,11 +265,101 @@ export function getLayer(
   const fillColorArray = normalizeRGBA(fillColor || fd.fillColorPicker);
   const strokeColorArray = normalizeRGBA(strokeColor || fd.strokeColorPicker);
 
+  const isDashed = lineStyle === 'dashed';
+
+  // Create tooltip content generator with hover column filtering
+  const tooltipContentGenerator = (o: JsonObject) =>
+    setTooltipContent(o, hoverColumnNames);
+
+  const hasHoverData =
+    (hoverColumnNames && hoverColumnNames.length > 0) ||
+    Boolean(fd.js_tooltip);
+
+  // Shared props for all layer types.
+  // Only enable onHover when hover data is configured — this prevents
+  // deck.gl from performing expensive GPU picking on every mouse move.
+  const baseLayerProps = {
+    ...commonLayerProps(fd, setTooltip, tooltipContentGenerator),
+    pickable: true,
+    onClick: onFeatureClick,
+    ...(hasHoverData ? {} : { onHover: undefined }),
+  };
+
+  // --- Fast path for Polygon layers with cached geometry ---
+  // When only categories/colors change (not underlying data), we can skip ALL
+  // expensive feature processing (recurseGeoJson, visibility map, sort, expand)
+  // and reuse the cached polygon geometry with accessor-based coloring.
+  const requestedLayerType = fd.geoJsonLayer || 'GeoJSON';
+  const cachedPolygonData =
+    requestedLayerType === 'Polygon'
+      ? polygonDataCache.get(payload.data)
+      : null;
+
+  if (cachedPolygonData) {
+    const effectiveStroked =
+      (lineWidth ?? fd.lineWidth ?? 1) > 0 ? (stroked ?? fd.stroked) : false;
+
+    const disabledCategories = new Set<string>();
+    if (!isMetric) {
+      for (const [key, state] of Object.entries(categories)) {
+        if (!(state as any).enabled) disabledCategories.add(key);
+      }
+    }
+    const hasDisabled = disabledCategories.size > 0;
+
+    return new PolygonLayer({
+      id: `polygon-layer-${fd.slice_id}`,
+      data: cachedPolygonData,
+      stroked: effectiveStroked,
+      filled: filled ?? fd.filled,
+      getPolygon: (d: ExpandedPolygon) => d.polygon,
+      getFillColor: (d: ExpandedPolygon): [number, number, number, number] => {
+        if (hasDisabled && dimension) {
+          const cat = d.properties?.[dimension];
+          if (cat != null) {
+            const key = String(cat).trim().toLowerCase();
+            if (disabledCategories.has(key)) return [0, 0, 0, 0];
+          }
+        }
+        const c = d.color || fillColorArray;
+        return [c[0] ?? 0, c[1] ?? 0, c[2] ?? 0, c[3] ?? 255];
+      },
+      getLineColor: hasDisabled
+        ? (d: ExpandedPolygon): [number, number, number, number] => {
+            if (dimension) {
+              const cat = d.properties?.[dimension];
+              if (cat != null) {
+                const key = String(cat).trim().toLowerCase();
+                if (disabledCategories.has(key)) return [0, 0, 0, 0];
+              }
+            }
+            return strokeColorArray as [number, number, number, number];
+          }
+        : (strokeColorArray as [number, number, number, number]),
+      getLineWidth: lineWidth ?? (fd.lineWidth || 0),
+      lineWidthUnits: 'pixels',
+      lineWidthScale: 1,
+      lineWidthMinPixels: 0,
+      updateTriggers: {
+        getFillColor: [fillColorArray, categories],
+        getLineColor: [strokeColorArray, categories],
+      },
+      // Disable picking on stroke sublayer — only the fill needs to be pickable.
+      // This halves the per-frame GPU picking cost for bordered polygons.
+      _subLayerProps: {
+        stroke: { pickable: false },
+      },
+      transitions: {
+        getFillColor: 50,
+      },
+      ...baseLayerProps,
+    });
+  }
+
+  // --- Standard path: process features for all layer types ---
   const propOverrides: JsonObject = {};
   if (fillColorArray[3] > 0) propOverrides.fillColor = fillColorArray;
   if (strokeColorArray[3] > 0) propOverrides.strokeColor = strokeColorArray;
-
-  const isDashed = lineStyle === 'dashed';
 
   const features =
     (recurseGeoJson(payload.data, propOverrides) as GeoJsonFeature[]) || [];
@@ -316,40 +415,38 @@ export function getLayer(
   const categoryKeys = Object.keys(categories);
   const UNCATEGORIZED_INDEX = Number.MAX_SAFE_INTEGER; // Ensures uncategorized sorts to bottom
 
+  // Pre-compute category index map for O(1) lookups instead of O(n) indexOf per comparison
+  const categoryIndexMap = new Map(categoryKeys.map((k, i) => [k, i]));
+
+  const getCategoryKey = (f: GeoJsonFeature): string | null => {
+    const categoryRaw =
+      (f as any).categoryName ?? f.properties?.[dimension as string];
+    if (categoryRaw == null) return null;
+    return typeof categoryRaw === 'string'
+      ? categoryRaw.trim().toLowerCase()
+      : String(categoryRaw).trim().toLowerCase();
+  };
+
   const sortedFeatures = [...visibleFeatures].sort((a, b) => {
     if (isMetric) return 0; // Don't sort in metric mode
 
-    const getCategoryIndex = (f: GeoJsonFeature) => {
-      const categoryRaw =
-        (f as any).categoryName ?? f.properties?.[dimension as string];
-      if (categoryRaw == null) return UNCATEGORIZED_INDEX; // Put uncategorized at bottom (drawn first)
-
-      const lookupKey =
-        typeof categoryRaw === 'string'
-          ? categoryRaw.trim().toLowerCase()
-          : String(categoryRaw).trim().toLowerCase();
-
-      const idx = categoryKeys.indexOf(lookupKey);
-      return idx === -1 ? UNCATEGORIZED_INDEX : idx; // Unknown categories also at bottom
-    };
+    const keyA = getCategoryKey(a);
+    const keyB = getCategoryKey(b);
+    const idxA =
+      keyA != null
+        ? (categoryIndexMap.get(keyA) ?? UNCATEGORIZED_INDEX)
+        : UNCATEGORIZED_INDEX;
+    const idxB =
+      keyB != null
+        ? (categoryIndexMap.get(keyB) ?? UNCATEGORIZED_INDEX)
+        : UNCATEGORIZED_INDEX;
 
     // Reverse order: higher index drawn first (bottom), lower index drawn last (top)
-    return getCategoryIndex(b) - getCategoryIndex(a);
+    return idxB - idxA;
   });
 
-  // Create tooltip content generator with hover column filtering
-  const tooltipContentGenerator = (o: JsonObject) =>
-    setTooltipContent(o, hoverColumnNames);
-
-  // Shared props for all layer types
-  const baseLayerProps = {
-    ...commonLayerProps(fd, setTooltip, tooltipContentGenerator),
-    pickable: true,
-    onClick: onFeatureClick,
-  };
-
   // validate which layer type to render
-  let layerType = fd.geoJsonLayer || 'GeoJSON';
+  let layerType = requestedLayerType;
   layerType = validateLayerType(
     layerType,
     processedFeatures[0]?.geometry?.type,
@@ -530,27 +627,78 @@ export function getLayer(
       });
     // POLYGONS
     case 'Polygon': {
-      // --- Flatten MultiPolygons into individual polygons ---
-      const polygonData = expandPolygonFeatures(
-        sortedFeatures as Feature<Geometry, GeoJsonProperties>[],
-      );
+      // --- Stable polygon data via payload-based caching ---
+      // Cache expanded polygons keyed on payload.data, which stays referentially
+      // stable when only categories/colors change (no new data fetch).
+      // This prevents deck.gl from re-tessellating polygon + stroke geometry
+      // on every category toggle — the most expensive operation for bordered polygons.
+      let polygonData = polygonDataCache.get(payload.data);
+      if (!polygonData) {
+        polygonData = expandPolygonFeatures(
+          sortedFeatures as Feature<Geometry, GeoJsonProperties>[],
+        );
+        polygonDataCache.set(payload.data, polygonData);
+      }
 
       // Compute effective stroked based on lineWidth
       const effectiveStroked =
         (lineWidth ?? fd.lineWidth ?? 1) > 0 ? (stroked ?? fd.stroked) : false;
 
+      // Pre-compute disabled categories set for O(1) lookup in accessors
+      const disabledCategories = new Set<string>();
+      if (!isMetric) {
+        for (const [key, state] of Object.entries(categories)) {
+          if (!(state as any).enabled) disabledCategories.add(key);
+        }
+      }
+      const hasDisabled = disabledCategories.size > 0;
+
+      // Use accessor-based colors with updateTriggers so deck.gl only
+      // recalculates color attributes (cheap) without re-tessellating geometry (expensive).
       return new PolygonLayer({
         id: `polygon-layer-${fd.slice_id}`,
         data: polygonData,
         stroked: effectiveStroked,
         filled: filled ?? fd.filled,
-        getPolygon: (feature: any) => feature.polygon,
-        getFillColor: feature => feature.color || fillColorArray,
-        getLineColor: () => strokeColorArray,
+        getPolygon: (d: ExpandedPolygon) => d.polygon,
+        getFillColor: (
+          d: ExpandedPolygon,
+        ): [number, number, number, number] => {
+          if (hasDisabled && dimension) {
+            const cat = d.properties?.[dimension];
+            if (cat != null) {
+              const key = String(cat).trim().toLowerCase();
+              if (disabledCategories.has(key)) return [0, 0, 0, 0];
+            }
+          }
+          const c = d.color || fillColorArray;
+          return [c[0] ?? 0, c[1] ?? 0, c[2] ?? 0, c[3] ?? 255];
+        },
+        getLineColor: hasDisabled
+          ? (
+              d: ExpandedPolygon,
+            ): [number, number, number, number] => {
+              if (dimension) {
+                const cat = d.properties?.[dimension];
+                if (cat != null) {
+                  const key = String(cat).trim().toLowerCase();
+                  if (disabledCategories.has(key)) return [0, 0, 0, 0];
+                }
+              }
+              return strokeColorArray as [number, number, number, number];
+            }
+          : (strokeColorArray as [number, number, number, number]),
         getLineWidth: lineWidth ?? (fd.lineWidth || 0),
         lineWidthUnits: 'pixels',
         lineWidthScale: 1,
         lineWidthMinPixels: 0,
+        updateTriggers: {
+          getFillColor: [fillColorArray, categories],
+          getLineColor: [strokeColorArray, categories],
+        },
+        _subLayerProps: {
+          stroke: { pickable: false },
+        },
         transitions: {
           getFillColor: 50,
         },
@@ -569,7 +717,6 @@ export function getLayer(
           feature: GeoJsonFeature,
         ): [number, number, number, number] => {
           const color = feature.color ?? fillColorArray;
-          // Ensure the color array has exactly 4 elements
           return [color[0] ?? 0, color[1] ?? 0, color[2] ?? 0, color[3] ?? 255];
         },
         getLineColor: (feature: any) =>
@@ -584,6 +731,10 @@ export function getLayer(
         pointRadiusMinPixels: 5,
         lineWidthUnits: 'pixels',
         lineWidthMinPixels: 0,
+        updateTriggers: {
+          getFillColor: [fillColorArray, categories],
+          getLineColor: [strokeColorArray, categories],
+        },
         transitions: {
           getFillColor: 50,
         },
@@ -601,7 +752,6 @@ export function getLayer(
           feature: GeoJsonFeature,
         ): [number, number, number, number] => {
           const color = feature.color ?? fillColorArray;
-          // Ensure the color array has exactly 4 elements
           return [color[0] ?? 0, color[1] ?? 0, color[2] ?? 0, color[3] ?? 255];
         },
         getLineColor: (feature: any) =>
@@ -616,6 +766,10 @@ export function getLayer(
         pointRadiusMinPixels: 5,
         lineWidthUnits: 'pixels',
         lineWidthMinPixels: 0,
+        updateTriggers: {
+          getFillColor: [fillColorArray, categories],
+          getLineColor: [strokeColorArray, categories],
+        },
         transitions: {
           getFillColor: 50,
         },
@@ -1061,6 +1215,7 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
       min: metricLegendObject.min,
       max: metricLegendObject.max,
       legendName:
+        metricLegendObject.legendName ||
         propVisualConfig?.metric?.valueColumn ||
         payload.data.metricLabels?.[0] ||
         'Value',
