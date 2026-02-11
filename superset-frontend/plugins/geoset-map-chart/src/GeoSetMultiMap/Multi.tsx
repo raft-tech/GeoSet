@@ -92,6 +92,7 @@ export type DeckMultiProps = {
   mapboxApiKey: string;
   mapStyle: string;
   viewport: Viewport;
+  enableStaticViewport: boolean;
   onAddFilter: HandlerFunction;
   height: number;
   width: number;
@@ -301,7 +302,8 @@ const DeckMulti = (props: DeckMultiProps) => {
                 } as any;
 
                 // Use transformProps to process data (same logic as standalone chart)
-                const transformedProps = transformGeoSetMapLayerProps(chartProps);
+                const transformedProps =
+                  transformGeoSetMapLayerProps(chartProps);
 
                 const sliceHoverColumnNames = transformedProps.hoverColumnNames;
                 const sliceFeatureInfoColumnNames =
@@ -550,7 +552,7 @@ const DeckMulti = (props: DeckMultiProps) => {
     }
   }, [subSlicesLayers, prevSubSlicesLayersLength]);
 
-  const { setControlValue, height, width } = props;
+  const { height, width } = props;
 
   // Toggle layer visibility callback
   const handleToggleLayerVisibility = useCallback(
@@ -811,9 +813,22 @@ const DeckMulti = (props: DeckMultiProps) => {
     [sortedLayers, categoryVisibility],
   );
 
+  // Clear cached autozoom when static viewport is enabled so autozoom
+  // recalculates fresh if the user toggles static back off
+  useEffect(() => {
+    if (props.enableStaticViewport) {
+      initialAutozoomViewportRef.current = null;
+    }
+  }, [props.enableStaticViewport]);
+
   // Calculate autozoom viewport from layers with autozoom enabled
   // Only calculate once on initial load to prevent view reset on category toggle
   const viewport: Viewport = useMemo(() => {
+    // When static viewport is enabled, skip autozoom entirely
+    if (props.enableStaticViewport) {
+      return props.viewport;
+    }
+
     // If we already calculated autozoom, use the stored viewport
     if (initialAutozoomViewportRef.current) {
       return initialAutozoomViewportRef.current;
@@ -833,7 +848,7 @@ const DeckMulti = (props: DeckMultiProps) => {
     // Store the initial autozoom viewport
     initialAutozoomViewportRef.current = calculatedViewport;
     return calculatedViewport;
-  }, [sortedLayers, props.viewport, width, height]);
+  }, [sortedLayers, props.viewport, width, height, props.enableStaticViewport]);
 
   // Map control handlers - must be defined before any conditional returns
   const handleZoomIn = useCallback(() => {
@@ -972,7 +987,6 @@ const DeckMulti = (props: DeckMultiProps) => {
         initialViewport={viewport}
         layerStates={layerStatesWithVisibility}
         mapStyle={mapStyle}
-        setControlValue={setControlValue}
         height={height}
         width={width}
         measureState={measureState}

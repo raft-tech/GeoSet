@@ -1110,7 +1110,6 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
         initialViewport={viewport}
         layerStates={layerState ? [layerState] : []}
         mapStyle={mapStyle || formData.mapbox_style}
-        setControlValue={setControlValue}
         height={mapHeight}
         width={width}
         measureState={measureState}

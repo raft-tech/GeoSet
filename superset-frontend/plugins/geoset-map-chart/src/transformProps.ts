@@ -402,10 +402,13 @@ export default function transformProps(chartProps: ChartProps) {
 
   const mapStyle = formData.mapboxStyle || 'mapbox://styles/mapbox/light-v10';
 
+  const enableStaticViewport = formData.enableStaticViewport || false;
+
   return {
     width,
     height,
     formData,
+    enableStaticViewport,
     geoJsonLayer: layerType,
     payload: {
       data: {

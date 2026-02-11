@@ -21,8 +21,5 @@ import { omit } from 'lodash';
 
 const TEMPORARY_CONTROLS: string[] = ['url_params'];
 
-// Controls that change during render but shouldn't trigger "unsaved changes" prompts
-const NOISY_CONTROLS: string[] = ['viewport'];
-
 export const sanitizeFormData = (formData: JsonObject): JsonObject =>
-  omit(formData, [...TEMPORARY_CONTROLS, ...NOISY_CONTROLS]);
+  omit(formData, TEMPORARY_CONTROLS);

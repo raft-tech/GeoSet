@@ -17,7 +17,11 @@
  * under the License.
  */
 import { t, validateNonEmpty } from '@superset-ui/core';
-import { viewport, mapboxStyle } from '../utilities/Shared_DeckGL';
+import {
+  mapboxStyle,
+  staticViewport,
+  viewportControl,
+} from '../utilities/Shared_DeckGL';
 
 export default {
   controlPanelSections: [
@@ -26,7 +30,17 @@ export default {
       expanded: true,
       controlSetRows: [
         [mapboxStyle],
-        [viewport],
+        [staticViewport],
+        [
+          {
+            name: viewportControl.name,
+            config: {
+              ...viewportControl.config,
+              visibility: ({ controls }: { controls: any }) =>
+                controls?.enable_static_viewport?.value === true,
+            },
+          },
+        ],
         [
           {
             name: 'deck_slices',
@@ -40,6 +54,11 @@ export default {
               ),
               dataEndpoint:
                 'api/v1/chart/?q=(filters:!((col:viz_type,opr:eq,value:deck_geoset_map_layer)),page_size:1000)',
+              shouldMapStateToProps: () => true,
+              mapStateToProps: ({ controls }: { controls: any }) => ({
+                staticViewportEnabled:
+                  controls?.enable_static_viewport?.value === true,
+              }),
             },
           },
           null,
