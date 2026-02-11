@@ -5,16 +5,29 @@ Icons support dynamic color injection at runtime via placeholder replacement.
 
 ## Current Icons
 
-| Icon Name | File         | Default Size | Description              |
-|-----------|--------------|--------------|--------------------------|
-| circle    | circle.svg   | 26x26        | Default circular marker  |
-| point     | point.svg    | 128x128      | Point marker             |
-| line      | line.svg     | 26x26        | Line marker              |
-| marker    | marker.svg   | 128x128      | Placemarker/pin icon     |
+| Icon Name | File       | Default Size | Description          |
+|-----------|------------|--------------|----------------------|
+| circle    | circle.svg | 26x26        | Default circular marker |
+| point     | point.svg  | 128x128      | Point marker         |
+| marker    | marker.svg | 128x128      | Placemarker/pin icon |
 
 ## Adding a New Icon
 
-### 1. Create the SVG File
+There are two ways to add a new icon: using the Claude command or manually.
+
+### Option A: Using the Claude Command
+
+1. Drop your `.svg` file into this folder (`svgIcons/`)
+2. Run the `/add-svg-icon` Claude command
+3. The command will automatically:
+   - Add `{{fillColor}}` placeholders to the primary shape elements
+   - Register the import and template mapping in `index.ts`
+   - Add the icon class and switch case in `svgIcons.ts`
+4. Review the changes and rebuild
+
+### Option B: Manual Steps
+
+#### 1. Create the SVG File
 
 Add your SVG file to this folder (`svgIcons/`). Use `{{fillColor}}` as a placeholder
 anywhere you want dynamic color injection:
@@ -28,31 +41,29 @@ anywhere you want dynamic color injection:
 ```
 
 **Rules for SVG files:**
-- Use `{{fillColor}}` for any color that should change dynamically (fill colors, stroke colors, etc.)
+- Use `{{fillColor}}` for any color that should change dynamically
+- Do NOT replace `fill` on decorative/structural elements (e.g., `fill="white"` for inner cutouts, `fill="none"` on the root `<svg>`, `fill="black"` with low `fill-opacity` for shadows, or `fill` inside `<mask>`, `<defs>`, `<clipPath>`)
 - Set a default `width` and `height` on the root `<svg>` element (these get replaced at runtime when custom dimensions are provided)
 - Keep the SVG self-contained (no external references)
 
-### 2. Register the Import in `index.ts`
+#### 2. Register the Import in `index.ts`
 
-Add a `require` statement and add the icon to the `svgTemplates` map:
+Add an import and register it in the `svgTemplates` map:
 
 ```typescript
 // Add the import (at the top with the other imports)
-const starTemplate: string =
-  require('!!raw-loader!./star.svg').default ||
-  require('!!raw-loader!./star.svg');
+import starTemplate from './star.svg';
 
 // Add to the svgTemplates map
 const svgTemplates: Record<string, string> = {
   circle: circleTemplate,
   point: pointTemplate,
-  line: lineTemplate,
   marker: markerTemplate,
   star: starTemplate, // <-- add here
 };
 ```
 
-### 3. Add an Icon Class in `svgIcons.ts`
+#### 3. Add an Icon Class in `svgIcons.ts`
 
 In the parent file (`../svgIcons.ts`), create a new class extending `CustomSvg`
 and add a case to the `getSvg()` switch statement:
@@ -78,8 +89,6 @@ export function getSvg(name: string, fillHexColor: string, width = -1, height = 
   switch (name) {
     case 'point':
       return new PointSvg(fillHexColor, width, height).svg;
-    case 'line':
-      return new LineSvg(fillHexColor, width, height).svg;
     case 'marker':
       return new MarkerSvg(fillHexColor, width, height).svg;
     case 'star': // <-- add case
@@ -100,14 +109,8 @@ npm run build # production
 
 ## How It Works
 
-1. SVG files are loaded as raw text strings at build time using `raw-loader`
+1. SVG files are imported as raw text strings at build time via webpack's `asset/source` rule
 2. At runtime, `loadSvgTemplate()` replaces `{{fillColor}}` placeholders with the actual color value
-3. If custom width/height are provided, the `width` and `height` attributes on the SVG root element are also replaced
+3. If custom width/height are provided, the `width` and `height` attributes on the root `<svg>` element are also replaced
 4. The `getColoredSvgUrl()` function converts the processed SVG into a data URI for use as map marker icons
 5. A cache (`svgCache`) prevents regenerating the same icon+color combination
-
-## Backend
-
-The backend schema (`GeoSetLayerV1Schema.py`) accepts any string for `pointType`,
-so no backend changes are needed when adding new icons. If an unrecognized icon name
-is used, the frontend falls back to the default `circle` icon.
