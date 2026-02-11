@@ -37,7 +37,8 @@ const StyledLegend = styled.div`
     padding: ${theme.sizeUnit * 4}px ${theme.sizeUnit * 5}px;
     outline: none;
     overflow-y: auto;
-    max-width: 220px;
+    min-width: 200px;
+    max-width: 225px;
     border-radius: 6px;
     z-index: 10;
     max-height: calc(100% - 24px);

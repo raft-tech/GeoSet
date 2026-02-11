@@ -95,6 +95,7 @@ const LegendWrapper = styled.div(
   box-shadow: 0 2px 6px ${theme.colorText}1F;
   font-family: inherit;
   max-height: 100%;
+  min-width: 200px;
   max-width: 350px;
   overflow-y: auto;
   pointer-events: auto;

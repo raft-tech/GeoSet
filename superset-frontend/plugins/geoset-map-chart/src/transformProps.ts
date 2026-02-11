@@ -195,7 +195,7 @@ export default function transformProps(chartProps: ChartProps) {
           max: upper,
           startColor: start,
           endColor: end,
-          legendName: valueColumn,
+          legendName: legend?.title || valueColumn,
         };
       }
     } else {
