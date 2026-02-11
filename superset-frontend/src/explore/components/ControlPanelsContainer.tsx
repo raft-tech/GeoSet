@@ -737,12 +737,14 @@ export const ControlPanelsContainer = (props: ControlPanelsContainerProps) => {
               <>
                 {showDatasourceAlert && <DatasourceAlert />}
                 <Collapse
+                  key={form_data.viz_type}
                   defaultActiveKey={expandedQuerySections}
                   expandIconPosition="end"
                   ghost
                   bordered
                   items={[...querySections.map(renderControlPanelSection)]}
                 />
+              
               </>
             ),
           },
@@ -753,6 +755,7 @@ export const ControlPanelsContainer = (props: ControlPanelsContainerProps) => {
                   label: t('Customize'),
                   children: (
                     <Collapse
+                      key={form_data.viz_type}
                       defaultActiveKey={expandedCustomizeSections}
                       expandIconPosition="end"
                       ghost
