@@ -16,7 +16,7 @@ const svgTemplates: Record<string, string> = {
 
 /**
  * Load and process SVG template with dynamic color and dimensions
- * @param iconName - Name of the icon (circle, point, line, marker)
+ * @param iconName - Name of the icon (circle, point, marker, square, triangle)
  * @param fillColor - Color to inject into the SVG (e.g., "#ff0000" or "rgb(255,0,0)")
  * @param width - Optional width to replace in the SVG
  * @param height - Optional height to replace in the SVG

@@ -23,10 +23,10 @@ export class CircleSvg extends CustomSvg {
   constructor(fillHexColor: string, width = -1, height = -1) {
     super(fillHexColor, width, height);
     if (width === -1) {
-      this.width = 26;
+      this.width = 24;
     }
     if (height === -1) {
-      this.height = 26;
+      this.height = 24;
     }
 
     this.svg = loadSvgTemplate('circle', fillHexColor, this.width, this.height);

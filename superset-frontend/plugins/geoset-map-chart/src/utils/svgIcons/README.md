@@ -5,11 +5,13 @@ Icons support dynamic color injection at runtime via placeholder replacement.
 
 ## Current Icons
 
-| Icon Name | File       | Default Size | Description          |
-|-----------|------------|--------------|----------------------|
-| circle    | circle.svg | 26x26        | Default circular marker |
-| point     | point.svg  | 128x128      | Point marker         |
-| marker    | marker.svg | 128x128      | Placemarker/pin icon |
+| Icon Name | File         | Default Size | Description             |
+|-----------|--------------|--------------|-------------------------|
+| circle    | circle.svg   | 24x24        | Default circular marker |
+| point     | point.svg    | 128x128      | Point marker            |
+| marker    | marker.svg   | 128x128      | Place marker/pin icon   |
+| square    | square.svg   | 24x24        | Square marker           |
+| triangle  | triangle.svg | 24x24        | Triangle marker         |
 
 ## Adding a New Icon
 
@@ -59,6 +61,8 @@ const svgTemplates: Record<string, string> = {
   circle: circleTemplate,
   point: pointTemplate,
   marker: markerTemplate,
+  square: squareTemplate,
+  triangle: triangleTemplate,
   star: starTemplate, // <-- add here
 };
 ```
@@ -89,6 +93,10 @@ export function getSvg(name: string, fillHexColor: string, width = -1, height = 
   switch (name) {
     case 'point':
       return new PointSvg(fillHexColor, width, height).svg;
+    case 'square':
+      return new SquareSvg(fillHexColor, width, height).svg;
+    case 'triangle':
+      return new TriangleSvg(fillHexColor, width, height).svg;
     case 'marker':
       return new MarkerSvg(fillHexColor, width, height).svg;
     case 'star': // <-- add case
