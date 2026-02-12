@@ -36,3 +36,44 @@ Prefix with `local-` for personal skills that won't be committed (gitignored):
 ```
 .claude/skills/local-my-thing/
 ```
+
+## Plugins
+
+Plugins are shareable, versioned bundles of skills, commands, hooks, and MCP servers that can be installed from marketplaces.
+
+### Browsing & Installing Plugins
+
+**Interactive (recommended):** Run `/plugin` in Claude Code to open the plugin manager, then:
+
+1. **Discover** tab — browse available plugins from all added marketplaces
+2. Select a plugin and press **Enter** to install
+3. Choose a scope:
+   - **User** — available to you across all projects
+   - **Project** — shared with collaborators (saved to `.claude/settings.json`)
+   - **Local** — just for you in this repo only
+
+**CLI:**
+
+```bash
+# Add a marketplace (the official one is available by default)
+/plugin marketplace add owner/repo
+
+# Install a specific plugin
+/plugin install plugin-name@marketplace-name
+```
+
+### Using Plugin Skills
+
+Plugin skills are namespaced to avoid conflicts:
+
+```
+/plugin-name:skill-name
+```
+
+For example, the `frontend-design` plugin provides `/frontend-design:frontend-design`.
+
+### Managing Plugins
+
+- `/plugin` — open the plugin manager to view installed plugins, update, or remove them
+- **Installed** tab — manage and uninstall existing plugins
+- **Marketplaces** tab — add or remove marketplace sources
