@@ -262,10 +262,45 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "celery inspect ping -A superset.tasks.celery_app:app -d celery@$$HOSTNAME"]
 
+  postgis:
+    image: postgis/postgis:16-3.4
+    container_name: superset_postgis
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5433:5432"
+    environment:
+      POSTGRES_DB: geoset
+      POSTGRES_USER: geoset
+      POSTGRES_PASSWORD: geoset
+    volumes:
+      - geoset_data:/var/lib/postgresql/data
+      - ./sample-data/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U geoset -d geoset"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  geoset_sample_data_ingest:
+    build:
+      context: ./sample-data
+    container_name: geoset_sample_data_ingest
+    depends_on:
+      postgis:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgis
+      DB_PORT: "5432"
+      DB_NAME: geoset
+      DB_USER: geoset
+      DB_PASSWORD: geoset
+
 volumes:
   superset_home:
     external: false
   db_home:
     external: false
   redis:
+    external: false
+  geoset_data:
     external: false
