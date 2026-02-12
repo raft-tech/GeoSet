@@ -322,14 +322,22 @@ export const DeckGLContainer = memo(
       });
     }, [props.width, props.height]);
 
-    // Sync React state on view changes (needed for scale control updates)
+    // Sync React state on view changes (needed for scale control updates).
+    // The ref updates every frame for accuracy, but setViewState is throttled
+    // to TICK intervals to avoid expensive React re-renders during pan/zoom.
+    const lastScaleUpdate = useRef<number>(0);
     const onViewStateChange = useCallback(
       ({ viewState: newViewState }: { viewState: JsonObject }) => {
         const newVS = newViewState as Viewport;
         currentViewport.current = newVS;
-        setViewState(newVS);
         // Always mark for save so viewport persists, but rate-limited by tick()
         pendingSaveTime.current = Date.now();
+        // Throttle React state updates (scale control) to avoid re-renders every frame
+        const now = Date.now();
+        if (now - lastScaleUpdate.current >= TICK) {
+          lastScaleUpdate.current = now;
+          setViewState(newVS);
+        }
       },
       [],
     );
@@ -375,12 +383,16 @@ export const DeckGLContainer = memo(
     useEffect(() => {
       if (!props.layerStates) return;
 
+      const currZoom = mapRef.current?.getMap()?.getZoom() ?? 0;
+
+      // Build new layer states, only cloning when visibility needs to change.
+      // This avoids an expensive layer.clone() on every props update when
+      // zoom-based visibility hasn't changed.
       const newLayerStates = props.layerStates
         .map(ls => {
           if (!ls?.layer) return null;
 
           const { layer, options } = ls;
-          const currZoom = mapRef.current?.getMap()?.getZoom() ?? 0;
 
           const zoomVisible =
             (!options?.minZoom || currZoom >= options.minZoom) &&
@@ -388,16 +400,21 @@ export const DeckGLContainer = memo(
           const userVisible = options?.userVisible !== false;
           const isVisible = zoomVisible && userVisible;
 
-          // Clone layer with visibility
-          try {
-            return {
-              id: layer.id,
-              layer: layer.clone({ visible: isVisible }),
-              options,
-            };
-          } catch {
-            return { id: layer.id, layer, options };
+          // The layer from props defaults to visible.  Only clone if we
+          // need to hide it — otherwise pass through the original layer.
+          if (!isVisible) {
+            try {
+              return {
+                id: layer.id,
+                layer: layer.clone({ visible: false }),
+                options,
+              };
+            } catch {
+              return { id: layer.id, layer, options };
+            }
           }
+
+          return { id: layer.id, layer, options };
         })
         .filter(Boolean);
 
@@ -680,6 +697,20 @@ export const DeckGLContainer = memo(
       return { width: Math.round(maxWidth * ratio), label };
     }, [viewState.zoom, viewState.latitude, width, height, mapReady]);
 
+    // --- DEBUG: deck.gl performance metrics overlay ---
+    // Use a ref + throttled state to avoid re-renders every frame from _onMetrics
+    const [deckMetrics, setDeckMetrics] = useState<Record<string, number>>({});
+    const metricsRef = useRef<Record<string, number>>({});
+    const lastMetricsFlush = useRef(0);
+    const onMetrics = useCallback((metrics: Record<string, number>) => {
+      metricsRef.current = metrics;
+      const now = Date.now();
+      if (now - lastMetricsFlush.current >= 1000) {
+        lastMetricsFlush.current = now;
+        setDeckMetrics(metrics);
+      }
+    }, []);
+
     return (
       <div
         style={{ position: 'relative', width, height, overflow: 'hidden' }}
@@ -698,6 +729,7 @@ export const DeckGLContainer = memo(
           onViewStateChange={onViewStateChange}
           onClick={handleClick}
           getCursor={getCursor}
+          _onMetrics={onMetrics}
         >
           <StaticMapStyledWrapper
             ref={mapRef}
@@ -726,6 +758,39 @@ export const DeckGLContainer = memo(
         <ScaleControlContainer>
           <ScaleBar $width={scaleInfo.width}>{scaleInfo.label}</ScaleBar>
         </ScaleControlContainer>
+        {/* eslint-disable theme-colors/no-literal-colors -- debug overlay, will be removed */}
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 50,
+            left: 10,
+            background: 'rgba(0,0,0,0.75)', // eslint-disable-line theme-colors/no-literal-colors
+            color: '#0f0', // eslint-disable-line theme-colors/no-literal-colors
+            fontFamily: 'monospace',
+            fontSize: 11,
+            padding: '6px 8px',
+            borderRadius: 4,
+            zIndex: 999,
+            lineHeight: 1.5,
+            pointerEvents: 'none',
+          }}
+        >
+          <div>FPS: {deckMetrics.fps ?? '-'}</div>
+          <div>GPU: {(deckMetrics.gpuTime ?? 0).toFixed(1)}ms</div>
+          <div>CPU: {(deckMetrics.cpuTime ?? 0).toFixed(1)}ms</div>
+          <div>Redraw: {deckMetrics.framesRedrawn ?? 0}</div>
+          <div>
+            Pick: {(deckMetrics.pickTime ?? 0).toFixed(1)}ms x
+            {deckMetrics.pickCount ?? 0}
+          </div>
+          <div>
+            SetProps: {(deckMetrics.setPropsTime ?? 0).toFixed(1)}ms
+          </div>
+          <div>
+            Attrs: {(deckMetrics.updateAttributesTime ?? 0).toFixed(1)}ms
+          </div>
+        </div>
+        {/* eslint-enable theme-colors/no-literal-colors */}
       </div>
     );
   }),
