@@ -275,13 +275,16 @@ export function getLayer(
     (hoverColumnNames && hoverColumnNames.length > 0) ||
     Boolean(fd.js_tooltip);
 
-  // Shared props for all layer types.
-  // Only enable onHover when hover data is configured — this prevents
-  // deck.gl from performing expensive GPU picking on every mouse move.
+  // Only enable picking when something actually needs it (hover tooltips or
+  // click popup).  When pickable is false, deck.gl skips GPU picking entirely
+  // — a significant per-frame saving for complex polygon layers.
+  const needsPicking = hasHoverData || Boolean(onFeatureClick);
   const baseLayerProps = {
     ...commonLayerProps(fd, setTooltip, tooltipContentGenerator),
-    pickable: true,
-    onClick: onFeatureClick,
+    pickable: needsPicking,
+    // Only pick the exact pixel under the cursor (no search radius)
+    pickingRadius: 0,
+    ...(onFeatureClick ? { onClick: onFeatureClick } : {}),
     ...(hasHoverData ? {} : { onHover: undefined }),
   };
 
@@ -310,6 +313,7 @@ export function getLayer(
     return new PolygonLayer({
       id: `polygon-layer-${fd.slice_id}`,
       data: cachedPolygonData,
+      positionFormat: 'XY',
       stroked: effectiveStroked,
       filled: filled ?? fd.filled,
       getPolygon: (d: ExpandedPolygon) => d.polygon,
@@ -344,8 +348,6 @@ export function getLayer(
         getFillColor: [fillColorArray, categories],
         getLineColor: [strokeColorArray, categories],
       },
-      // Disable picking on stroke sublayer — only the fill needs to be pickable.
-      // This halves the per-frame GPU picking cost for bordered polygons.
       _subLayerProps: {
         stroke: { pickable: false },
       },
@@ -655,6 +657,7 @@ export function getLayer(
       return new PolygonLayer({
         id: `polygon-layer-${fd.slice_id}`,
         data: polygonData,
+        positionFormat: 'XY',
         stroked: effectiveStroked,
         filled: filled ?? fd.filled,
         getPolygon: (d: ExpandedPolygon) => d.polygon,
