@@ -1,0 +1,1305 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-121.29483, 37.85621] },
+      "properties": {
+        "incident_name": "Oak Fire",
+        "state": "CA",
+        "discovery_date": "2022-07-22",
+        "containment_date": "2022-08-06",
+        "acres_burned": 19244,
+        "cause": "Under Investigation",
+        "status": "Contained"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-121.38274, 40.05832] },
+      "properties": {
+        "incident_name": "Dixie Fire",
+        "state": "CA",
+        "discovery_date": "2021-07-13",
+        "containment_date": "2021-10-25",
+        "acres_burned": 963309,
+        "cause": "Powerline",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-120.52341, 38.77412] },
+      "properties": {
+        "incident_name": "Caldor Fire",
+        "state": "CA",
+        "discovery_date": "2021-08-14",
+        "containment_date": "2021-10-21",
+        "acres_burned": 221835,
+        "cause": "Under Investigation",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-122.74519, 41.83215] },
+      "properties": {
+        "incident_name": "McKinney Fire",
+        "state": "CA",
+        "discovery_date": "2022-07-29",
+        "containment_date": "2022-08-31",
+        "acres_burned": 60138,
+        "cause": "Lightning",
+        "status": "Contained"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-119.81254, 36.72318] },
+      "properties": {
+        "incident_name": "Creek Fire",
+        "state": "CA",
+        "discovery_date": "2020-09-04",
+        "containment_date": "2020-12-24",
+        "acres_burned": 379895,
+        "cause": "Under Investigation",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-118.56231, 34.27185] },
+      "properties": {
+        "incident_name": "Bobcat Fire",
+        "state": "CA",
+        "discovery_date": "2020-09-06",
+        "containment_date": "2020-11-19",
+        "acres_burned": 115997,
+        "cause": "Under Investigation",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-122.19473, 42.34821] },
+      "properties": {
+        "incident_name": "Bootleg Fire",
+        "state": "OR",
+        "discovery_date": "2021-07-06",
+        "containment_date": "2021-08-15",
+        "acres_burned": 413765,
+        "cause": "Lightning",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-120.93418, 44.39215] },
+      "properties": {
+        "incident_name": "Cedar Creek Fire",
+        "state": "OR",
+        "discovery_date": "2022-08-01",
+        "containment_date": "2022-10-28",
+        "acres_burned": 127312,
+        "cause": "Lightning",
+        "status": "Contained"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-121.85239, 48.72314] },
+      "properties": {
+        "incident_name": "Bolt Creek Fire",
+        "state": "WA",
+        "discovery_date": "2022-09-10",
+        "containment_date": "2022-10-15",
+        "acres_burned": 14362,
+        "cause": "Human",
+        "status": "Contained"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-120.65182, 47.85123] },
+      "properties": {
+        "incident_name": "White River Fire",
+        "state": "WA",
+        "discovery_date": "2022-07-31",
+        "containment_date": "2022-08-18",
+        "acres_burned": 7214,
+        "cause": "Lightning",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-105.51283, 39.92714] },
+      "properties": {
+        "incident_name": "Cameron Peak Fire",
+        "state": "CO",
+        "discovery_date": "2020-08-13",
+        "containment_date": "2020-12-02",
+        "acres_burned": 208913,
+        "cause": "Under Investigation",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-105.36721, 40.58213] },
+      "properties": {
+        "incident_name": "East Troublesome Fire",
+        "state": "CO",
+        "discovery_date": "2020-10-14",
+        "containment_date": "2020-11-30",
+        "acres_burned": 193812,
+        "cause": "Human",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-105.27834, 40.11294] },
+      "properties": {
+        "incident_name": "Marshall Fire",
+        "state": "CO",
+        "discovery_date": "2021-12-30",
+        "containment_date": "2022-01-02",
+        "acres_burned": 6026,
+        "cause": "Under Investigation",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-114.12483, 46.87215] },
+      "properties": {
+        "incident_name": "Lolo Peak Fire",
+        "state": "MT",
+        "discovery_date": "2021-07-15",
+        "containment_date": "2021-09-28",
+        "acres_burned": 53872,
+        "cause": "Lightning",
+        "status": "Contained"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-113.54218, 47.25318] },
+      "properties": {
+        "incident_name": "Elmo Fire",
+        "state": "MT",
+        "discovery_date": "2022-07-29",
+        "containment_date": "2022-08-13",
+        "acres_burned": 28322,
+        "cause": "Lightning",
+        "status": "Contained"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-115.48327, 43.92134] },
+      "properties": {
+        "incident_name": "Moose Fire",
+        "state": "ID",
+        "discovery_date": "2022-07-17",
+        "containment_date": "2022-09-14",
+        "acres_burned": 36427,
+        "cause": "Lightning",
+        "status": "Contained"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-115.92183, 44.73218] },
+      "properties": {
+        "incident_name": "Woodhead Fire",
+        "state": "ID",
+        "discovery_date": "2023-08-04",
+        "containment_date": "2023-09-12",
+        "acres_burned": 42187,
+        "cause": "Lightning",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-105.72914, 33.39218] },
+      "properties": {
+        "incident_name": "Black Fire",
+        "state": "NM",
+        "discovery_date": "2022-05-13",
+        "containment_date": "2022-07-14",
+        "acres_burned": 325136,
+        "cause": "Under Investigation",
+        "status": "Contained"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-105.38214, 36.17832] },
+      "properties": {
+        "incident_name": "Hermits Peak Fire",
+        "state": "NM",
+        "discovery_date": "2022-04-06",
+        "containment_date": "2022-08-21",
+        "acres_burned": 341471,
+        "cause": "Debris Burning",
+        "status": "Contained"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-111.72381, 34.52183] },
+      "properties": {
+        "incident_name": "Backbone Fire",
+        "state": "AZ",
+        "discovery_date": "2021-06-16",
+        "containment_date": "2021-07-25",
+        "acres_burned": 38342,
+        "cause": "Human",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-110.85721, 33.31284] },
+      "properties": {
+        "incident_name": "Telegraph Fire",
+        "state": "AZ",
+        "discovery_date": "2021-06-04",
+        "containment_date": "2021-07-16",
+        "acres_burned": 180757,
+        "cause": "Human",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-115.93214, 39.28317] },
+      "properties": {
+        "incident_name": "Becky Peak Fire",
+        "state": "NV",
+        "discovery_date": "2023-07-14",
+        "containment_date": "2023-07-28",
+        "acres_burned": 18234,
+        "cause": "Lightning",
+        "status": "Contained"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-119.43218, 40.81234] },
+      "properties": {
+        "incident_name": "Sheep Fire",
+        "state": "NV",
+        "discovery_date": "2022-07-08",
+        "containment_date": "2022-07-21",
+        "acres_burned": 8541,
+        "cause": "Lightning",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-111.52183, 40.62318] },
+      "properties": {
+        "incident_name": "Parleys Canyon Fire",
+        "state": "UT",
+        "discovery_date": "2021-08-14",
+        "containment_date": "2021-08-19",
+        "acres_burned": 562,
+        "cause": "Equipment",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-112.83194, 37.82145] },
+      "properties": {
+        "incident_name": "Pine Gulch Fire",
+        "state": "UT",
+        "discovery_date": "2020-07-31",
+        "containment_date": "2020-09-11",
+        "acres_burned": 3182,
+        "cause": "Lightning",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-120.82134, 39.81245] },
+      "properties": {
+        "incident_name": "Sugar Fire",
+        "state": "CA",
+        "discovery_date": "2021-07-02",
+        "containment_date": "2021-07-29",
+        "acres_burned": 105344,
+        "cause": "Lightning",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-119.45321, 34.54218] },
+      "properties": {
+        "incident_name": "Alisal Fire",
+        "state": "CA",
+        "discovery_date": "2021-10-11",
+        "containment_date": "2021-11-08",
+        "acres_burned": 16921,
+        "cause": "Under Investigation",
+        "status": "Contained"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-117.18432, 33.72184] },
+      "properties": {
+        "incident_name": "Tenaja Fire",
+        "state": "CA",
+        "discovery_date": "2020-09-04",
+        "containment_date": "2020-09-12",
+        "acres_burned": 1926,
+        "cause": "Arson",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-120.19482, 37.52314] },
+      "properties": {
+        "incident_name": "Washburn Fire",
+        "state": "CA",
+        "discovery_date": "2022-07-07",
+        "containment_date": "2022-08-19",
+        "acres_burned": 4886,
+        "cause": "Under Investigation",
+        "status": "Contained"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-118.72341, 35.82134] },
+      "properties": {
+        "incident_name": "Windy Fire",
+        "state": "CA",
+        "discovery_date": "2021-09-09",
+        "containment_date": "2021-11-16",
+        "acres_burned": 97528,
+        "cause": "Lightning",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-122.63182, 41.19428] },
+      "properties": {
+        "incident_name": "Lava Fire",
+        "state": "CA",
+        "discovery_date": "2021-06-25",
+        "containment_date": "2021-07-22",
+        "acres_burned": 26447,
+        "cause": "Lightning",
+        "status": "Contained"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-120.38421, 39.52183] },
+      "properties": {
+        "incident_name": "Mosquito Fire",
+        "state": "CA",
+        "discovery_date": "2022-09-06",
+        "containment_date": "2022-10-25",
+        "acres_burned": 76788,
+        "cause": "Under Investigation",
+        "status": "Contained"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-121.92314, 38.45218] },
+      "properties": {
+        "incident_name": "Rumsey Fire",
+        "state": "CA",
+        "discovery_date": "2020-08-18",
+        "containment_date": "2020-10-22",
+        "acres_burned": 43271,
+        "cause": "Lightning",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-118.95321, 34.62183] },
+      "properties": {
+        "incident_name": "Route Fire",
+        "state": "CA",
+        "discovery_date": "2023-08-31",
+        "containment_date": "2023-09-04",
+        "acres_burned": 452,
+        "cause": "Equipment",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-117.52183, 34.18214] },
+      "properties": {
+        "incident_name": "El Dorado Fire",
+        "state": "CA",
+        "discovery_date": "2020-09-05",
+        "containment_date": "2020-11-16",
+        "acres_burned": 22744,
+        "cause": "Human",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-120.72314, 41.23184] },
+      "properties": {
+        "incident_name": "Beckwourth Complex",
+        "state": "CA",
+        "discovery_date": "2021-06-30",
+        "containment_date": "2021-08-09",
+        "acres_burned": 105670,
+        "cause": "Lightning",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-123.41283, 42.82145] },
+      "properties": {
+        "incident_name": "Rum Creek Fire",
+        "state": "OR",
+        "discovery_date": "2022-08-17",
+        "containment_date": "2022-10-10",
+        "acres_burned": 20738,
+        "cause": "Lightning",
+        "status": "Contained"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-121.52183, 44.15218] },
+      "properties": {
+        "incident_name": "Windigo Fire",
+        "state": "OR",
+        "discovery_date": "2022-08-05",
+        "containment_date": "2022-10-15",
+        "acres_burned": 4912,
+        "cause": "Lightning",
+        "status": "Contained"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-121.83214, 43.71832] },
+      "properties": {
+        "incident_name": "Jack Fire",
+        "state": "OR",
+        "discovery_date": "2021-07-05",
+        "containment_date": "2021-08-14",
+        "acres_burned": 24180,
+        "cause": "Human",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-119.83421, 43.52314] },
+      "properties": {
+        "incident_name": "Double Creek Fire",
+        "state": "OR",
+        "discovery_date": "2022-08-30",
+        "containment_date": "2022-11-08",
+        "acres_burned": 175218,
+        "cause": "Lightning",
+        "status": "Contained"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-121.34218, 45.32184] },
+      "properties": {
+        "incident_name": "Nakia Creek Fire",
+        "state": "WA",
+        "discovery_date": "2022-10-09",
+        "containment_date": "2022-11-18",
+        "acres_burned": 2037,
+        "cause": "Campfire",
+        "status": "Contained"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-120.42183, 48.15214] },
+      "properties": {
+        "incident_name": "Cedar Creek Fire",
+        "state": "WA",
+        "discovery_date": "2021-07-08",
+        "containment_date": "2021-08-28",
+        "acres_burned": 14813,
+        "cause": "Lightning",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-120.83214, 47.42183] },
+      "properties": {
+        "incident_name": "Irving Peak Fire",
+        "state": "WA",
+        "discovery_date": "2023-08-02",
+        "containment_date": "2023-09-30",
+        "acres_burned": 8743,
+        "cause": "Lightning",
+        "status": "Contained"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-120.92134, 46.82314] },
+      "properties": {
+        "incident_name": "Goat Rocks Fire",
+        "state": "WA",
+        "discovery_date": "2022-08-09",
+        "containment_date": "2022-09-15",
+        "acres_burned": 3482,
+        "cause": "Lightning",
+        "status": "Contained"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-106.82134, 39.12314] },
+      "properties": {
+        "incident_name": "Grizzly Creek Fire",
+        "state": "CO",
+        "discovery_date": "2020-08-10",
+        "containment_date": "2020-12-18",
+        "acres_burned": 32631,
+        "cause": "Human",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-105.62183, 38.81234] },
+      "properties": {
+        "incident_name": "Spring Creek Fire",
+        "state": "CO",
+        "discovery_date": "2023-06-27",
+        "containment_date": "2023-07-12",
+        "acres_burned": 1294,
+        "cause": "Human",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-107.42183, 37.52134] },
+      "properties": {
+        "incident_name": "Bear Trail Fire",
+        "state": "CO",
+        "discovery_date": "2022-06-09",
+        "containment_date": "2022-07-14",
+        "acres_burned": 5128,
+        "cause": "Lightning",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-113.82134, 47.63214] },
+      "properties": {
+        "incident_name": "Trail Creek Fire",
+        "state": "MT",
+        "discovery_date": "2022-08-15",
+        "containment_date": "2022-09-30",
+        "acres_burned": 22478,
+        "cause": "Lightning",
+        "status": "Contained"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-110.42183, 45.72134] },
+      "properties": {
+        "incident_name": "Bridger Foothills Fire",
+        "state": "MT",
+        "discovery_date": "2020-09-04",
+        "containment_date": "2020-10-01",
+        "acres_burned": 8224,
+        "cause": "Human",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-114.52314, 48.32184] },
+      "properties": {
+        "incident_name": "Hay Creek Fire",
+        "state": "MT",
+        "discovery_date": "2023-08-14",
+        "containment_date": "2023-09-08",
+        "acres_burned": 4128,
+        "cause": "Lightning",
+        "status": "Contained"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-112.32184, 46.52314] },
+      "properties": {
+        "incident_name": "Alice Creek Fire",
+        "state": "MT",
+        "discovery_date": "2021-08-22",
+        "containment_date": "2021-10-03",
+        "acres_burned": 28429,
+        "cause": "Lightning",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-111.82134, 47.12183] },
+      "properties": {
+        "incident_name": "Deep Creek Fire",
+        "state": "MT",
+        "discovery_date": "2022-07-20",
+        "containment_date": "2022-08-05",
+        "acres_burned": 874,
+        "cause": "Lightning",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-115.12183, 45.42314] },
+      "properties": {
+        "incident_name": "Mud Lick Fire",
+        "state": "ID",
+        "discovery_date": "2022-09-01",
+        "containment_date": "2022-10-14",
+        "acres_burned": 42871,
+        "cause": "Lightning",
+        "status": "Contained"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-114.82134, 44.12183] },
+      "properties": {
+        "incident_name": "Ross Fork Fire",
+        "state": "ID",
+        "discovery_date": "2023-07-28",
+        "containment_date": "2023-09-02",
+        "acres_burned": 15892,
+        "cause": "Lightning",
+        "status": "Contained"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-116.12314, 46.82183] },
+      "properties": {
+        "incident_name": "Snake River Complex",
+        "state": "ID",
+        "discovery_date": "2021-07-07",
+        "containment_date": "2021-08-18",
+        "acres_burned": 108472,
+        "cause": "Lightning",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-114.92183, 42.52314] },
+      "properties": {
+        "incident_name": "Badger Fire",
+        "state": "ID",
+        "discovery_date": "2020-09-12",
+        "containment_date": "2020-10-28",
+        "acres_burned": 89892,
+        "cause": "Human",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-105.92183, 35.82134] },
+      "properties": {
+        "incident_name": "Cerro Pelado Fire",
+        "state": "NM",
+        "discovery_date": "2022-04-22",
+        "containment_date": "2022-06-15",
+        "acres_burned": 45605,
+        "cause": "Debris Burning",
+        "status": "Contained"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-108.72314, 33.21834] },
+      "properties": {
+        "incident_name": "Johnson Fire",
+        "state": "NM",
+        "discovery_date": "2023-05-19",
+        "containment_date": "2023-06-28",
+        "acres_burned": 93284,
+        "cause": "Lightning",
+        "status": "Contained"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-106.42183, 34.82134] },
+      "properties": {
+        "incident_name": "Medio Fire",
+        "state": "NM",
+        "discovery_date": "2020-06-04",
+        "containment_date": "2020-06-18",
+        "acres_burned": 4217,
+        "cause": "Campfire",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-111.52183, 34.92134] },
+      "properties": {
+        "incident_name": "Tunnel Fire",
+        "state": "AZ",
+        "discovery_date": "2022-04-17",
+        "containment_date": "2022-05-08",
+        "acres_burned": 21252,
+        "cause": "Under Investigation",
+        "status": "Contained"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-110.32184, 34.42134] },
+      "properties": {
+        "incident_name": "Crooks Fire",
+        "state": "AZ",
+        "discovery_date": "2022-04-14",
+        "containment_date": "2022-05-01",
+        "acres_burned": 8217,
+        "cause": "Human",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-112.42183, 34.72134] },
+      "properties": {
+        "incident_name": "Cellar Fire",
+        "state": "AZ",
+        "discovery_date": "2021-07-14",
+        "containment_date": "2021-08-02",
+        "acres_burned": 7124,
+        "cause": "Lightning",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-109.82183, 31.82134] },
+      "properties": {
+        "incident_name": "Pinnacle Fire",
+        "state": "AZ",
+        "discovery_date": "2022-06-11",
+        "containment_date": "2022-07-24",
+        "acres_burned": 14817,
+        "cause": "Lightning",
+        "status": "Contained"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-116.82134, 40.72134] },
+      "properties": {
+        "incident_name": "Martin Fire",
+        "state": "NV",
+        "discovery_date": "2020-07-05",
+        "containment_date": "2020-07-12",
+        "acres_burned": 439148,
+        "cause": "Lightning",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-117.42183, 41.52134] },
+      "properties": {
+        "incident_name": "Bull Draw Fire",
+        "state": "NV",
+        "discovery_date": "2023-08-12",
+        "containment_date": "2023-08-19",
+        "acres_burned": 12847,
+        "cause": "Lightning",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-118.52134, 39.92183] },
+      "properties": {
+        "incident_name": "Bald Mountain Fire",
+        "state": "NV",
+        "discovery_date": "2022-09-14",
+        "containment_date": "2022-09-22",
+        "acres_burned": 3218,
+        "cause": "Lightning",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-111.82183, 38.82134] },
+      "properties": {
+        "incident_name": "Bear Fire",
+        "state": "UT",
+        "discovery_date": "2023-06-18",
+        "containment_date": "2023-07-14",
+        "acres_burned": 12817,
+        "cause": "Lightning",
+        "status": "Contained"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-112.52183, 39.42134] },
+      "properties": {
+        "incident_name": "Coal Hollow Fire",
+        "state": "UT",
+        "discovery_date": "2022-07-22",
+        "containment_date": "2022-08-08",
+        "acres_burned": 1842,
+        "cause": "Human",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-109.82183, 40.92134] },
+      "properties": {
+        "incident_name": "Red Hollow Fire",
+        "state": "UT",
+        "discovery_date": "2021-09-18",
+        "containment_date": "2021-09-22",
+        "acres_burned": 314,
+        "cause": "Human",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-122.42183, 40.52134] },
+      "properties": {
+        "incident_name": "Fawn Fire",
+        "state": "CA",
+        "discovery_date": "2021-09-22",
+        "containment_date": "2021-10-07",
+        "acres_burned": 8578,
+        "cause": "Arson",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-119.92183, 37.82134] },
+      "properties": {
+        "incident_name": "River Fire",
+        "state": "CA",
+        "discovery_date": "2021-08-04",
+        "containment_date": "2021-08-14",
+        "acres_burned": 2619,
+        "cause": "Under Investigation",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-123.12183, 39.72134] },
+      "properties": {
+        "incident_name": "August Complex",
+        "state": "CA",
+        "discovery_date": "2020-08-16",
+        "containment_date": "2020-11-12",
+        "acres_burned": 1032648,
+        "cause": "Lightning",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-117.82183, 33.92134] },
+      "properties": {
+        "incident_name": "Silverado Fire",
+        "state": "CA",
+        "discovery_date": "2020-10-26",
+        "containment_date": "2020-11-08",
+        "acres_burned": 12466,
+        "cause": "Powerline",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-121.52183, 36.72134] },
+      "properties": {
+        "incident_name": "Dolan Fire",
+        "state": "CA",
+        "discovery_date": "2020-08-18",
+        "containment_date": "2020-12-31",
+        "acres_burned": 124924,
+        "cause": "Arson",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-118.32183, 36.42134] },
+      "properties": {
+        "incident_name": "KNP Complex",
+        "state": "CA",
+        "discovery_date": "2021-09-09",
+        "containment_date": "2021-12-16",
+        "acres_burned": 88307,
+        "cause": "Lightning",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-120.12183, 38.92134] },
+      "properties": {
+        "incident_name": "Tamarack Fire",
+        "state": "CA",
+        "discovery_date": "2021-07-04",
+        "containment_date": "2021-09-20",
+        "acres_burned": 68637,
+        "cause": "Lightning",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-122.82183, 38.42134] },
+      "properties": {
+        "incident_name": "Glass Fire",
+        "state": "CA",
+        "discovery_date": "2020-09-27",
+        "containment_date": "2020-10-20",
+        "acres_burned": 67484,
+        "cause": "Under Investigation",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-120.52183, 35.82134] },
+      "properties": {
+        "incident_name": "Chimney Fire",
+        "state": "CA",
+        "discovery_date": "2023-06-25",
+        "containment_date": "2023-07-08",
+        "acres_burned": 823,
+        "cause": "Equipment",
+        "status": "Contained"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-119.22183, 35.32134] },
+      "properties": {
+        "incident_name": "French Fire",
+        "state": "CA",
+        "discovery_date": "2021-08-18",
+        "containment_date": "2021-09-14",
+        "acres_burned": 26535,
+        "cause": "Campfire",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-122.32183, 41.52134] },
+      "properties": {
+        "incident_name": "Mill Fire",
+        "state": "CA",
+        "discovery_date": "2022-09-02",
+        "containment_date": "2022-09-17",
+        "acres_burned": 3935,
+        "cause": "Powerline",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-121.72183, 39.32134] },
+      "properties": {
+        "incident_name": "North Complex",
+        "state": "CA",
+        "discovery_date": "2020-08-17",
+        "containment_date": "2020-11-04",
+        "acres_burned": 318935,
+        "cause": "Lightning",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-121.32183, 42.12134] },
+      "properties": {
+        "incident_name": "Archie Creek Fire",
+        "state": "OR",
+        "discovery_date": "2020-09-08",
+        "containment_date": "2020-11-02",
+        "acres_burned": 131542,
+        "cause": "Under Investigation",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-122.62183, 43.12134] },
+      "properties": {
+        "incident_name": "Holiday Farm Fire",
+        "state": "OR",
+        "discovery_date": "2020-09-07",
+        "containment_date": "2020-10-26",
+        "acres_burned": 173393,
+        "cause": "Powerline",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-121.12183, 43.82134] },
+      "properties": {
+        "incident_name": "Lionshead Fire",
+        "state": "OR",
+        "discovery_date": "2020-08-16",
+        "containment_date": "2020-10-29",
+        "acres_burned": 204469,
+        "cause": "Lightning",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-123.72183, 42.22134] },
+      "properties": {
+        "incident_name": "Slater Fire",
+        "state": "OR",
+        "discovery_date": "2020-09-08",
+        "containment_date": "2020-12-01",
+        "acres_burned": 157220,
+        "cause": "Under Investigation",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-120.22183, 48.52134] },
+      "properties": {
+        "incident_name": "Varden Fire",
+        "state": "WA",
+        "discovery_date": "2021-08-15",
+        "containment_date": "2021-09-18",
+        "acres_burned": 5812,
+        "cause": "Lightning",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-120.52183, 46.32134] },
+      "properties": {
+        "incident_name": "Schneider Springs Fire",
+        "state": "WA",
+        "discovery_date": "2021-08-03",
+        "containment_date": "2021-11-07",
+        "acres_burned": 107017,
+        "cause": "Lightning",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-117.62183, 48.12134] },
+      "properties": {
+        "incident_name": "Cougar Creek Fire",
+        "state": "WA",
+        "discovery_date": "2023-08-18",
+        "containment_date": "2023-10-02",
+        "acres_burned": 2481,
+        "cause": "Lightning",
+        "status": "Contained"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-106.22183, 37.82134] },
+      "properties": {
+        "incident_name": "Hayden Pass Fire",
+        "state": "CO",
+        "discovery_date": "2021-07-08",
+        "containment_date": "2021-08-02",
+        "acres_burned": 3917,
+        "cause": "Lightning",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-107.82183, 38.52134] },
+      "properties": {
+        "incident_name": "Kruger Rock Fire",
+        "state": "CO",
+        "discovery_date": "2021-11-16",
+        "containment_date": "2021-11-22",
+        "acres_burned": 186,
+        "cause": "Human",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-114.92183, 47.82134] },
+      "properties": {
+        "incident_name": "Boulder 2700 Fire",
+        "state": "MT",
+        "discovery_date": "2023-07-22",
+        "containment_date": "2023-08-30",
+        "acres_burned": 15283,
+        "cause": "Lightning",
+        "status": "Contained"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-110.82183, 46.32134] },
+      "properties": {
+        "incident_name": "Crooked Creek Fire",
+        "state": "MT",
+        "discovery_date": "2022-07-28",
+        "containment_date": "2022-08-18",
+        "acres_burned": 523,
+        "cause": "Lightning",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-116.32183, 44.52134] },
+      "properties": {
+        "incident_name": "Elk Fire",
+        "state": "ID",
+        "discovery_date": "2023-09-05",
+        "containment_date": "2023-10-18",
+        "acres_burned": 7281,
+        "cause": "Lightning",
+        "status": "Contained"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-113.82183, 42.72134] },
+      "properties": {
+        "incident_name": "Crystal Peak Fire",
+        "state": "ID",
+        "discovery_date": "2020-07-29",
+        "containment_date": "2020-08-14",
+        "acres_burned": 3148,
+        "cause": "Lightning",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-108.52183, 35.22134] },
+      "properties": {
+        "incident_name": "Saddle Fire",
+        "state": "NM",
+        "discovery_date": "2020-07-06",
+        "containment_date": "2020-08-12",
+        "acres_burned": 14872,
+        "cause": "Lightning",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-111.22183, 33.92134] },
+      "properties": {
+        "incident_name": "Bush Fire",
+        "state": "AZ",
+        "discovery_date": "2020-06-13",
+        "containment_date": "2020-07-15",
+        "acres_burned": 193455,
+        "cause": "Equipment",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-109.42183, 32.42134] },
+      "properties": {
+        "incident_name": "Mescal Fire",
+        "state": "AZ",
+        "discovery_date": "2023-06-01",
+        "containment_date": "2023-06-09",
+        "acres_burned": 341,
+        "cause": "Human",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-116.22183, 38.82134] },
+      "properties": {
+        "incident_name": "Nye County Fire",
+        "state": "NV",
+        "discovery_date": "2021-07-05",
+        "containment_date": "2021-07-14",
+        "acres_burned": 42814,
+        "cause": "Lightning",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-110.52183, 39.72134] },
+      "properties": {
+        "incident_name": "Range Creek Fire",
+        "state": "UT",
+        "discovery_date": "2021-08-07",
+        "containment_date": "2021-09-14",
+        "acres_burned": 8914,
+        "cause": "Lightning",
+        "status": "Out"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-119.62183, 36.12134] },
+      "properties": {
+        "incident_name": "Mineral Fire",
+        "state": "CA",
+        "discovery_date": "2020-07-13",
+        "containment_date": "2020-08-07",
+        "acres_burned": 29667,
+        "cause": "Equipment",
+        "status": "Out"
+      }
+    }
+  ]
+}

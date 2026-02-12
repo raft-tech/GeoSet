@@ -17,11 +17,13 @@
 from .bart_lines import load_bart_lines
 from .big_data import load_big_data
 from .birth_names import load_birth_names
+from .census_state_boundaries import load_census_state_boundaries
 from .country_map import load_country_map_data
 from .css_templates import load_css_templates
 from .deck import load_deck_dash
 from .energy import load_energy
 from .flights import load_flights
+from .hurricane_tracks import load_hurricane_tracks
 from .long_lat import load_long_lat_data
 from .misc_dashboard import load_misc_dashboard
 from .multiformat_time_series import load_multiformat_time_series
@@ -31,17 +33,20 @@ from .sf_population_polygons import load_sf_population_polygons
 from .supported_charts_dashboard import load_supported_charts_dashboard
 from .tabbed_dashboard import load_tabbed_dashboard
 from .utils import load_examples_from_configs
+from .wildfire_incidents import load_wildfire_incidents
 from .world_bank import load_world_bank_health_n_pop
 
 __all__ = [
     "load_bart_lines",
     "load_big_data",
     "load_birth_names",
+    "load_census_state_boundaries",
     "load_country_map_data",
     "load_css_templates",
     "load_deck_dash",
     "load_energy",
     "load_flights",
+    "load_hurricane_tracks",
     "load_long_lat_data",
     "load_misc_dashboard",
     "load_multiformat_time_series",
@@ -51,5 +56,6 @@ __all__ = [
     "load_supported_charts_dashboard",
     "load_tabbed_dashboard",
     "load_examples_from_configs",
+    "load_wildfire_incidents",
     "load_world_bank_health_n_pop",
 ]

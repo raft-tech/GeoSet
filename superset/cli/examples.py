@@ -74,6 +74,15 @@ def load_examples_run(
         logger.info("Loading [BART lines]")
         examples.load_bart_lines(only_metadata, force)
 
+        logger.info("Loading [Census State Boundaries]")
+        examples.load_census_state_boundaries(only_metadata, force)
+
+        logger.info("Loading [Wildfire Incidents]")
+        examples.load_wildfire_incidents(only_metadata, force)
+
+        logger.info("Loading [Hurricane Tracks]")
+        examples.load_hurricane_tracks(only_metadata, force)
+
         logger.info("Loading [Misc Charts] dashboard")
         examples.load_misc_dashboard()
 

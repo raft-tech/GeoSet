@@ -76,7 +76,10 @@ services:
         required: true
       - path: docker/.env-local # optional override
         required: false
-    image: postgres:16
+    # imresamu/postgis is used instead of the official postgis/postgis because
+    # the official image lacks ARM64 builds (https://github.com/postgis/docker-postgis/issues/216).
+    # imresamu/postgis supports both amd64 and arm64 natively.
+    image: imresamu/postgis:16-3.5
     container_name: superset_db
     restart: unless-stopped
     ports:
