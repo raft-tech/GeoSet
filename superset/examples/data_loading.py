@@ -17,7 +17,6 @@
 from .bart_lines import load_bart_lines
 from .big_data import load_big_data
 from .birth_names import load_birth_names
-from .census_state_boundaries import load_census_state_boundaries
 from .country_map import load_country_map_data
 from .css_templates import load_css_templates
 from .deck import load_deck_dash
@@ -33,6 +32,7 @@ from .sf_population_polygons import load_sf_population_polygons
 from .supported_charts_dashboard import load_supported_charts_dashboard
 from .tabbed_dashboard import load_tabbed_dashboard
 from .utils import load_examples_from_configs
+from .va_congressional_districts import load_va_congressional_districts
 from .wildfire_incidents import load_wildfire_incidents
 from .world_bank import load_world_bank_health_n_pop
 
@@ -40,7 +40,6 @@ __all__ = [
     "load_bart_lines",
     "load_big_data",
     "load_birth_names",
-    "load_census_state_boundaries",
     "load_country_map_data",
     "load_css_templates",
     "load_deck_dash",
@@ -56,6 +55,7 @@ __all__ = [
     "load_supported_charts_dashboard",
     "load_tabbed_dashboard",
     "load_examples_from_configs",
+    "load_va_congressional_districts",
     "load_wildfire_incidents",
     "load_world_bank_health_n_pop",
 ]
