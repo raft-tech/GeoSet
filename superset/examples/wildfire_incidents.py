@@ -33,9 +33,7 @@ from .helpers import get_table_connector_registry
 logger = logging.getLogger(__name__)
 
 
-def load_wildfire_incidents(
-    only_metadata: bool = False, force: bool = False
-) -> None:
+def load_wildfire_incidents(only_metadata: bool = False, force: bool = False) -> None:
     tbl_name = "wildfire_incidents"
     database = database_utils.get_example_database()
     with database.get_sqla_engine() as engine:
@@ -47,9 +45,7 @@ def load_wildfire_incidents(
             df = geojson_features_to_dataframe(geojson)
 
             df["discovery_date"] = pd.to_datetime(df["discovery_date"]).dt.date
-            df["containment_date"] = pd.to_datetime(
-                df["containment_date"]
-            ).dt.date
+            df["containment_date"] = pd.to_datetime(df["containment_date"]).dt.date
 
             df.to_sql(
                 tbl_name,

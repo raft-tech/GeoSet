@@ -94,8 +94,7 @@ def create_postgis_geometry_column(
         with engine.begin() as conn:
             conn.execute(
                 text(
-                    f"ALTER TABLE {qualified} "
-                    f"ADD COLUMN geom geometry(Geometry, 4326)"
+                    f"ALTER TABLE {qualified} ADD COLUMN geom geometry(Geometry, 4326)"
                 )
             )
             conn.execute(
@@ -106,17 +105,10 @@ def create_postgis_geometry_column(
             )
             conn.execute(
                 text(
-                    f"CREATE INDEX idx_{tbl_name}_geom "
-                    f"ON {qualified} USING GIST (geom)"
+                    f"CREATE INDEX idx_{tbl_name}_geom ON {qualified} USING GIST (geom)"
                 )
             )
-            conn.execute(
-                text(
-                    f"ALTER TABLE {qualified} DROP COLUMN _geojson_text"
-                )
-            )
+            conn.execute(text(f"ALTER TABLE {qualified} DROP COLUMN _geojson_text"))
         logger.info("Created PostGIS geometry column for %s", tbl_name)
     except Exception:
-        logger.exception(
-            "Failed to create PostGIS geometry column for %s", tbl_name
-        )
+        logger.exception("Failed to create PostGIS geometry column for %s", tbl_name)

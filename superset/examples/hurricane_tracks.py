@@ -17,7 +17,7 @@
 import logging
 
 import pandas as pd
-from sqlalchemy import Date, Integer, inspect, String, Text
+from sqlalchemy import Date, inspect, Integer, String, Text
 
 import superset.utils.database as database_utils
 from superset import db
@@ -33,9 +33,7 @@ from .helpers import get_table_connector_registry
 logger = logging.getLogger(__name__)
 
 
-def load_hurricane_tracks(
-    only_metadata: bool = False, force: bool = False
-) -> None:
+def load_hurricane_tracks(only_metadata: bool = False, force: bool = False) -> None:
     tbl_name = "hurricane_tracks"
     database = database_utils.get_example_database()
     with database.get_sqla_engine() as engine:
