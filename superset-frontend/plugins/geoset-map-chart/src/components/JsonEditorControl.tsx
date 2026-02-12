@@ -294,7 +294,7 @@ export default function JsonEditorControl({
   const popoverContent = (
     <PopoverContentWrapper>
       <PopoverHeader>
-        <Text strong>{t('Template Configuration')}</Text>
+        <Text strong>{t('Example Configuration')}</Text>
         <Button
           size="small"
           icon={copied ? <CheckOutlined /> : <CopyOutlined />}

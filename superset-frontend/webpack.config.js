@@ -450,8 +450,14 @@ const config = {
         type: 'asset',
       },
       {
+        test: /\.svg$/,
+        include: /svgIcons/,
+        type: 'asset/source',
+      },
+      {
         test: /\.svg(\?v=\d+\.\d+\.\d+)?$/,
         issuer: /\.([jt])sx?$/,
+        exclude: /svgIcons/,
         use: [
           {
             loader: '@svgr/webpack',

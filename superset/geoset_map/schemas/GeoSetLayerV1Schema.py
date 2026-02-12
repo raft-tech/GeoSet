@@ -70,7 +70,8 @@ class GlobalColoringSchema(Schema):
     point_type = fields.String(
         load_default=None,
         data_key="pointType",
-        validate=validate.OneOf(["circle", "fema", "fire", "point", "line"]),
+        # Accept any icon name - frontend handles invalid values
+        # by falling back to default (circle)
     )
     point_size = fields.Integer(
         load_default=None,
