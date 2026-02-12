@@ -437,9 +437,6 @@ export function getLayer(
           radiusMinPixels: 1,
           radiusMaxPixels: 50,
           radiusScale: 1,
-          transitions: {
-            getFillColor: 50,
-          },
           ...baseLayerProps,
         });
       }
