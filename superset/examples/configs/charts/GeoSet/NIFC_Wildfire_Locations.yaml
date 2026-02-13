@@ -1,0 +1,55 @@
+slice_name: NIFC Wildfire Locations
+description: Active wildfire incident locations from the NIFC WFIGS API
+certified_by: null
+certification_details: null
+viz_type: deck_geoset_map_layer
+params:
+  datasource: 0__table
+  viz_type: deck_geoset_map_layer
+  geojson: origin_coordinate
+  geoJsonLayer: Point
+  autozoom: true
+  row_limit: 10000
+  mapbox_style: "mapbox://styles/acf-dart/cm8ov8yl4001401s365rs672z"
+  adhoc_filters: []
+  hover_data_columns:
+    - incident_name
+    - fire_cause
+    - incident_size
+    - percent_contained
+    - origin_state_code
+  feature_info_columns:
+    - incident_name
+    - incident_description
+    - fire_cause
+    - incident_size
+    - percent_contained
+    - estimated_cost_to_date
+    - origin_state_code
+    - origin_county_name
+    - fire_discovery_time
+  enableClustering: true
+  clusterMaxZoom: 14
+  clusterMinPoints: 3
+  clusterRadius: 50
+  min_max_zoom:
+    - 0
+    - 22
+  schema_version: 2
+  geojsonConfig: >-
+    {
+      "globalColoring": {
+        "fillColor": [255, 69, 0, 200],
+        "strokeColor": [0, 0, 0, 255],
+        "strokeWidth": 1,
+        "fillPattern": "solid"
+      },
+      "legend": {
+        "title": "NIFC Wildfires",
+        "name": "Active Wildfire Locations"
+      }
+    }
+cache_timeout: null
+uuid: e6e168a5-d38c-428c-ab6c-5ecec9e754dd
+version: 1.0.0
+dataset_uuid: 76d55c98-dfec-4fb9-819e-05a673da945b

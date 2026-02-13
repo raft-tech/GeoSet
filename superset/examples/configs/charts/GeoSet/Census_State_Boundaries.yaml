@@ -1,0 +1,44 @@
+slice_name: Census State Boundaries
+description: US state boundary polygons from Census TIGER/Line 2024 shapefiles
+certified_by: null
+certification_details: null
+viz_type: deck_geoset_map_layer
+params:
+  datasource: 0__table
+  viz_type: deck_geoset_map_layer
+  geojson: state_boundary
+  geoJsonLayer: Polygon
+  autozoom: true
+  row_limit: 100
+  mapbox_style: "mapbox://styles/acf-dart/cm8ov8yl4001401s365rs672z"
+  adhoc_filters: []
+  hover_data_columns:
+    - state_name
+    - state_abbrev
+  feature_info_columns:
+    - state_name
+    - state_abbrev
+    - state_code
+    - land_area
+    - water_area
+  min_max_zoom:
+    - 0
+    - 22
+  schema_version: 2
+  geojsonConfig: >-
+    {
+      "globalColoring": {
+        "fillColor": [40, 147, 179, 120],
+        "strokeColor": [255, 255, 255, 200],
+        "strokeWidth": 1,
+        "fillPattern": "solid"
+      },
+      "legend": {
+        "title": "US Census",
+        "name": "State Boundaries"
+      }
+    }
+cache_timeout: null
+uuid: fbe401b9-ea00-4161-ad3a-be062e256922
+version: 1.0.0
+dataset_uuid: 9a83a2c9-351f-4a8e-97cd-9af903054ccb

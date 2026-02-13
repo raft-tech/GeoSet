@@ -1,0 +1,132 @@
+table_name: census_state_boundaries
+main_dttm_col: null
+description: US Census state boundary polygons from the 2024 TIGER/Line shapefiles
+default_endpoint: null
+offset: 0
+cache_timeout: null
+schema: public
+sql: null
+params: null
+template_params: null
+filter_select_enabled: true
+fetch_values_predicate: null
+extra: null
+uuid: 9a83a2c9-351f-4a8e-97cd-9af903054ccb
+metrics:
+- metric_name: count
+  verbose_name: COUNT(*)
+  metric_type: count
+  expression: COUNT(*)
+  description: null
+  d3format: null
+  extra: null
+  warning_text: null
+- metric_name: total_land_area
+  verbose_name: Total Land Area
+  metric_type: sum
+  expression: SUM(land_area)
+  description: null
+  d3format: null
+  extra: null
+  warning_text: null
+- metric_name: total_water_area
+  verbose_name: Total Water Area
+  metric_type: sum
+  expression: SUM(water_area)
+  description: null
+  d3format: null
+  extra: null
+  warning_text: null
+columns:
+- column_name: state_code
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: VARCHAR(2)
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+- column_name: state_gnis_code
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: VARCHAR(8)
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+- column_name: state_abbrev
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: VARCHAR(2)
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+- column_name: full_geoid
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: VARCHAR(14)
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+- column_name: geoid
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: VARCHAR(2)
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+- column_name: legal_statistical_code
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: VARCHAR(2)
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+- column_name: land_area
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: BIGINT
+  groupby: false
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+- column_name: water_area
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: BIGINT
+  groupby: false
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+- column_name: state_name
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: VARCHAR(100)
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+version: 1.0.0
+database_uuid: d601f9bf-b076-46fa-bd78-5aa1bd0b74b1

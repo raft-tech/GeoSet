@@ -1,0 +1,45 @@
+slice_name: NHC Advisory Forecast Track
+description: Hurricane forecast track lines with wind speed data from NHC
+certified_by: null
+certification_details: null
+viz_type: deck_geoset_map_layer
+params:
+  datasource: 0__table
+  viz_type: deck_geoset_map_layer
+  geojson: geom
+  geoJsonLayer: Line
+  autozoom: true
+  row_limit: 10000
+  mapbox_style: "mapbox://styles/acf-dart/cm8ov8yl4001401s365rs672z"
+  adhoc_filters: []
+  hover_data_columns:
+    - storm_name
+    - wind_speed_mph
+    - max_gust_mph
+  feature_info_columns:
+    - storm_name
+    - nhc_identifier
+    - wind_speed_mph
+    - max_gust_mph
+    - year
+  min_max_zoom:
+    - 0
+    - 22
+  schema_version: 2
+  geojsonConfig: >-
+    {
+      "globalColoring": {
+        "fillColor": [0, 191, 255, 200],
+        "strokeColor": [0, 191, 255, 255],
+        "strokeWidth": 3,
+        "fillPattern": "solid"
+      },
+      "legend": {
+        "title": "NHC Forecasts",
+        "name": "Advisory Forecast Track"
+      }
+    }
+cache_timeout: null
+uuid: 1edd99b1-b803-4fa2-8500-16dbc172f053
+version: 1.0.0
+dataset_uuid: 63a5d27b-db51-4257-b1fa-3ea895bb5fc8
