@@ -73,8 +73,7 @@ def parse_feature(feature):
     row = feature["properties"]
     row["id"] = feature["id"]
 
-    coords = feature.get("geometry", {}).get("coordinates")
-    if coords:
+    if coords := feature.get("geometry", {}).get("coordinates"):
         lng, lat = coords
         row["origin_coordinate"] = json.dumps(
             {"type": "Point", "coordinates": [lng, lat]}
@@ -138,9 +137,7 @@ with engine.begin() as conn:
     for _, row in df.iterrows():
         row_dict = row.to_dict()
         # Replace pandas NaT/NaN with None for SQL
-        row_dict = {
-            k: (None if pd.isna(v) else v) for k, v in row_dict.items()
-        }
+        row_dict = {k: (None if pd.isna(v) else v) for k, v in row_dict.items()}
         conn.execute(insert_sql, row_dict)
 
 print("Done.")

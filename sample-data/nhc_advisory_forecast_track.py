@@ -143,7 +143,7 @@ def read_kmz(kmz_url):
 
 def parse_valid_at_datetime(valid_at_str):
     """Parse NHC 'Valid at: 11:00 AM EDT July 06, 2025' to a timezone-aware datetime."""
-    valid_at_str = valid_at_str[len("Valid at: "):]
+    valid_at_str = valid_at_str[len("Valid at: ") :]
 
     for tz, offset in TZ_TO_UTC_OFFSET.items():
         if tz in valid_at_str:
@@ -160,10 +160,14 @@ def parse_description_html(description):
 
     effective_timestamp = parse_valid_at_datetime(valid_at)
 
-    wind_match = re.search(r"Maximum Wind: \d{2,3} knots \((?P<mph>\d{2,3}) mph\)", wind_raw)
+    wind_match = re.search(
+        r"Maximum Wind: \d{2,3} knots \((?P<mph>\d{2,3}) mph\)", wind_raw
+    )
     wind_speed_mph = int(wind_match.group("mph")) if wind_match else None
 
-    gust_match = re.search(r"Wind Gusts: \d{2,3} knots \((?P<mph>\d{2,3}) mph\)", gust_raw)
+    gust_match = re.search(
+        r"Wind Gusts: \d{2,3} knots \((?P<mph>\d{2,3}) mph\)", gust_raw
+    )
     max_gust_mph = int(gust_match.group("mph")) if gust_match else None
 
     return {
@@ -220,9 +224,7 @@ for _, (storm_name, identifier, track_url) in storms_df.iterrows():
     # Parse description HTML for each point
     # Column name casing varies by geopandas/fiona version
     desc_col = "Description" if "Description" in kmz_df.columns else "description"
-    parsed_df = pd.json_normalize(
-        kmz_df[desc_col].apply(parse_description_html)
-    )
+    parsed_df = pd.json_normalize(kmz_df[desc_col].apply(parse_description_html))
     parsed_df["forecast_point"] = kmz_df.forecast_point
     parsed_df["storm_name"] = storm_name
     parsed_df["nhc_identifier"] = identifier
@@ -256,9 +258,7 @@ insert_sql = text("""
 with engine.begin() as conn:
     for _, row in agg_df.iterrows():
         row_dict = row.to_dict()
-        row_dict = {
-            k: (None if pd.isna(v) else v) for k, v in row_dict.items()
-        }
+        row_dict = {k: (None if pd.isna(v) else v) for k, v in row_dict.items()}
         conn.execute(insert_sql, row_dict)
 
 print("Done.")
