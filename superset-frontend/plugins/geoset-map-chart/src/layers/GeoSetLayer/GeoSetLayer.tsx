@@ -1162,6 +1162,15 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
     maxZoom: minMaxZoomSlider[1],
   };
 
+  // Only pass click handler when there are feature info columns configured.
+  // Without this guard, pickable is always true (due to onFeatureClick being
+  // truthy), which forces deck.gl to run GPU picking on every mouse move even
+  // when there's no hover data — a significant per-frame cost for polygons.
+  const effectiveClickHandler =
+    featureInfoColumnNames && featureInfoColumnNames.length > 0
+      ? handleFeatureClick
+      : undefined;
+
   const layer = useMemo(
     () =>
       getLayer(
@@ -1172,7 +1181,7 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
         categories,
         visualConfig,
         hoverColumnNames,
-        handleFeatureClick,
+        effectiveClickHandler,
       ),
     [
       formData,
@@ -1182,7 +1191,7 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
       categories,
       visualConfig,
       hoverColumnNames,
-      handleFeatureClick,
+      effectiveClickHandler,
     ],
   );
 
