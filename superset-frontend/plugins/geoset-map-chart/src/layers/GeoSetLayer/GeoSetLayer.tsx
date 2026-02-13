@@ -272,8 +272,7 @@ export function getLayer(
     setTooltipContent(o, hoverColumnNames);
 
   const hasHoverData =
-    (hoverColumnNames && hoverColumnNames.length > 0) ||
-    Boolean(fd.js_tooltip);
+    (hoverColumnNames && hoverColumnNames.length > 0) || Boolean(fd.js_tooltip);
 
   // Only enable picking when something actually needs it (hover tooltips or
   // click popup).  When pickable is false, deck.gl skips GPU picking entirely
@@ -373,76 +372,73 @@ export function getLayer(
     processedFeatures = jsFnMutator(processedFeatures) || processedFeatures;
   }
 
-  // Apply category visibility: if NOT in metric mode, hide features whose category is disabled.
-  // We don't introduce new fields — we simply set color/stroke to transparent [0,0,0,0].
-  const visibleFeatures = processedFeatures.map(f => {
-    // If metric coloring is active, don't modify features (metric takes precedence).
-    if (isMetric) return f;
+  // In metric mode, skip category visibility and sorting — color comes from
+  // the metric value, not categories, so these operations are pure overhead.
+  let sortedFeatures: GeoJsonFeature[];
 
-    // Determine category key stored on the feature (you saved it earlier as categoryName),
-    // otherwise fall back to property using dimension column name.
-    const categoryRaw =
-      (f as any).categoryName ?? f.properties?.[dimension as string];
-    if (categoryRaw == null) return f;
+  if (isMetric) {
+    sortedFeatures = processedFeatures;
+  } else {
+    // Apply category visibility: hide features whose category is disabled
+    // by setting color/stroke to transparent [0,0,0,0].
+    const visibleFeatures = processedFeatures.map(f => {
+      const categoryRaw =
+        (f as any).categoryName ?? f.properties?.[dimension as string];
+      if (categoryRaw == null) return f;
 
-    const lookupKey =
-      typeof categoryRaw === 'string'
+      const lookupKey =
+        typeof categoryRaw === 'string'
+          ? categoryRaw.trim().toLowerCase()
+          : String(categoryRaw).trim().toLowerCase();
+
+      const catState = (categories as Record<string, any>)[lookupKey];
+      if (catState && catState.enabled === false) {
+        const cc = [0, 0, 0, 0];
+        return {
+          ...f,
+          color: cc,
+          strokeColor: cc,
+          properties: {
+            ...f.properties,
+            fillColor: cc,
+            strokeColor: cc,
+          },
+        };
+      }
+      return f;
+    });
+
+    // Sort features by category order for z-index rendering.
+    // Categories earlier in the JSON config render on top (last in draw order).
+    const categoryKeys = Object.keys(categories);
+    const UNCATEGORIZED_INDEX = Number.MAX_SAFE_INTEGER;
+    const categoryIndexMap = new Map(categoryKeys.map((k, i) => [k, i]));
+
+    const getCategoryKey = (f: GeoJsonFeature): string | null => {
+      const categoryRaw =
+        (f as any).categoryName ?? f.properties?.[dimension as string];
+      if (categoryRaw == null) return null;
+      return typeof categoryRaw === 'string'
         ? categoryRaw.trim().toLowerCase()
         : String(categoryRaw).trim().toLowerCase();
+    };
 
-    const catState = (categories as Record<string, any>)[lookupKey];
-    if (catState && catState.enabled === false) {
-      // Return a shallow clone with fully transparent colors.
-      const cc = [0, 0, 0, 0];
-      return {
-        ...f,
-        color: cc,
-        strokeColor: cc,
-        properties: {
-          ...f.properties,
-          fillColor: cc,
-          strokeColor: cc,
-        },
-      };
-    }
-    return f;
-  });
+    sortedFeatures = [...visibleFeatures].sort((a, b) => {
+      const keyA = getCategoryKey(a);
+      const keyB = getCategoryKey(b);
+      const idxA =
+        keyA != null
+          ? (categoryIndexMap.get(keyA) ?? UNCATEGORIZED_INDEX)
+          : UNCATEGORIZED_INDEX;
+      const idxB =
+        keyB != null
+          ? (categoryIndexMap.get(keyB) ?? UNCATEGORIZED_INDEX)
+          : UNCATEGORIZED_INDEX;
 
-  // Sort features by category order for z-index rendering.
-  // Categories earlier in the JSON config render on top (last in draw order).
-  // So we sort in reverse: higher index = earlier in array = drawn first (bottom).
-  const categoryKeys = Object.keys(categories);
-  const UNCATEGORIZED_INDEX = Number.MAX_SAFE_INTEGER; // Ensures uncategorized sorts to bottom
-
-  // Pre-compute category index map for O(1) lookups instead of O(n) indexOf per comparison
-  const categoryIndexMap = new Map(categoryKeys.map((k, i) => [k, i]));
-
-  const getCategoryKey = (f: GeoJsonFeature): string | null => {
-    const categoryRaw =
-      (f as any).categoryName ?? f.properties?.[dimension as string];
-    if (categoryRaw == null) return null;
-    return typeof categoryRaw === 'string'
-      ? categoryRaw.trim().toLowerCase()
-      : String(categoryRaw).trim().toLowerCase();
-  };
-
-  const sortedFeatures = [...visibleFeatures].sort((a, b) => {
-    if (isMetric) return 0; // Don't sort in metric mode
-
-    const keyA = getCategoryKey(a);
-    const keyB = getCategoryKey(b);
-    const idxA =
-      keyA != null
-        ? (categoryIndexMap.get(keyA) ?? UNCATEGORIZED_INDEX)
-        : UNCATEGORIZED_INDEX;
-    const idxB =
-      keyB != null
-        ? (categoryIndexMap.get(keyB) ?? UNCATEGORIZED_INDEX)
-        : UNCATEGORIZED_INDEX;
-
-    // Reverse order: higher index drawn first (bottom), lower index drawn last (top)
-    return idxB - idxA;
-  });
+      // Reverse order: higher index drawn first (bottom), lower index drawn last (top)
+      return idxB - idxA;
+    });
+  }
 
   // validate which layer type to render
   let layerType = requestedLayerType;
@@ -672,9 +668,7 @@ export function getLayer(
           return [c[0] ?? 0, c[1] ?? 0, c[2] ?? 0, c[3] ?? 255];
         },
         getLineColor: hasDisabled
-          ? (
-              d: ExpandedPolygon,
-            ): [number, number, number, number] => {
+          ? (d: ExpandedPolygon): [number, number, number, number] => {
               if (dimension) {
                 const cat = d.properties?.[dimension];
                 if (cat != null) {
