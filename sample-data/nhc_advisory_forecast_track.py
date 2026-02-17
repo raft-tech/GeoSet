@@ -10,6 +10,8 @@ Data source: https://www.nhc.noaa.gov/gis/archive_forecast.php
 import json
 import os
 import re
+import sys
+import time
 import zipfile
 from datetime import datetime
 from io import BytesIO, StringIO
@@ -57,8 +59,6 @@ def fetch_url(url, timeout=60):
         except Exception as e:
             if attempt < 2:
                 print(f"  Retry {attempt + 1} for {url}: {e}")
-                import time
-
                 time.sleep(2)
             else:
                 raise
@@ -93,8 +93,6 @@ def get_all_storm_urls(year):
 
 def _get_kmz_urls_for_storm(storm_url):
     """Get all KMZ file URLs for a specific storm page."""
-    import time
-
     time.sleep(0.5)  # Rate limiting
     html_text = fetch_url(storm_url).text
 
@@ -117,8 +115,6 @@ def _get_kmz_urls_for_storm(storm_url):
 
 def read_kmz(kmz_url):
     """Download a KMZ file and return a GeoDataFrame."""
-    import time
-
     time.sleep(0.5)  # Rate limiting
     content = fetch_url(kmz_url).content
 
@@ -221,8 +217,6 @@ for _, (storm_name, identifier, track_url) in storms_df.iterrows():
 
 if not holder:
     print("No storm data found. Done.")
-    import sys
-
     sys.exit(0)
 
 agg_df = pd.concat(holder, ignore_index=True)
