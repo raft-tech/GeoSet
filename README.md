@@ -23,7 +23,7 @@ under the License.
 
 A geospatial data monitoring and visualization platform built on [Apache Superset](https://github.com/apache/superset).
 
-<!-- TODO: Add hero screenshot of a GeoSet dashboard -->
+[GeoSet Wildfire Dashboard](docs/static/images/usa-wildfire-dashboard.png)
 
 ## Summary
 
@@ -68,10 +68,10 @@ cd GeoSet
 1. Copy the example environment file and configure it:
 
 ```bash
-cp docker/.env.example docker/.env-local
+cp docker/.env.example docker/.env
 ```
 
-2. Edit `docker/.env-local` with your settings. At minimum, you should set:
+2. Edit `docker/.env` with your settings. At minimum, you should set:
 
 ```env
 MAPBOX_API_KEY=<your-mapbox-token>
@@ -140,9 +140,6 @@ npm run plugins:build
 # Start the dev server with hot reload
 npm run dev-server
 
-# Start the dev server with hot reload
-npm run dev-server
-
 # Start all services (includes hot reload for plugin changes)
 cd ..
 docker compose up -d
@@ -161,6 +158,11 @@ docker compose up -d
   - Measurement tool in action
   - Multi-layer legend
 -->
+[GeoSet Helene Storm Map](docs/static/images/helene-storm-data.png)
+[GeoJSON Config Control - Chart Builder](docs/static/images/geojson-config-control-chart-builder.png)
+[Category-Colored Polygons](docs/static/images/tropical-storm-warnings.png)
+[Metric Gradient Max Wind Speed](docs/static/images/wind-metrics-chart.png)
+
 
 ## Project Structure
 
