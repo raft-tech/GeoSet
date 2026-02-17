@@ -23,7 +23,7 @@ under the License.
 
 A geospatial data monitoring and visualization platform built on [Apache Superset](https://github.com/apache/superset).
 
-[GeoSet Wildfire Dashboard](docs/static/images/usa-wildfire-dashboard.png)
+![GeoSet Wildfire Dashboard](docs/static/images/usa-wildfire-dashboard.png)
 
 ## Summary
 
@@ -158,10 +158,10 @@ docker compose up -d
   - Measurement tool in action
   - Multi-layer legend
 -->
-[GeoSet Helene Storm Map](docs/static/images/helene-storm-data.png)
-[GeoJSON Config Control - Chart Builder](docs/static/images/geojson-config-control-chart-builder.png)
-[Category-Colored Polygons](docs/static/images/tropical-storm-warnings.png)
-[Metric Gradient Max Wind Speed](docs/static/images/wind-metrics-chart.png)
+![GeoSet Helene Storm Map](docs/static/images/helene-storm-data.png)
+![GeoJSON Config Control - Chart Builder](docs/static/images/geojson-config-control-chart-builder.png)
+![Category-Colored Polygons](docs/static/images/tropical-storm-warnings.png)
+![Metric Gradient Max Wind Speed](docs/static/images/wind-metrics-chart.png)
 
 
 ## Project Structure
