@@ -73,7 +73,7 @@ columns:
   is_dttm: false
   is_active: true
   type: TEXT
-  groupby: false
+  groupby: true
   filterable: true
   expression: null
   description: null
@@ -83,7 +83,7 @@ columns:
   is_dttm: false
   is_active: true
   type: DOUBLE PRECISION
-  groupby: false
+  groupby: true
   filterable: true
   expression: null
   description: null
@@ -93,7 +93,7 @@ columns:
   is_dttm: false
   is_active: true
   type: DOUBLE PRECISION
-  groupby: false
+  groupby: true
   filterable: true
   expression: null
   description: null
@@ -103,7 +103,7 @@ columns:
   is_dttm: false
   is_active: true
   type: DOUBLE PRECISION
-  groupby: false
+  groupby: true
   filterable: true
   expression: null
   description: null
@@ -113,7 +113,7 @@ columns:
   is_dttm: false
   is_active: true
   type: DOUBLE PRECISION
-  groupby: false
+  groupby: true
   filterable: true
   expression: null
   description: null
@@ -123,7 +123,7 @@ columns:
   is_dttm: false
   is_active: true
   type: DOUBLE PRECISION
-  groupby: false
+  groupby: true
   filterable: true
   expression: null
   description: null

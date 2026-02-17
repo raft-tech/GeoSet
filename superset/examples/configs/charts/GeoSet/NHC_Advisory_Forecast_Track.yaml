@@ -12,31 +12,39 @@ params:
   row_limit: 10000
   mapbox_style: "mapbox://styles/acf-dart/cm8ov8yl4001401s365rs672z"
   adhoc_filters: []
-  hover_data_columns:
+  hoverDataColumns:
     - storm_name
     - wind_speed_mph
     - max_gust_mph
-  feature_info_columns:
+  featureInfoColumns:
     - storm_name
     - nhc_identifier
     - wind_speed_mph
     - max_gust_mph
     - year
-  min_max_zoom:
+  minMaxZoomSlider:
     - 0
     - 22
   schema_version: 2
   geojsonConfig: >-
     {
       "globalColoring": {
-        "fillColor": [0, 191, 255, 200],
-        "strokeColor": [0, 191, 255, 255],
-        "strokeWidth": 3,
+        "fillColor": [255, 220, 50, 255],
+        "strokeColor": [255, 220, 50, 255],
+        "strokeWidth": 2,
         "fillPattern": "solid"
+      },
+      "colorByValue": {
+        "valueColumn": "wind_speed_mph",
+        "startColor": [255, 255, 100, 255],
+        "endColor": [200, 0, 50, 255],
+        "lowerBound": 25,
+        "upperBound": 75,
+        "breakpoints": []
       },
       "legend": {
         "title": "NHC Forecasts",
-        "name": "Advisory Forecast Track"
+        "name": null
       }
     }
 cache_timeout: null

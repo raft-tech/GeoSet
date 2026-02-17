@@ -103,7 +103,7 @@ columns:
   is_dttm: false
   is_active: true
   type: BIGINT
-  groupby: false
+  groupby: true
   filterable: true
   expression: null
   description: null
@@ -113,7 +113,7 @@ columns:
   is_dttm: false
   is_active: true
   type: BIGINT
-  groupby: false
+  groupby: true
   filterable: true
   expression: null
   description: null
