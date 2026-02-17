@@ -1,14 +1,13 @@
 """Load US Census state boundary shapefile data into PostGIS."""
 
 import json
-import os
-import sys
-import time
 
 import geopandas as gpd
 import pandas as pd
 from shapely.geometry import mapping
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
+
+from db import get_engine, skip_if_populated, wait_for_db
 
 CENSUS_STATE_SHAPEFILE_URL = (
     "https://www2.census.gov/geo/tiger/GENZ2024/shp/cb_2024_us_state_500k.zip"
@@ -27,30 +26,9 @@ COLUMN_MAPPING = {
     "geometry": "state_boundary",
 }
 
-DB_HOST = os.environ.get("DB_HOST", "postgis")
-DB_PORT = os.environ.get("DB_PORT", "5432")
-DB_NAME = os.environ.get("DB_NAME", "geoset")
-DB_USER = os.environ.get("DB_USER", "geoset")
-DB_PASSWORD = os.environ.get("DB_PASSWORD", "geoset")
-
-
-def wait_for_db(engine, retries=10, delay=3):
-    for attempt in range(retries):
-        try:
-            with engine.connect() as conn:
-                conn.execute(text("SELECT 1"))
-            return
-        except Exception:
-            print(f"Waiting for database (attempt {attempt + 1}/{retries})...")
-            time.sleep(delay)
-    print("Could not connect to database.")
-    sys.exit(1)
-
-
-db_url = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-engine = create_engine(db_url)
-
+engine = get_engine()
 wait_for_db(engine)
+skip_if_populated(engine, "census_state_boundaries")
 
 print(f"Reading shapefile from {CENSUS_STATE_SHAPEFILE_URL}...")
 gdf = gpd.read_file(CENSUS_STATE_SHAPEFILE_URL)

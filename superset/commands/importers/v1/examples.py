@@ -255,7 +255,6 @@ class ImportExamplesCommand(ImportModelsCommand):
                         }
                     )
             if resolved_slices:
-                chart_params["deckSlices"] = resolved_slices
                 chart_params["deck_slices"] = resolved_slices
                 chart.params = json.dumps(chart_params)
                 logger.info(
@@ -281,6 +280,10 @@ class ImportExamplesCommand(ImportModelsCommand):
                 try:
                     config = update_id_refs(config, chart_ids, dataset_info)
                 except KeyError:
+                    logger.warning(
+                        "[GeoSet] Skipping dashboard %s — missing chart/dataset ref",
+                        file_name,
+                    )
                     continue
 
                 dashboard = import_dashboard(
@@ -300,4 +303,5 @@ class ImportExamplesCommand(ImportModelsCommand):
             {"dashboard_id": dashboard_id, "slice_id": chart_id}
             for (dashboard_id, chart_id) in dashboard_chart_ids
         ]
-        db.session.execute(dashboard_slices.insert(), values)
+        if values:
+            db.session.execute(dashboard_slices.insert(), values)

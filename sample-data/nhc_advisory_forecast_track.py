@@ -10,8 +10,6 @@ Data source: https://www.nhc.noaa.gov/gis/archive_forecast.php
 import json
 import os
 import re
-import sys
-import time
 import zipfile
 from datetime import datetime
 from io import BytesIO, StringIO
@@ -21,19 +19,15 @@ import pandas as pd
 import requests
 import shapely
 from fiona.drvsupport import supported_drivers
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
+
+from db import get_engine, skip_if_populated, wait_for_db
 
 # Enable KML support in Fiona/GDAL
 supported_drivers["KML"] = "rw"
 
 BASE_URL = "https://www.nhc.noaa.gov/gis/archive_forecast.php"
 YEAR = int(os.environ.get("YEAR", 2024))
-
-DB_HOST = os.environ.get("DB_HOST", "postgis")
-DB_PORT = os.environ.get("DB_PORT", "5432")
-DB_NAME = os.environ.get("DB_NAME", "geoset")
-DB_USER = os.environ.get("DB_USER", "geoset")
-DB_PASSWORD = os.environ.get("DB_PASSWORD", "geoset")
 
 # Timezone abbreviation to UTC offset mapping for NHC timestamps
 TZ_TO_UTC_OFFSET = {
@@ -53,19 +47,6 @@ TZ_TO_UTC_OFFSET = {
 }
 
 
-def wait_for_db(engine, retries=10, delay=3):
-    for attempt in range(retries):
-        try:
-            with engine.connect() as conn:
-                conn.execute(text("SELECT 1"))
-            return
-        except Exception:
-            print(f"Waiting for database (attempt {attempt + 1}/{retries})...")
-            time.sleep(delay)
-    print("Could not connect to database.")
-    sys.exit(1)
-
-
 def fetch_url(url, timeout=60):
     """Fetch URL content with retry logic."""
     for attempt in range(3):
@@ -76,6 +57,8 @@ def fetch_url(url, timeout=60):
         except Exception as e:
             if attempt < 2:
                 print(f"  Retry {attempt + 1} for {url}: {e}")
+                import time
+
                 time.sleep(2)
             else:
                 raise
@@ -110,6 +93,8 @@ def get_all_storm_urls(year):
 
 def _get_kmz_urls_for_storm(storm_url):
     """Get all KMZ file URLs for a specific storm page."""
+    import time
+
     time.sleep(0.5)  # Rate limiting
     html_text = fetch_url(storm_url).text
 
@@ -132,6 +117,8 @@ def _get_kmz_urls_for_storm(storm_url):
 
 def read_kmz(kmz_url):
     """Download a KMZ file and return a GeoDataFrame."""
+    import time
+
     time.sleep(0.5)  # Rate limiting
     content = fetch_url(kmz_url).content
 
@@ -180,10 +167,9 @@ def parse_description_html(description):
 
 # --- Main ---
 
-db_url = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-engine = create_engine(db_url)
-
+engine = get_engine()
 wait_for_db(engine)
+skip_if_populated(engine, "nhc_advisory_forecast_track")
 
 storms_df = get_all_storm_urls(YEAR)
 
@@ -201,7 +187,7 @@ for _, (storm_name, identifier, track_url) in storms_df.iterrows():
 
     try:
         kmz_df = read_kmz(track_url)
-    except (shapely.errors.GEOSException, Exception) as e:
+    except Exception as e:
         print(f"  Skipping {storm_name}: {e}")
         continue
 
@@ -235,6 +221,8 @@ for _, (storm_name, identifier, track_url) in storms_df.iterrows():
 
 if not holder:
     print("No storm data found. Done.")
+    import sys
+
     sys.exit(0)
 
 agg_df = pd.concat(holder, ignore_index=True)

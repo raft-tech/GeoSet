@@ -38,8 +38,7 @@ CREATE TABLE IF NOT EXISTS nifc_wildfire_locations (
     origin_state_code CHAR(5),
     origin_county_name TEXT,
     landowner_type TEXT,
-    is_multijurisdictional BOOLEAN,
-    additional_data JSONB
+    is_multijurisdictional BOOLEAN
 );
 
 CREATE TABLE IF NOT EXISTS nhc_advisory_forecast_track (

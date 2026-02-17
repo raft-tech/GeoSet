@@ -1,13 +1,12 @@
 """Load NIFC wildfire location data into PostGIS."""
 
 import json
-import os
-import sys
-import time
 import urllib.request
 
 import pandas as pd
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
+
+from db import get_engine, skip_if_populated, wait_for_db
 
 FIRE_API_URL = (
     "https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/"
@@ -48,25 +47,6 @@ TIME_COLUMNS = [
     "nifc_modified_time",
 ]
 
-DB_HOST = os.environ.get("DB_HOST", "postgis")
-DB_PORT = os.environ.get("DB_PORT", "5432")
-DB_NAME = os.environ.get("DB_NAME", "geoset")
-DB_USER = os.environ.get("DB_USER", "geoset")
-DB_PASSWORD = os.environ.get("DB_PASSWORD", "geoset")
-
-
-def wait_for_db(engine, retries=10, delay=3):
-    for attempt in range(retries):
-        try:
-            with engine.connect() as conn:
-                conn.execute(text("SELECT 1"))
-            return
-        except Exception:
-            print(f"Waiting for database (attempt {attempt + 1}/{retries})...")
-            time.sleep(delay)
-    print("Could not connect to database.")
-    sys.exit(1)
-
 
 def parse_feature(feature):
     """Flatten a GeoJSON feature into a dict with properties, id, and point geometry."""
@@ -84,10 +64,9 @@ def parse_feature(feature):
     return row
 
 
-db_url = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-engine = create_engine(db_url)
-
+engine = get_engine()
 wait_for_db(engine)
+skip_if_populated(engine, "nifc_wildfire_locations")
 
 print("Fetching wildfire data from NIFC API...")
 with urllib.request.urlopen(FIRE_API_URL, timeout=120) as response:
