@@ -128,5 +128,15 @@ columns:
   expression: null
   description: null
   python_date_format: null
+- column_name: state_boundary
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: TEXT
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
 version: 1.0.0
 database_uuid: d601f9bf-b076-46fa-bd78-5aa1bd0b74b1

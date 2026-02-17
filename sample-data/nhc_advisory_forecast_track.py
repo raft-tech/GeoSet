@@ -252,7 +252,7 @@ insert_sql = text("""
          nhc_identifier, increment, year, forecast_point)
     VALUES
         (:effective_timestamp, :wind_speed_mph, :max_gust_mph, :storm_name,
-         :nhc_identifier, :increment, :year, ST_GeomFromGeoJSON(:forecast_point))
+         :nhc_identifier, :increment, :year, :forecast_point)
 """)
 
 with engine.begin() as conn:

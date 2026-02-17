@@ -9,7 +9,7 @@ sql: |-
   SELECT
       storm_name,
       nhc_identifier,
-      ST_MakeLine("start_geom", "end_geom") AS geom,
+      ST_AsGeoJSON(ST_MakeLine("start_geom", "end_geom"))::text AS geom,
       wind_speed_mph,
       max_gust_mph,
       year
@@ -17,8 +17,8 @@ sql: |-
       SELECT
           storm_name,
           nhc_identifier,
-          forecast_point::geometry AS "start_geom",
-          LEAD(forecast_point::geometry) OVER (
+          ST_GeomFromGeoJSON(forecast_point) AS "start_geom",
+          LEAD(ST_GeomFromGeoJSON(forecast_point)) OVER (
               PARTITION BY storm_name ORDER BY nhc_identifier
           ) AS "end_geom",
           wind_speed_mph,
@@ -91,9 +91,9 @@ columns:
   verbose_name: null
   is_dttm: false
   is_active: true
-  type: GEOMETRY
-  groupby: false
-  filterable: false
+  type: TEXT
+  groupby: true
+  filterable: true
   expression: null
   description: null
   python_date_format: null

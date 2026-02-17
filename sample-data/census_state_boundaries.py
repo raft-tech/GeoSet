@@ -73,7 +73,7 @@ insert_sql = text("""
     VALUES
         (:state_code, :state_gnis_code, :state_abbrev, :full_geoid,
          :geoid, :legal_statistical_code, :land_area, :water_area,
-         :state_name, ST_GeomFromGeoJSON(:state_boundary))
+         :state_name, :state_boundary)
 """)
 
 with engine.begin() as conn:

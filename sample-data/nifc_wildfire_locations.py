@@ -126,11 +126,10 @@ insert_sql = text("""
     VALUES
         (:fire_id, :irwin_id, :incident_size, :containment_time, :percent_contained,
          :control_time, :incident_description, :discovery_acres, :final_acres,
-         :fire_cause, ST_GeomFromGeoJSON(:origin_coordinate), :dispatch_center_id,
-         :fire_discovery_time, :nifc_created_time, :nifc_modified_time,
-         :estimated_cost_to_date, :incident_name, :origin_fips_code,
-         :origin_city_name, :origin_state_code, :origin_county_name,
-         :landowner_type, :is_multijurisdictional)
+         :fire_cause, :origin_coordinate, :dispatch_center_id, :fire_discovery_time,
+         :nifc_created_time, :nifc_modified_time, :estimated_cost_to_date,
+         :incident_name, :origin_fips_code, :origin_city_name, :origin_state_code,
+         :origin_county_name, :landowner_type, :is_multijurisdictional)
 """)
 
 with engine.begin() as conn:

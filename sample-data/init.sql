@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS census_state_boundaries (
     land_area BIGINT,
     water_area BIGINT,
     state_name VARCHAR(100) NOT NULL,
-    state_boundary GEOGRAPHY(MULTIPOLYGON, 4326)
+    state_boundary TEXT
 );
 
 CREATE TABLE IF NOT EXISTS nifc_wildfire_locations (
@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS nifc_wildfire_locations (
     discovery_acres DOUBLE PRECISION,
     final_acres DOUBLE PRECISION,
     fire_cause TEXT,
-    origin_coordinate GEOGRAPHY(POINT, 4326),
+    origin_coordinate TEXT,
     dispatch_center_id TEXT,
     fire_discovery_time TIMESTAMPTZ,
     nifc_created_time TIMESTAMPTZ,
@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS nhc_advisory_forecast_track (
     nhc_identifier TEXT,
     increment TEXT NOT NULL,
     year INTEGER NOT NULL,
-    forecast_point GEOGRAPHY(POINT, 4326)
+    forecast_point TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_nhc_identifier ON nhc_advisory_forecast_track (nhc_identifier);

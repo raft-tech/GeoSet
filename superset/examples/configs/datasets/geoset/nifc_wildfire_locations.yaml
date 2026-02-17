@@ -208,6 +208,16 @@ columns:
   expression: null
   description: null
   python_date_format: null
+- column_name: origin_coordinate
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: TEXT
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
 - column_name: fire_discovery_time
   verbose_name: null
   is_dttm: true
