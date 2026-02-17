@@ -84,48 +84,79 @@ import ClickPopupBox, {
 // expensive polygon re-tessellation in deck.gl's SolidPolygonLayer.
 const polygonDataCache = new WeakMap<object, ExpandedPolygon[]>();
 
-// Line segment for rendering polygon borders with LineLayer (faster than PathLayer).
-type LineSegment = {
-  sourcePosition: number[];
-  targetPosition: number[];
-  polygonIndex: number; // index into the ExpandedPolygon[] array for color lookups
+// Binary segment data for zero-allocation polygon border rendering via LineLayer.
+// Typed arrays go straight to the GPU — no per-edge JS objects, no GC pressure.
+type BinarySegmentData = {
+  length: number;
+  sourcePositions: Float64Array;
+  targetPositions: Float64Array;
+  polygonIndices: Uint32Array;
 };
 
-// Cache line segments alongside polygon data so they're computed once per dataset.
-const lineSegmentCache = new WeakMap<object, LineSegment[]>();
+const binarySegmentCache = new WeakMap<object, BinarySegmentData>();
 
 /**
- * Convert expanded polygon rings into individual line segment pairs for LineLayer.
- * LineLayer renders each segment independently (no joins/tessellation), which is
- * significantly faster than PathLayer for thin borders (1-3px).
+ * Convert expanded polygon rings into binary typed arrays for LineLayer.
+ * Each ring edge becomes a source/target position pair stored in flat arrays.
+ * LineLayer renders ~33% fewer GPU vertices than PathLayer with no CPU tessellation.
  */
-function polygonsToLineSegments(polygons: ExpandedPolygon[]): LineSegment[] {
-  const segments: LineSegment[] = [];
+function polygonsToBinarySegments(
+  polygons: ExpandedPolygon[],
+): BinarySegmentData {
+  // First pass: count total segments to pre-allocate arrays
+  let count = 0;
+  for (const poly of polygons) {
+    for (const ring of poly.polygon) {
+      if (ring.length < 2) continue;
+      count += ring.length - 1;
+      // Closing edge if ring isn't already closed
+      const first = ring[0];
+      const last = ring[ring.length - 1];
+      if (first[0] !== last[0] || first[1] !== last[1]) {
+        count += 1;
+      }
+    }
+  }
+
+  const src = new Float64Array(count * 2);
+  const tgt = new Float64Array(count * 2);
+  const idx = new Uint32Array(count);
+  let offset = 0;
+
   for (let pi = 0; pi < polygons.length; pi += 1) {
-    const rings = polygons[pi].polygon;
-    for (const ring of rings) {
+    for (const ring of polygons[pi].polygon) {
       const len = ring.length;
       if (len < 2) continue;
       for (let i = 0; i < len - 1; i += 1) {
-        segments.push({
-          sourcePosition: ring[i],
-          targetPosition: ring[i + 1],
-          polygonIndex: pi,
-        });
+        const o2 = offset * 2;
+        src[o2] = ring[i][0];
+        src[o2 + 1] = ring[i][1];
+        tgt[o2] = ring[i + 1][0];
+        tgt[o2 + 1] = ring[i + 1][1];
+        idx[offset] = pi;
+        offset += 1;
       }
       // Close the ring if first and last point differ
       const first = ring[0];
       const last = ring[len - 1];
       if (first[0] !== last[0] || first[1] !== last[1]) {
-        segments.push({
-          sourcePosition: last,
-          targetPosition: first,
-          polygonIndex: pi,
-        });
+        const o2 = offset * 2;
+        src[o2] = last[0];
+        src[o2 + 1] = last[1];
+        tgt[o2] = first[0];
+        tgt[o2 + 1] = first[1];
+        idx[offset] = pi;
+        offset += 1;
       }
     }
   }
-  return segments;
+
+  return {
+    length: offset,
+    sourcePositions: src.subarray(0, offset * 2),
+    targetPositions: tgt.subarray(0, offset * 2),
+    polygonIndices: idx.subarray(0, offset),
+  };
 }
 
 const LimitWarning = styled.div`
@@ -352,12 +383,12 @@ export function getLayer(
     const hasDisabled = disabledCategories.size > 0;
 
     // SolidPolygonLayer for fill (no stroke overhead)
-    const fillLayer = new SolidPolygonLayer({
+    const fillLayer = new SolidPolygonLayer<ExpandedPolygon>({
       id: `polygon-fill-${fd.slice_id}`,
       data: cachedPolygonData,
       positionFormat: 'XY',
       filled: filled ?? fd.filled,
-      getPolygon: (d: ExpandedPolygon) => d.polygon,
+      getPolygon: ((d: ExpandedPolygon) => d.polygon) as any,
       getFillColor: (d: ExpandedPolygon): [number, number, number, number] => {
         if (hasDisabled && dimension) {
           const cat = d.properties?.[dimension];
@@ -377,22 +408,37 @@ export function getLayer(
 
     if (!effectiveStroked) return [fillLayer];
 
-    // LineLayer for borders — ~50% fewer vertices and no CPU tessellation vs PathLayer
-    let cachedSegments = lineSegmentCache.get(payload.data);
+    // LineLayer with binary data for borders — zero JS object allocation,
+    // ~33% fewer GPU vertices than PathLayer, no CPU tessellation.
+    let cachedSegments = binarySegmentCache.get(payload.data);
     if (!cachedSegments) {
-      cachedSegments = polygonsToLineSegments(cachedPolygonData);
-      lineSegmentCache.set(payload.data, cachedSegments);
+      cachedSegments = polygonsToBinarySegments(cachedPolygonData);
+      binarySegmentCache.set(payload.data, cachedSegments);
     }
 
     const strokeLayer = new LineLayer({
       id: `polygon-stroke-${fd.slice_id}`,
-      data: cachedSegments,
-      getSourcePosition: (d: LineSegment) => d.sourcePosition,
-      getTargetPosition: (d: LineSegment) => d.targetPosition,
+      data: {
+        length: cachedSegments.length,
+        attributes: {
+          getSourcePosition: {
+            value: cachedSegments.sourcePositions,
+            size: 2,
+          },
+          getTargetPosition: {
+            value: cachedSegments.targetPositions,
+            size: 2,
+          },
+        },
+      },
       getColor: hasDisabled
-        ? (d: LineSegment): [number, number, number, number] => {
+        ? (
+            _: null,
+            info: { index: number },
+          ): [number, number, number, number] => {
             if (dimension) {
-              const poly = cachedPolygonData[d.polygonIndex];
+              const pi = cachedSegments!.polygonIndices[info.index];
+              const poly = cachedPolygonData[pi];
               const cat = poly?.properties?.[dimension];
               if (cat != null) {
                 const key = String(cat).trim().toLowerCase();
@@ -684,8 +730,8 @@ export function getLayer(
         extensions: [new PathStyleExtension({ dash: isDashed })],
         ...baseLayerProps,
       });
-    // POLYGONS — SolidPolygonLayer (fill) + LineLayer (borders)
-    // LineLayer renders ~50% fewer vertices with no CPU tessellation vs PathLayer.
+    // POLYGONS — SolidPolygonLayer (fill) + LineLayer (binary borders)
+    // Separated from composite PolygonLayer for direct control and to skip stroke when disabled.
     case 'Polygon': {
       // Cache expanded polygons keyed on payload.data, which stays referentially
       // stable when only categories/colors change (no new data fetch).
@@ -709,12 +755,12 @@ export function getLayer(
       const hasDisabled = disabledCategories.size > 0;
 
       // SolidPolygonLayer for fill (no stroke overhead)
-      const fillLayer = new SolidPolygonLayer({
+      const fillLayer = new SolidPolygonLayer<ExpandedPolygon>({
         id: `polygon-fill-${fd.slice_id}`,
         data: polygonData,
         positionFormat: 'XY',
         filled: filled ?? fd.filled,
-        getPolygon: (d: ExpandedPolygon) => d.polygon,
+        getPolygon: ((d: ExpandedPolygon) => d.polygon) as any,
         getFillColor: (
           d: ExpandedPolygon,
         ): [number, number, number, number] => {
@@ -736,22 +782,37 @@ export function getLayer(
 
       if (!effectiveStroked) return [fillLayer];
 
-      // LineLayer for borders — no CPU tessellation, no join geometry
-      let segments = lineSegmentCache.get(payload.data);
+      // LineLayer with binary data for borders — zero JS object allocation,
+      // ~33% fewer GPU vertices than PathLayer, no CPU tessellation.
+      let segments = binarySegmentCache.get(payload.data);
       if (!segments) {
-        segments = polygonsToLineSegments(polygonData);
-        lineSegmentCache.set(payload.data, segments);
+        segments = polygonsToBinarySegments(polygonData);
+        binarySegmentCache.set(payload.data, segments);
       }
 
       const strokeLayer = new LineLayer({
         id: `polygon-stroke-${fd.slice_id}`,
-        data: segments,
-        getSourcePosition: (d: LineSegment) => d.sourcePosition,
-        getTargetPosition: (d: LineSegment) => d.targetPosition,
+        data: {
+          length: segments.length,
+          attributes: {
+            getSourcePosition: {
+              value: segments.sourcePositions,
+              size: 2,
+            },
+            getTargetPosition: {
+              value: segments.targetPositions,
+              size: 2,
+            },
+          },
+        },
         getColor: hasDisabled
-          ? (d: LineSegment): [number, number, number, number] => {
+          ? (
+              _: null,
+              info: { index: number },
+            ): [number, number, number, number] => {
               if (dimension) {
-                const poly = polygonData![d.polygonIndex];
+                const pi = segments!.polygonIndices[info.index];
+                const poly = polygonData![pi];
                 const cat = poly?.properties?.[dimension];
                 if (cat != null) {
                   const key = String(cat).trim().toLowerCase();
