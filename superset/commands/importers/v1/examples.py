@@ -23,7 +23,6 @@ from sqlalchemy.sql import select
 
 from superset import db
 from superset.charts.schemas import ImportV1ChartSchema
-from superset.models.slice import Slice
 from superset.commands.chart.importers.v1 import ImportChartsCommand
 from superset.commands.chart.importers.v1.utils import import_chart
 from superset.commands.dashboard.importers.v1 import ImportDashboardsCommand
@@ -43,6 +42,7 @@ from superset.dashboards.schemas import ImportV1DashboardSchema
 from superset.databases.schemas import ImportV1DatabaseSchema
 from superset.datasets.schemas import ImportV1DatasetSchema
 from superset.models.dashboard import dashboard_slices
+from superset.models.slice import Slice
 from superset.utils import json
 from superset.utils.core import get_example_default_schema
 from superset.utils.database import get_example_database
@@ -206,11 +206,7 @@ class ImportExamplesCommand(ImportModelsCommand):
                 config.get("uuid"),
                 viz_type,
             )
-            chart = (
-                db.session.query(Slice)
-                .filter_by(uuid=config["uuid"])
-                .first()
-            )
+            chart = db.session.query(Slice).filter_by(uuid=config["uuid"]).first()
             if not chart:
                 logger.warning(
                     "[GeoSet] Multi chart not found in DB for uuid=%s",
@@ -236,9 +232,7 @@ class ImportExamplesCommand(ImportModelsCommand):
             )
             resolved_slices = []
             for item in deck_slice_uuids:
-                uuid_ref = (
-                    item.get("uuid") if isinstance(item, dict) else str(item)
-                )
+                uuid_ref = item.get("uuid") if isinstance(item, dict) else str(item)
                 chart_id = chart_ids.get(str(uuid_ref))
                 logger.info(
                     "[GeoSet] Resolving uuid=%s -> chart_id=%s",
@@ -252,14 +246,10 @@ class ImportExamplesCommand(ImportModelsCommand):
                             "autozoom": item.get("autozoom", True)
                             if isinstance(item, dict)
                             else True,
-                            "legendCollapsed": item.get(
-                                "legendCollapsed", False
-                            )
+                            "legendCollapsed": item.get("legendCollapsed", False)
                             if isinstance(item, dict)
                             else False,
-                            "initiallyHidden": item.get(
-                                "initiallyHidden", False
-                            )
+                            "initiallyHidden": item.get("initiallyHidden", False)
                             if isinstance(item, dict)
                             else False,
                         }
