@@ -27,7 +27,7 @@ params:
   enableClustering: true
   clusterMaxZoom: 14
   clusterMinPoints: 3
-  clusterRadius: 50
+  clusterRadius: 25
   minMaxZoomSlider:
     - 0
     - 22

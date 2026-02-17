@@ -1,0 +1,27 @@
+slice_name: GeoSet Sample Map
+description: Combined map with NIFC Wildfires, Census State Boundaries, and NHC Forecast Tracks
+certified_by: null
+certification_details: null
+viz_type: deck_geoset_map
+params:
+  datasource: 0__table
+  viz_type: deck_geoset_map
+  mapbox_style: "mapbox://styles/acf-dart/cm8ov8yl4001401s365rs672z"
+  adhoc_filters: []
+  deck_slice_uuids:
+    - uuid: e6e168a5-d38c-428c-ab6c-5ecec9e754dd
+      autozoom: true
+      legendCollapsed: false
+      initiallyHidden: false
+    - uuid: 1edd99b1-b803-4fa2-8500-16dbc172f053
+      autozoom: true
+      legendCollapsed: false
+      initiallyHidden: false
+    - uuid: fbe401b9-ea00-4161-ad3a-be062e256922
+      autozoom: false
+      legendCollapsed: false
+      initiallyHidden: false
+cache_timeout: null
+uuid: be6e5c5a-99ee-44cb-9b78-c7e189590351
+version: 1.0.0
+dataset_uuid: 9a83a2c9-351f-4a8e-97cd-9af903054ccb

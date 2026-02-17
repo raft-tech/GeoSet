@@ -14,6 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+import logging
 from typing import Any, Optional
 
 from marshmallow import Schema
@@ -22,6 +23,7 @@ from sqlalchemy.sql import select
 
 from superset import db
 from superset.charts.schemas import ImportV1ChartSchema
+from superset.models.slice import Slice
 from superset.commands.chart.importers.v1 import ImportChartsCommand
 from superset.commands.chart.importers.v1.utils import import_chart
 from superset.commands.dashboard.importers.v1 import ImportDashboardsCommand
@@ -41,9 +43,12 @@ from superset.dashboards.schemas import ImportV1DashboardSchema
 from superset.databases.schemas import ImportV1DatabaseSchema
 from superset.datasets.schemas import ImportV1DatasetSchema
 from superset.models.dashboard import dashboard_slices
+from superset.utils import json
 from superset.utils.core import get_example_default_schema
 from superset.utils.database import get_example_database
 from superset.utils.decorators import transaction
+
+logger = logging.getLogger(__name__)
 
 
 class ImportExamplesCommand(ImportModelsCommand):
@@ -151,18 +156,128 @@ class ImportExamplesCommand(ImportModelsCommand):
         # import charts
         chart_ids: dict[str, int] = {}
         for file_name, config in configs.items():
-            if (
-                file_name.startswith("charts/")
-                and config["dataset_uuid"] in dataset_info
-            ):
+            if file_name.startswith("charts/"):
+                if config["dataset_uuid"] not in dataset_info:
+                    logger.warning(
+                        "[GeoSet] Skipping chart %s — dataset_uuid %s "
+                        "not in dataset_info. Available: %s",
+                        file_name,
+                        config["dataset_uuid"],
+                        list(dataset_info.keys()),
+                    )
+                    continue
                 # update datasource id, type, and name
                 config.update(dataset_info[config["dataset_uuid"]])
+                # fix datasource placeholder in params so the stored JSON
+                # contains the real datasource string (e.g. "5__table")
+                if isinstance(config.get("params"), dict):
+                    config["params"]["datasource"] = (
+                        f"{config['datasource_id']}__{config['datasource_type']}"
+                    )
                 chart = import_chart(
                     config,
                     overwrite=overwrite,
                     ignore_permissions=True,
                 )
                 chart_ids[str(chart.uuid)] = chart.id
+                logger.info(
+                    "[GeoSet] Imported chart %s (uuid=%s, id=%d, viz=%s)",
+                    file_name,
+                    chart.uuid,
+                    chart.id,
+                    config.get("viz_type"),
+                )
+
+        logger.info(
+            "[GeoSet] All chart_ids after import: %s",
+            chart_ids,
+        )
+
+        # resolve deck_slice_uuids for GeoSet multi-layer charts
+        for file_name, config in configs.items():
+            if not file_name.startswith("charts/"):
+                continue
+            viz_type = config.get("viz_type")
+            if viz_type != "deck_geoset_map":
+                continue
+            logger.info(
+                "[GeoSet] Found multi chart config: %s (uuid=%s, viz=%s)",
+                file_name,
+                config.get("uuid"),
+                viz_type,
+            )
+            chart = (
+                db.session.query(Slice)
+                .filter_by(uuid=config["uuid"])
+                .first()
+            )
+            if not chart:
+                logger.warning(
+                    "[GeoSet] Multi chart not found in DB for uuid=%s",
+                    config["uuid"],
+                )
+                continue
+            logger.info(
+                "[GeoSet] Found multi chart in DB: id=%d, params=%s",
+                chart.id,
+                chart.params[:200] if chart.params else "None",
+            )
+            chart_params = json.loads(chart.params or "{}")
+            deck_slice_uuids = chart_params.pop("deck_slice_uuids", None)
+            if not deck_slice_uuids:
+                logger.warning(
+                    "[GeoSet] No deck_slice_uuids in params. Keys: %s",
+                    list(chart_params.keys()),
+                )
+                continue
+            logger.info(
+                "[GeoSet] deck_slice_uuids to resolve: %s",
+                deck_slice_uuids,
+            )
+            resolved_slices = []
+            for item in deck_slice_uuids:
+                uuid_ref = (
+                    item.get("uuid") if isinstance(item, dict) else str(item)
+                )
+                chart_id = chart_ids.get(str(uuid_ref))
+                logger.info(
+                    "[GeoSet] Resolving uuid=%s -> chart_id=%s",
+                    uuid_ref,
+                    chart_id,
+                )
+                if chart_id:
+                    resolved_slices.append(
+                        {
+                            "sliceId": chart_id,
+                            "autozoom": item.get("autozoom", True)
+                            if isinstance(item, dict)
+                            else True,
+                            "legendCollapsed": item.get(
+                                "legendCollapsed", False
+                            )
+                            if isinstance(item, dict)
+                            else False,
+                            "initiallyHidden": item.get(
+                                "initiallyHidden", False
+                            )
+                            if isinstance(item, dict)
+                            else False,
+                        }
+                    )
+            if resolved_slices:
+                chart_params["deckSlices"] = resolved_slices
+                chart_params["deck_slices"] = resolved_slices
+                chart.params = json.dumps(chart_params)
+                logger.info(
+                    "[GeoSet] Resolved deckSlices for multi chart %d: %s",
+                    chart.id,
+                    resolved_slices,
+                )
+            else:
+                logger.warning(
+                    "[GeoSet] No slices resolved for multi chart %d",
+                    chart.id,
+                )
 
         # store the existing relationship between dashboards and charts
         existing_relationships = db.session.execute(
