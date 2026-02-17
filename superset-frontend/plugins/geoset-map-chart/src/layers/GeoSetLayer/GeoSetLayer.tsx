@@ -23,8 +23,8 @@ import {
   IconLayer,
   LineLayer,
   PathLayer,
-  PolygonLayer,
   ScatterplotLayer,
+  SolidPolygonLayer,
 } from '@deck.gl/layers';
 import { PathStyleExtension } from '@deck.gl/extensions';
 // ignoring the eslint error below since typescript prefers 'geojson' to '@types/geojson'
@@ -57,7 +57,7 @@ import { calculateAutozoomViewport, Viewport } from '../../utils/fitViewport';
 import { TooltipProps } from '../../components/Tooltip';
 import Legend from '../../components/Legend';
 import MapControls from '../../components/MapControls';
-import { GeoJsonFeature } from '../../types';
+import { GeoJsonFeature, LayerState } from '../../types';
 import { useDebouncedValue } from '../../utils/hooks';
 import { normalizeRGBA } from '../../utils/colorsFallback';
 import { getColoredSvgUrl } from '../../utils/svgIcons';
@@ -81,8 +81,52 @@ import ClickPopupBox, {
 // Module-level cache: keeps expanded polygon geometry stable across re-renders
 // that only change category visibility or colors (not the underlying data).
 // When data reference (payload.data) stays the same, cache hits avoid
-// expensive polygon re-tessellation in deck.gl's PolygonLayer + PathLayer.
+// expensive polygon re-tessellation in deck.gl's SolidPolygonLayer.
 const polygonDataCache = new WeakMap<object, ExpandedPolygon[]>();
+
+// Line segment for rendering polygon borders with LineLayer (faster than PathLayer).
+type LineSegment = {
+  sourcePosition: number[];
+  targetPosition: number[];
+  polygonIndex: number; // index into the ExpandedPolygon[] array for color lookups
+};
+
+// Cache line segments alongside polygon data so they're computed once per dataset.
+const lineSegmentCache = new WeakMap<object, LineSegment[]>();
+
+/**
+ * Convert expanded polygon rings into individual line segment pairs for LineLayer.
+ * LineLayer renders each segment independently (no joins/tessellation), which is
+ * significantly faster than PathLayer for thin borders (1-3px).
+ */
+function polygonsToLineSegments(polygons: ExpandedPolygon[]): LineSegment[] {
+  const segments: LineSegment[] = [];
+  for (let pi = 0; pi < polygons.length; pi += 1) {
+    const rings = polygons[pi].polygon;
+    for (const ring of rings) {
+      const len = ring.length;
+      if (len < 2) continue;
+      for (let i = 0; i < len - 1; i += 1) {
+        segments.push({
+          sourcePosition: ring[i],
+          targetPosition: ring[i + 1],
+          polygonIndex: pi,
+        });
+      }
+      // Close the ring if first and last point differ
+      const first = ring[0];
+      const last = ring[len - 1];
+      if (first[0] !== last[0] || first[1] !== last[1]) {
+        segments.push({
+          sourcePosition: last,
+          targetPosition: first,
+          polygonIndex: pi,
+        });
+      }
+    }
+  }
+  return segments;
+}
 
 const LimitWarning = styled.div`
   background-color: ${({ theme }) => theme.colorWarningBg};
@@ -307,10 +351,11 @@ export function getLayer(
     }
     const hasDisabled = disabledCategories.size > 0;
 
-    return new PolygonLayer({
-      id: `polygon-layer-${fd.slice_id}`,
+    // SolidPolygonLayer for fill (no stroke overhead)
+    const fillLayer = new SolidPolygonLayer({
+      id: `polygon-fill-${fd.slice_id}`,
       data: cachedPolygonData,
-      stroked: effectiveStroked,
+      positionFormat: 'XY',
       filled: filled ?? fd.filled,
       getPolygon: (d: ExpandedPolygon) => d.polygon,
       getFillColor: (d: ExpandedPolygon): [number, number, number, number] => {
@@ -324,10 +369,31 @@ export function getLayer(
         const c = d.color || fillColorArray;
         return [c[0] ?? 0, c[1] ?? 0, c[2] ?? 0, c[3] ?? 255];
       },
-      getLineColor: hasDisabled
-        ? (d: ExpandedPolygon): [number, number, number, number] => {
+      updateTriggers: {
+        getFillColor: [fillColorArray, categories],
+      },
+      ...baseLayerProps,
+    });
+
+    if (!effectiveStroked) return [fillLayer];
+
+    // LineLayer for borders — ~50% fewer vertices and no CPU tessellation vs PathLayer
+    let cachedSegments = lineSegmentCache.get(payload.data);
+    if (!cachedSegments) {
+      cachedSegments = polygonsToLineSegments(cachedPolygonData);
+      lineSegmentCache.set(payload.data, cachedSegments);
+    }
+
+    const strokeLayer = new LineLayer({
+      id: `polygon-stroke-${fd.slice_id}`,
+      data: cachedSegments,
+      getSourcePosition: (d: LineSegment) => d.sourcePosition,
+      getTargetPosition: (d: LineSegment) => d.targetPosition,
+      getColor: hasDisabled
+        ? (d: LineSegment): [number, number, number, number] => {
             if (dimension) {
-              const cat = d.properties?.[dimension];
+              const poly = cachedPolygonData[d.polygonIndex];
+              const cat = poly?.properties?.[dimension];
               if (cat != null) {
                 const key = String(cat).trim().toLowerCase();
                 if (disabledCategories.has(key)) return [0, 0, 0, 0];
@@ -336,21 +402,17 @@ export function getLayer(
             return strokeColorArray as [number, number, number, number];
           }
         : (strokeColorArray as [number, number, number, number]),
-      getLineWidth: lineWidth ?? (fd.lineWidth || 0),
-      lineWidthUnits: 'pixels',
-      lineWidthScale: 1,
-      lineWidthMinPixels: 0,
+      getWidth: lineWidth ?? (fd.lineWidth || 1),
+      widthUnits: 'pixels',
+      widthScale: 1,
+      widthMinPixels: 0,
       updateTriggers: {
-        getFillColor: [fillColorArray, categories],
-        getLineColor: [strokeColorArray, categories],
+        getColor: [strokeColorArray, categories],
       },
-      // Disable picking on stroke sublayer — only the fill needs to be pickable.
-      // This halves the per-frame GPU picking cost for bordered polygons.
-      _subLayerProps: {
-        stroke: { pickable: false },
-      },
-      ...baseLayerProps,
+      pickable: false,
     });
+
+    return [fillLayer, strokeLayer];
   }
 
   // --- Standard path: process features for all layer types ---
@@ -622,13 +684,11 @@ export function getLayer(
         extensions: [new PathStyleExtension({ dash: isDashed })],
         ...baseLayerProps,
       });
-    // POLYGONS
+    // POLYGONS — SolidPolygonLayer (fill) + LineLayer (borders)
+    // LineLayer renders ~50% fewer vertices with no CPU tessellation vs PathLayer.
     case 'Polygon': {
-      // --- Stable polygon data via payload-based caching ---
       // Cache expanded polygons keyed on payload.data, which stays referentially
       // stable when only categories/colors change (no new data fetch).
-      // This prevents deck.gl from re-tessellating polygon + stroke geometry
-      // on every category toggle — the most expensive operation for bordered polygons.
       let polygonData = polygonDataCache.get(payload.data);
       if (!polygonData) {
         polygonData = expandPolygonFeatures(
@@ -637,11 +697,9 @@ export function getLayer(
         polygonDataCache.set(payload.data, polygonData);
       }
 
-      // Compute effective stroked based on lineWidth
       const effectiveStroked =
         (lineWidth ?? fd.lineWidth ?? 1) > 0 ? (stroked ?? fd.stroked) : false;
 
-      // Pre-compute disabled categories set for O(1) lookup in accessors
       const disabledCategories = new Set<string>();
       if (!isMetric) {
         for (const [key, state] of Object.entries(categories)) {
@@ -650,12 +708,11 @@ export function getLayer(
       }
       const hasDisabled = disabledCategories.size > 0;
 
-      // Use accessor-based colors with updateTriggers so deck.gl only
-      // recalculates color attributes (cheap) without re-tessellating geometry (expensive).
-      return new PolygonLayer({
-        id: `polygon-layer-${fd.slice_id}`,
+      // SolidPolygonLayer for fill (no stroke overhead)
+      const fillLayer = new SolidPolygonLayer({
+        id: `polygon-fill-${fd.slice_id}`,
         data: polygonData,
-        stroked: effectiveStroked,
+        positionFormat: 'XY',
         filled: filled ?? fd.filled,
         getPolygon: (d: ExpandedPolygon) => d.polygon,
         getFillColor: (
@@ -671,12 +728,31 @@ export function getLayer(
           const c = d.color || fillColorArray;
           return [c[0] ?? 0, c[1] ?? 0, c[2] ?? 0, c[3] ?? 255];
         },
-        getLineColor: hasDisabled
-          ? (
-              d: ExpandedPolygon,
-            ): [number, number, number, number] => {
+        updateTriggers: {
+          getFillColor: [fillColorArray, categories],
+        },
+        ...baseLayerProps,
+      });
+
+      if (!effectiveStroked) return [fillLayer];
+
+      // LineLayer for borders — no CPU tessellation, no join geometry
+      let segments = lineSegmentCache.get(payload.data);
+      if (!segments) {
+        segments = polygonsToLineSegments(polygonData);
+        lineSegmentCache.set(payload.data, segments);
+      }
+
+      const strokeLayer = new LineLayer({
+        id: `polygon-stroke-${fd.slice_id}`,
+        data: segments,
+        getSourcePosition: (d: LineSegment) => d.sourcePosition,
+        getTargetPosition: (d: LineSegment) => d.targetPosition,
+        getColor: hasDisabled
+          ? (d: LineSegment): [number, number, number, number] => {
               if (dimension) {
-                const cat = d.properties?.[dimension];
+                const poly = polygonData![d.polygonIndex];
+                const cat = poly?.properties?.[dimension];
                 if (cat != null) {
                   const key = String(cat).trim().toLowerCase();
                   if (disabledCategories.has(key)) return [0, 0, 0, 0];
@@ -685,19 +761,17 @@ export function getLayer(
               return strokeColorArray as [number, number, number, number];
             }
           : (strokeColorArray as [number, number, number, number]),
-        getLineWidth: lineWidth ?? (fd.lineWidth || 0),
-        lineWidthUnits: 'pixels',
-        lineWidthScale: 1,
-        lineWidthMinPixels: 0,
+        getWidth: lineWidth ?? (fd.lineWidth || 1),
+        widthUnits: 'pixels',
+        widthScale: 1,
+        widthMinPixels: 0,
         updateTriggers: {
-          getFillColor: [fillColorArray, categories],
-          getLineColor: [strokeColorArray, categories],
+          getColor: [strokeColorArray, categories],
         },
-        _subLayerProps: {
-          stroke: { pickable: false },
-        },
-        ...baseLayerProps,
+        pickable: false,
       });
+
+      return [fillLayer, strokeLayer];
     }
     // GeoJSON (auto layer type)
     case 'GeoJSON':
@@ -766,17 +840,17 @@ export function getLayer(
   }
 }
 
-export function getLayerState(
-  layer: Layer | null,
+export function getLayerStates(
+  layers: Layer | Layer[] | null,
   options: { minZoom: number; maxZoom: number },
-) {
-  if (!layer) return null;
-
-  return {
+): LayerState[] {
+  if (!layers) return [];
+  const arr = Array.isArray(layers) ? layers : [layers];
+  return arr.map(layer => ({
     id: layer.id,
     layer,
     options,
-  };
+  }));
 }
 
 export type DeckGLGeoJsonProps = {
@@ -1153,16 +1227,12 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
     [propVisualConfig, parsedGeojsonConfig],
   );
 
-  let { minMaxZoomSlider } = formData;
-  if (minMaxZoomSlider === undefined) {
-    minMaxZoomSlider = [0, 22];
-  }
-  const layerStateOptions = {
-    minZoom: minMaxZoomSlider[0],
-    maxZoom: minMaxZoomSlider[1],
-  };
+  const layerStateOptions = useMemo(() => {
+    const slider = formData.minMaxZoomSlider ?? [0, 22];
+    return { minZoom: slider[0], maxZoom: slider[1] };
+  }, [formData.minMaxZoomSlider]);
 
-  const layer = useMemo(
+  const layers = useMemo(
     () =>
       getLayer(
         formData,
@@ -1186,7 +1256,10 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
     ],
   );
 
-  const layerState = getLayerState(layer, layerStateOptions);
+  const layerStates = useMemo(
+    () => getLayerStates(layers, layerStateOptions),
+    [layers, layerStateOptions],
+  );
 
   // Adjust map height to accommodate warning banners
   const warningOffset = migrationInfo ? 190 : 60;
@@ -1251,7 +1324,7 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
         mapboxApiAccessToken={effectiveMapboxKey || 'no-token'}
         viewport={viewport}
         initialViewport={viewport}
-        layerStates={layerState ? [layerState] : []}
+        layerStates={layerStates}
         mapStyle={mapStyle || formData.mapbox_style}
         height={mapHeight}
         width={width}

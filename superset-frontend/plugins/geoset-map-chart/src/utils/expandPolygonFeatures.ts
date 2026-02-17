@@ -23,7 +23,7 @@ const expandedPolygonsCache = new WeakMap<
 
 /**
  * Flattens MultiPolygon features into individual polygon records,
- * preserving all properties for Deck.gl's PolygonLayer.
+ * preserving all properties for Deck.gl's SolidPolygonLayer.
  * Results are cached per features array reference for performance.
  */
 export function expandPolygonFeatures(
@@ -84,13 +84,3 @@ export function expandPolygonFeatures(
   return polygons;
 }
 
-/**
- * Clears the expanded polygons cache.
- * Call this when features need to be re-expanded (e.g., color changes).
- */
-export function clearExpandedPolygonsCache(): void {
-  // WeakMap doesn't have a clear method, but creating a new one
-  // will allow the old entries to be garbage collected
-  // This is a no-op since we can't clear WeakMap, but the function
-  // exists for documentation and potential future use with a different cache strategy
-}

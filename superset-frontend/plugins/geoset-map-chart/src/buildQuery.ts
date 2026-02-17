@@ -43,15 +43,7 @@ export default function buildQuery(formData: QueryFormData) {
   checkDupes(hoverCols, 'Hover-Over Data');
   checkDupes(featureCols, 'Additional Details');
 
-  // For Polygon layers, simplify geometry to reduce vertex count.
-  // This dramatically improves deck.gl rendering performance for bordered
-  // polygons by cutting tessellation work. Tolerance 0.001 ≈ 111 m at the equator.
-  // The second arg to ST_AsGeoJSON limits coordinate decimal places (6 ≈ 0.1 m precision).
-  const layerType = formData.geoJsonLayer || 'Polygon';
-  const geojsonExpr =
-    layerType === 'Polygon' || layerType === 'GeoJSON'
-      ? `ST_AsGeoJSON(ST_SimplifyPreserveTopology(${geojsonCol}::geometry, 0.001), 6)`
-      : `ST_AsGeoJSON(${geojsonCol}, 6)`;
+  const geojsonExpr = `ST_AsGeoJSON(${geojsonCol}, 6)`;
 
   // Build columns array
   const columns: any[] = [
