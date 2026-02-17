@@ -83,4 +83,3 @@ export function expandPolygonFeatures(
 
   return polygons;
 }
-
