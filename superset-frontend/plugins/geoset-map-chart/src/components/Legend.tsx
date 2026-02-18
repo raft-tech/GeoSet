@@ -38,7 +38,8 @@ const StyledLegend = styled.div`
     outline: none;
     overflow-y: auto;
     min-width: 200px;
-    max-width: 225px;
+    max-width: 300px;
+    width: max-content;
     border-radius: 6px;
     z-index: 10;
     max-height: calc(100% - 24px);
@@ -71,7 +72,8 @@ const StyledLegend = styled.div`
 
       .gradient-bar {
         height: 14px;
-        width: 180px;
+        width: 100%;
+        min-width: 180px;
         border-radius: 4px;
         margin-bottom: ${theme.sizeUnit}px;
       }
@@ -80,7 +82,8 @@ const StyledLegend = styled.div`
         display: flex;
         justify-content: space-between;
         font-size: ${theme.fontSizeSM}px;
-        width: 180px;
+        width: 100%;
+        min-width: 180px;
         padding: 0 2px;
         letter-spacing: 0.5px;
       }

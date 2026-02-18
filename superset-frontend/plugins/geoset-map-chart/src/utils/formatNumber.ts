@@ -19,9 +19,9 @@
 
 /**
  * Formats a number for human-readable display in legends.
- * - Numbers < 1000: up to 3 decimal places (trailing zeros removed)
- * - Numbers >= 1,000: uses K suffix (e.g., 1.255K)
- * - Numbers >= 1,000,000: uses M suffix (e.g., 1.253M)
+ * - Numbers < 1000: up to 1 decimal place (trailing zeros removed)
+ * - Numbers >= 1,000: uses K suffix (e.g., 1.3K)
+ * - Numbers >= 1,000,000: uses M suffix (e.g., 1.3M)
  * - Numbers >= 1,000,000,000: uses B suffix (e.g., 2.5B)
  */
 export function formatLegendNumber(value: number): string {
@@ -50,11 +50,9 @@ export function formatLegendNumber(value: number): string {
 }
 
 /**
- * Formats a number to up to 3 decimal places, removing trailing zeros.
+ * Formats a number to up to 1 decimal place, removing trailing zeros.
  */
 function trimDecimals(value: number): string {
-  // Round to 3 decimal places
-  const rounded = Math.round(value * 1000) / 1000;
-  // Convert to string and remove trailing zeros after decimal
+  const rounded = Math.round(value * 10) / 10;
   return rounded.toString();
 }

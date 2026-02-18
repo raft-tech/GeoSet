@@ -27,6 +27,11 @@ export const CURRENT_VERSION = 2;
 
 const d3array: Record<string, any> = d3arrayModule as Record<string, any>;
 
+// Throttle hover tooltip updates to avoid React re-renders on every mouse move.
+// deck.gl fires onHover up to 60x/sec; we only need tooltip updates every ~100ms.
+const HOVER_THROTTLE_MS = 100;
+let lastHoverTime = 0;
+
 export function commonLayerProps(
   formData: QueryFormData,
   setTooltip: (tooltip: TooltipProps['tooltip']) => void,
@@ -41,16 +46,22 @@ export function commonLayerProps(
   }
   if (tooltipContentGenerator) {
     onHover = (o: JsonObject) => {
-      if (o.picked) {
-        const content = tooltipContentGenerator(o);
-        setTooltip(
-          content !== null
-            ? { content, x: (o.x as number) + 5, y: (o.y as number) + 5 }
-            : null,
-        );
-      } else {
+      // When the mouse leaves a feature, clear tooltip immediately
+      if (!o.picked) {
         setTooltip(null);
+        return true;
       }
+      // Throttle tooltip updates while hovering over features
+      const now = Date.now();
+      if (now - lastHoverTime < HOVER_THROTTLE_MS) return true;
+      lastHoverTime = now;
+
+      const content = tooltipContentGenerator(o);
+      setTooltip(
+        content !== null
+          ? { content, x: (o.x as number) + 5, y: (o.y as number) + 5 }
+          : null,
+      );
       return true;
     };
   }

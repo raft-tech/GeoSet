@@ -466,13 +466,16 @@ export function getLayer(
   const hasHoverData =
     (hoverColumnNames && hoverColumnNames.length > 0) || Boolean(fd.js_tooltip);
 
-  // Shared props for all layer types.
-  // Only enable onHover when hover data is configured — this prevents
-  // deck.gl from performing expensive GPU picking on every mouse move.
+  // Only enable picking when something actually needs it (hover tooltips or
+  // click popup).  When pickable is false, deck.gl skips GPU picking entirely
+  // — a significant per-frame saving for complex polygon layers.
+  const needsPicking = hasHoverData || Boolean(onFeatureClick);
   const baseLayerProps = {
     ...commonLayerProps(fd, setTooltip, tooltipContentGenerator),
-    pickable: true,
-    onClick: onFeatureClick,
+    pickable: needsPicking,
+    // Only pick the exact pixel under the cursor (no search radius)
+    pickingRadius: 0,
+    ...(onFeatureClick ? { onClick: onFeatureClick } : {}),
     ...(hasHoverData ? {} : { onHover: undefined }),
   };
 
@@ -519,76 +522,73 @@ export function getLayer(
     processedFeatures = jsFnMutator(processedFeatures) || processedFeatures;
   }
 
-  // Apply category visibility: if NOT in metric mode, hide features whose category is disabled.
-  // We don't introduce new fields — we simply set color/stroke to transparent [0,0,0,0].
-  const visibleFeatures = processedFeatures.map(f => {
-    // If metric coloring is active, don't modify features (metric takes precedence).
-    if (isMetric) return f;
+  // In metric mode, skip category visibility and sorting — color comes from
+  // the metric value, not categories, so these operations are pure overhead.
+  let sortedFeatures: GeoJsonFeature[];
 
-    // Determine category key stored on the feature (you saved it earlier as categoryName),
-    // otherwise fall back to property using dimension column name.
-    const categoryRaw =
-      (f as any).categoryName ?? f.properties?.[dimension as string];
-    if (categoryRaw == null) return f;
+  if (isMetric) {
+    sortedFeatures = processedFeatures;
+  } else {
+    // Apply category visibility: hide features whose category is disabled
+    // by setting color/stroke to transparent [0,0,0,0].
+    const visibleFeatures = processedFeatures.map(f => {
+      const categoryRaw =
+        (f as any).categoryName ?? f.properties?.[dimension as string];
+      if (categoryRaw == null) return f;
 
-    const lookupKey =
-      typeof categoryRaw === 'string'
+      const lookupKey =
+        typeof categoryRaw === 'string'
+          ? categoryRaw.trim().toLowerCase()
+          : String(categoryRaw).trim().toLowerCase();
+
+      const catState = (categories as Record<string, any>)[lookupKey];
+      if (catState && catState.enabled === false) {
+        const cc = [0, 0, 0, 0];
+        return {
+          ...f,
+          color: cc,
+          strokeColor: cc,
+          properties: {
+            ...f.properties,
+            fillColor: cc,
+            strokeColor: cc,
+          },
+        };
+      }
+      return f;
+    });
+
+    // Sort features by category order for z-index rendering.
+    // Categories earlier in the JSON config render on top (last in draw order).
+    const categoryKeys = Object.keys(categories);
+    const UNCATEGORIZED_INDEX = Number.MAX_SAFE_INTEGER;
+    const categoryIndexMap = new Map(categoryKeys.map((k, i) => [k, i]));
+
+    const getCategoryKey = (f: GeoJsonFeature): string | null => {
+      const categoryRaw =
+        (f as any).categoryName ?? f.properties?.[dimension as string];
+      if (categoryRaw == null) return null;
+      return typeof categoryRaw === 'string'
         ? categoryRaw.trim().toLowerCase()
         : String(categoryRaw).trim().toLowerCase();
+    };
 
-    const catState = (categories as Record<string, any>)[lookupKey];
-    if (catState && catState.enabled === false) {
-      // Return a shallow clone with fully transparent colors.
-      const cc = [0, 0, 0, 0];
-      return {
-        ...f,
-        color: cc,
-        strokeColor: cc,
-        properties: {
-          ...f.properties,
-          fillColor: cc,
-          strokeColor: cc,
-        },
-      };
-    }
-    return f;
-  });
+    sortedFeatures = [...visibleFeatures].sort((a, b) => {
+      const keyA = getCategoryKey(a);
+      const keyB = getCategoryKey(b);
+      const idxA =
+        keyA != null
+          ? (categoryIndexMap.get(keyA) ?? UNCATEGORIZED_INDEX)
+          : UNCATEGORIZED_INDEX;
+      const idxB =
+        keyB != null
+          ? (categoryIndexMap.get(keyB) ?? UNCATEGORIZED_INDEX)
+          : UNCATEGORIZED_INDEX;
 
-  // Sort features by category order for z-index rendering.
-  // Categories earlier in the JSON config render on top (last in draw order).
-  // So we sort in reverse: higher index = earlier in array = drawn first (bottom).
-  const categoryKeys = Object.keys(categories);
-  const UNCATEGORIZED_INDEX = Number.MAX_SAFE_INTEGER; // Ensures uncategorized sorts to bottom
-
-  // Pre-compute category index map for O(1) lookups instead of O(n) indexOf per comparison
-  const categoryIndexMap = new Map(categoryKeys.map((k, i) => [k, i]));
-
-  const getCategoryKey = (f: GeoJsonFeature): string | null => {
-    const categoryRaw =
-      (f as any).categoryName ?? f.properties?.[dimension as string];
-    if (categoryRaw == null) return null;
-    return typeof categoryRaw === 'string'
-      ? categoryRaw.trim().toLowerCase()
-      : String(categoryRaw).trim().toLowerCase();
-  };
-
-  const sortedFeatures = [...visibleFeatures].sort((a, b) => {
-    if (isMetric) return 0; // Don't sort in metric mode
-
-    const keyA = getCategoryKey(a);
-    const keyB = getCategoryKey(b);
-    const idxA =
-      keyA != null
-        ? (categoryIndexMap.get(keyA) ?? UNCATEGORIZED_INDEX)
-        : UNCATEGORIZED_INDEX;
-    const idxB =
-      keyB != null
-        ? (categoryIndexMap.get(keyB) ?? UNCATEGORIZED_INDEX)
-        : UNCATEGORIZED_INDEX;
-
-    // Reverse order: higher index drawn first (bottom), lower index drawn last (top)
-    return idxB - idxA;
-  });
+      // Reverse order: higher index drawn first (bottom), lower index drawn last (top)
+      return idxB - idxA;
+    });
+  }
 
   // validate which layer type to render
   let layerType = requestedLayerType;
@@ -663,9 +663,6 @@ export function getLayer(
           radiusMinPixels: 1,
           radiusMaxPixels: 50,
           radiusScale: 1,
-          transitions: {
-            getFillColor: 50,
-          },
           ...baseLayerProps,
         });
       }
@@ -1255,6 +1252,15 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
     return { minZoom: slider[0], maxZoom: slider[1] };
   }, [formData.minMaxZoomSlider]);
 
+  // Only pass click handler when there are feature info columns configured.
+  // Without this guard, pickable is always true (due to onFeatureClick being
+  // truthy), which forces deck.gl to run GPU picking on every mouse move even
+  // when there's no hover data — a significant per-frame cost for polygons.
+  const effectiveClickHandler =
+    featureInfoColumnNames && featureInfoColumnNames.length > 0
+      ? handleFeatureClick
+      : undefined;
+
   const layers = useMemo(
     () =>
       getLayer(
@@ -1265,7 +1271,7 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
         categories,
         visualConfig,
         hoverColumnNames,
-        handleFeatureClick,
+        effectiveClickHandler,
       ),
     [
       formData,
@@ -1275,7 +1281,7 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
       categories,
       visualConfig,
       hoverColumnNames,
-      handleFeatureClick,
+      effectiveClickHandler,
     ],
   );
 
