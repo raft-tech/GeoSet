@@ -161,14 +161,9 @@ docker compose up -d
 
 <!-- markdownlint-disable MD033 MD045 -->
 <p align="center">
-  <img src="docs/static/images/helene-storm-data.png" alt="GeoSet Helene Storm Map" width="49%">
+  <img src="docs/static/images/helene-storm-data.png" alt="GeoSet Helene Storm Map" width="49%"><br>
+  <img src="docs/static/images/wind-metrics-chart.png" alt="Metric Gradient Max Wind Speed" width="49%">
 </p>
-<table>
-  <tr>
-    <td><img src="docs/static/images/wind-metrics-chart.png" alt="Metric Gradient Max Wind Speed"></td>
-    <td><img src="docs/static/images/point-clustering-example.png" alt="Point Clustering Example"></td>
-  </tr>
-</table>
 <!-- markdownlint-enable MD033 MD045 -->
 
 ![Multi Legend Toggling](docs/static/images/multi-legend-toggling.gif)
