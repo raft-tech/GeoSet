@@ -51,14 +51,13 @@ GeoSet is a fork of Apache Superset with the following additions:
 
 ![GeoSet Chart Selection](docs/static/images/geoset-chart-selection.png)
 
-<!-- markdownlint-disable MD033 MD045 -->
-<table>
-  <tr>
-    <td align="center"><strong>GeoSet Layer Chart Builder</strong><br><img src="docs/static/images/geojson-config-control-chart-builder.png" alt="GeoSet Layer Chart Builder"></td>
-    <td align="center"><strong>GeoSet Multi Layer Chart Builder</strong><br><img src="docs/static/images/geoset-multi-chart-builder.png" alt="GeoSet Multi Layer Chart Builder"></td>
-  </tr>
-</table>
-<!-- markdownlint-enable MD033 MD045 -->
+#### GeoSet Layer Chart Builder
+
+![GeoSet Layer Chart Builder](docs/static/images/geojson-config-control-chart-builder.png)
+
+#### GeoSet Multi Layer Chart Builder
+
+![GeoSet Multi Layer Chart Builder](docs/static/images/geoset-multi-chart-builder.png)
 
 ## Getting Started
 
@@ -160,11 +159,10 @@ docker compose up -d
 ### Screenshots & Videos
 
 <!-- markdownlint-disable MD033 MD045 -->
-<p align="center">
-  <img src="docs/static/images/helene-storm-data.png" alt="GeoSet Helene Storm Map" width="49%"><br>
-  <img src="docs/static/images/wind-metrics-chart.png" alt="Metric Gradient Max Wind Speed" width="49%">
-</p>
 <!-- markdownlint-enable MD033 MD045 -->
+
+![GeoSet Helene Storm Map](docs/static/images/helene-storm-data.png)
+![Metric Gradient Max Wind Speed](docs/static/images/wind-metrics-chart.png)
 
 ![Multi Legend Toggling](docs/static/images/multi-legend-toggling.gif)
 
