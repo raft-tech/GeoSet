@@ -47,7 +47,22 @@ GeoSet is a fork of Apache Superset with the following additions:
 | GeoJSON configuration | Manual setup | JSON-based config with schema validation, versioned migrations, color-by-category and color-by-value modes |
 | Point clustering | Not available | Supercluster-based automatic clustering with configurable radius, zoom, and min-points |
 
-<!-- TODO: Add side-by-side comparison screenshots -->
+### GeoSet Chart Selection
+
+![GeoSet Chart Selection](docs/static/images/geoset-chart-selection.png)
+
+<!-- markdownlint-disable MD033 MD045 -->
+<p>
+  <span>
+    <strong>GeoSet Layer Chart Builder</strong><br>
+    <img src="docs/static/images/geojson-config-control-chart-builder.png" alt="GeoSet Layer Chart Builder" width="49%">
+  </span>
+  <span>
+    <strong>GeoSet Multi Layer Chart Builder</strong><br>
+    <img src="docs/static/images/geoset-multi-chart-builder.png" alt="GeoSet Multi Layer Chart Builder" width="49%">
+  </span>
+</p>
+<!-- markdownlint-enable MD033 MD045 -->
 
 ## Getting Started
 
@@ -97,6 +112,7 @@ This starts all services:
 | **redis** | 6379 | Cache and Celery broker |
 
 On first run, the `superset-init` container will automatically:
+
 - Run database migrations
 - Create an admin user (`admin` / `admin`)
 - Set up default roles and permissions
@@ -145,24 +161,27 @@ cd ..
 docker compose up -d
 ```
 
-<!-- TODO: Add screenshot of a running GeoSet dashboard -->
+### Screenshots & Videos
 
-### Screenshots
+<!-- markdownlint-disable MD033 MD045 -->
+<p>
+  <img src="docs/static/images/helene-storm-data.png" alt="GeoSet Helene Storm Map" width="49%">
+  <img src="docs/static/images/tropical-storm-warnings.png" alt="Category-Colored Polygons" width="49%">
+</p>
+<p>
+  <img src="docs/static/images/wind-metrics-chart.png" alt="Metric Gradient Max Wind Speed" width="49%">
+  <img src="docs/static/images/point-clustering-example.png" alt="Point Clustering Example" width="49%">
+</p>
+<!-- markdownlint-enable MD033 MD045 -->
 
-<!-- TODO: Add screenshots showing:
-  - Dashboard with map charts
-  - Chart builder with GeoJSON config
-  - Category-colored polygons
-  - Metric gradient visualization
-  - Point clustering
-  - Measurement tool in action
-  - Multi-layer legend
--->
-![GeoSet Helene Storm Map](docs/static/images/helene-storm-data.png)
-![GeoJSON Config Control - Chart Builder](docs/static/images/geojson-config-control-chart-builder.png)
-![Category-Colored Polygons](docs/static/images/tropical-storm-warnings.png)
-![Metric Gradient Max Wind Speed](docs/static/images/wind-metrics-chart.png)
+<!-- markdownlint-disable MD033 -->
+<video src="docs/static/videos/multi-legend-toggling.mp4" width="100%" autoplay loop muted playsinline></video>
 
+<p>
+  <video src="docs/static/videos/ruler-tool-in-action.mp4" width="49%" autoplay loop muted playsinline></video>
+  <video src="docs/static/videos/point-clustering-and-controls.mp4" width="49%" autoplay loop muted playsinline></video>
+</p>
+<!-- markdownlint-enable MD033 -->
 
 ## Project Structure
 
@@ -196,9 +215,11 @@ We welcome contributions to GeoSet! Here's how to get started:
 
 1. **Fork and clone** the repository
 2. **Create a feature branch** from `main`:
+
    ```bash
    git checkout -b your-feature-name main
    ```
+
 3. **Make your changes** — see the project structure above for where things live
 4. **Test locally** using Docker Compose or the local dev setup
 5. **Submit a PR** against `main` on [raft-tech/GeoSet](https://github.com/raft-tech/GeoSet)
