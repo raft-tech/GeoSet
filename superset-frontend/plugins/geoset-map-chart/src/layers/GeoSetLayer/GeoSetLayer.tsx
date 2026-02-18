@@ -1333,6 +1333,7 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
     metricLegend = {
       startColor: metricLegendObject.startColor,
       endColor: metricLegendObject.endColor,
+
       min: metricLegendObject.min,
       max: metricLegendObject.max,
       legendName:
