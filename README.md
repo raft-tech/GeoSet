@@ -52,16 +52,12 @@ GeoSet is a fork of Apache Superset with the following additions:
 ![GeoSet Chart Selection](docs/static/images/geoset-chart-selection.png)
 
 <!-- markdownlint-disable MD033 MD045 -->
-<p>
-  <span>
-    <strong>GeoSet Layer Chart Builder</strong><br>
-    <img src="docs/static/images/geojson-config-control-chart-builder.png" alt="GeoSet Layer Chart Builder" width="49%">
-  </span>
-  <span>
-    <strong>GeoSet Multi Layer Chart Builder</strong><br>
-    <img src="docs/static/images/geoset-multi-chart-builder.png" alt="GeoSet Multi Layer Chart Builder" width="49%">
-  </span>
-</p>
+<table>
+  <tr>
+    <td align="center"><strong>GeoSet Layer Chart Builder</strong><br><img src="docs/static/images/geojson-config-control-chart-builder.png" alt="GeoSet Layer Chart Builder"></td>
+    <td align="center"><strong>GeoSet Multi Layer Chart Builder</strong><br><img src="docs/static/images/geoset-multi-chart-builder.png" alt="GeoSet Multi Layer Chart Builder"></td>
+  </tr>
+</table>
 <!-- markdownlint-enable MD033 MD045 -->
 
 ## Getting Started
@@ -166,22 +162,23 @@ docker compose up -d
 <!-- markdownlint-disable MD033 MD045 -->
 <p>
   <img src="docs/static/images/helene-storm-data.png" alt="GeoSet Helene Storm Map" width="49%">
-  <img src="docs/static/images/tropical-storm-warnings.png" alt="Category-Colored Polygons" width="49%">
 </p>
-<p>
-  <img src="docs/static/images/wind-metrics-chart.png" alt="Metric Gradient Max Wind Speed" width="49%">
-  <img src="docs/static/images/point-clustering-example.png" alt="Point Clustering Example" width="49%">
-</p>
+<table>
+  <tr>
+    <td><img src="docs/static/images/wind-metrics-chart.png" alt="Metric Gradient Max Wind Speed"></td>
+    <td><img src="docs/static/images/point-clustering-example.png" alt="Point Clustering Example"></td>
+  </tr>
+</table>
 <!-- markdownlint-enable MD033 MD045 -->
 
-<!-- markdownlint-disable MD033 -->
-<video src="docs/static/videos/multi-legend-toggling.mp4" width="100%" autoplay loop muted playsinline></video>
+![Multi Legend Toggling](docs/static/images/multi-legend-toggling.gif)
 
+<!-- markdownlint-disable MD033 MD045 -->
 <p>
-  <video src="docs/static/videos/ruler-tool-in-action.mp4" width="49%" autoplay loop muted playsinline></video>
-  <video src="docs/static/videos/point-clustering-and-controls.mp4" width="49%" autoplay loop muted playsinline></video>
+  <img src="docs/static/images/ruler-tool-in-action.gif" alt="Ruler Tool in Action" width="49%">
+  <img src="docs/static/images/point-clustering-and-controls.gif" alt="Point Clustering and Controls" width="49%">
 </p>
-<!-- markdownlint-enable MD033 -->
+<!-- markdownlint-enable MD033 MD045 -->
 
 ## Project Structure
 
