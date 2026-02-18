@@ -160,7 +160,7 @@ docker compose up -d
 ### Screenshots & Videos
 
 <!-- markdownlint-disable MD033 MD045 -->
-<p>
+<p align="center">
   <img src="docs/static/images/helene-storm-data.png" alt="GeoSet Helene Storm Map" width="49%">
 </p>
 <table>
