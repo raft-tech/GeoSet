@@ -41,8 +41,6 @@ from superset.dashboards.schemas import ImportV1DashboardSchema
 from superset.databases.schemas import ImportV1DatabaseSchema
 from superset.datasets.schemas import ImportV1DatasetSchema
 from superset.models.dashboard import dashboard_slices
-from superset.models.slice import Slice
-from superset.utils import json
 from superset.utils.core import get_example_default_schema
 from superset.utils.database import get_example_database
 from superset.utils.decorators import transaction
@@ -171,43 +169,6 @@ class ImportExamplesCommand(ImportModelsCommand):
                     ignore_permissions=True,
                 )
                 chart_ids[str(chart.uuid)] = chart.id
-
-        # resolve deck_slice_uuids for GeoSet multi-layer charts
-        for file_name, config in configs.items():
-            if not file_name.startswith("charts/"):
-                continue
-            viz_type = config.get("viz_type")
-            if viz_type != "deck_geoset_map":
-                continue
-            chart = db.session.query(Slice).filter_by(uuid=config["uuid"]).first()
-            if not chart:
-                continue
-            chart_params = json.loads(chart.params or "{}")
-            deck_slice_uuids = chart_params.pop("deck_slice_uuids", None)
-            if not deck_slice_uuids:
-                continue
-            resolved_slices = []
-            for item in deck_slice_uuids:
-                uuid_ref = item.get("uuid") if isinstance(item, dict) else str(item)
-                chart_id = chart_ids.get(str(uuid_ref))
-                if chart_id:
-                    resolved_slices.append(
-                        {
-                            "sliceId": chart_id,
-                            "autozoom": item.get("autozoom", True)
-                            if isinstance(item, dict)
-                            else True,
-                            "legendCollapsed": item.get("legendCollapsed", False)
-                            if isinstance(item, dict)
-                            else False,
-                            "initiallyHidden": item.get("initiallyHidden", False)
-                            if isinstance(item, dict)
-                            else False,
-                        }
-                    )
-            if resolved_slices:
-                chart_params["deck_slices"] = resolved_slices
-                chart.params = json.dumps(chart_params)
 
         # store the existing relationship between dashboards and charts
         existing_relationships = db.session.execute(
