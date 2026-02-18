@@ -77,6 +77,3 @@ if [ "$SUPERSET_LOAD_EXAMPLES" = "yes" ]; then
     fi
     echo_step "4" "Complete" "Loading examples"
 fi
-
-# Register the GeoSet PostGIS database connection
-superset set-database-uri -d geoset -u postgresql://geoset:geoset@postgis:5432/geoset

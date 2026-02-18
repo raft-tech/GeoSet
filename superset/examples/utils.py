@@ -41,10 +41,6 @@ def load_examples_from_configs(
     command = ImportExamplesCommand(contents, overwrite=True, force_data=force_data)
     command.run()
 
-    from superset.examples.geoset import resolve_geoset_multi_map_layers
-
-    resolve_geoset_multi_map_layers()
-
 
 def load_contents(load_test_data: bool = False) -> dict[str, Any]:
     """Traverse configs directory and load contents"""

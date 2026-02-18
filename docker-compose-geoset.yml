@@ -1,4 +1,33 @@
+#
+# Self-contained GeoSet development environment.
+# Includes PostGIS, sample data ingest, and all Superset services.
+#
+# USAGE:
+#   docker compose -f docker-compose-geoset.yml up
+#
+# ACCESS:
+#   Frontend: http://localhost:9001
+#
+x-superset-user: &superset-user root
+x-superset-volumes: &superset-volumes
+  - ./docker:/app/docker
+  - ./superset:/app/superset
+  - ./superset-frontend:/app/superset-frontend
+  - superset_home_geoset:/app/superset_home
+  - ./tests:/app/tests
+x-common-build: &common-build
+  context: .
+  target: ${SUPERSET_BUILD_TARGET:-dev}
+  cache_from:
+    - apache/superset-cache:3.10-slim-bookworm
+  args:
+    DEV_MODE: "true"
+    INCLUDE_CHROMIUM: ${INCLUDE_CHROMIUM:-false}
+    INCLUDE_FIREFOX: ${INCLUDE_FIREFOX:-false}
+    BUILD_TRANSLATIONS: ${BUILD_TRANSLATIONS:-false}
+
 services:
+  # ---------- GeoSet data layer ----------
   postgis:
     image: postgis/postgis:16-3.4
     container_name: superset_postgis
@@ -18,7 +47,7 @@ services:
       timeout: 5s
       retries: 5
 
-  geoset_sample_data_ingest:
+  geoset-sample-data-ingest:
     build:
       context: ./sample-data
     container_name: geoset_sample_data_ingest
@@ -32,6 +61,101 @@ services:
       DB_USER: geoset
       DB_PASSWORD: geoset
 
+  # ---------- Superset metadata database ----------
+  db-geoset:
+    env_file:
+      - path: docker/.env
+        required: true
+      - path: docker/.env-local
+        required: false
+    image: postgres:16
+    restart: unless-stopped
+    volumes:
+      - db_home_geoset:/var/lib/postgresql/data
+      - ./docker/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+    environment:
+      POSTGRES_DB: superset_geoset
+
+  # ---------- Superset services ----------
+  superset-init-geoset:
+    build:
+      <<: *common-build
+    command: ["/app/docker/docker-init-geoset.sh"]
+    env_file:
+      - path: docker/.env
+        required: true
+      - path: docker/.env-local
+        required: false
+    depends_on:
+      db-geoset:
+        condition: service_started
+      postgis:
+        condition: service_healthy
+    user: *superset-user
+    volumes: *superset-volumes
+    environment:
+      DATABASE_HOST: db-geoset
+      DATABASE_DB: superset_geoset
+      POSTGRES_DB: superset_geoset
+      EXAMPLES_HOST: db-geoset
+      EXAMPLES_DB: superset_geoset
+      EXAMPLES_USER: superset
+      EXAMPLES_PASSWORD: superset
+    healthcheck:
+      disable: true
+
+  superset-geoset:
+    env_file:
+      - path: docker/.env
+        required: true
+      - path: docker/.env-local
+        required: false
+    build:
+      <<: *common-build
+    command: ["/app/docker/docker-bootstrap.sh", "app"]
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    user: *superset-user
+    depends_on:
+      superset-init-geoset:
+        condition: service_completed_successfully
+    volumes: *superset-volumes
+    environment:
+      DATABASE_HOST: db-geoset
+      DATABASE_DB: superset_geoset
+      POSTGRES_DB: superset_geoset
+      EXAMPLES_HOST: db-geoset
+      EXAMPLES_DB: superset_geoset
+      EXAMPLES_USER: superset
+      EXAMPLES_PASSWORD: superset
+
+  superset-node-geoset:
+    build:
+      context: .
+      target: superset-node
+      args:
+        DEV_MODE: "true"
+        BUILD_TRANSLATIONS: ${BUILD_TRANSLATIONS:-false}
+    environment:
+      BUILD_SUPERSET_FRONTEND_IN_DOCKER: true
+      NPM_RUN_PRUNE: false
+      SCARF_ANALYTICS: "${SCARF_ANALYTICS:-}"
+      superset: "http://superset-geoset:8088"
+    ports:
+      - "127.0.0.1:${NODE_PORT:-9001}:9000"
+    command: ["/app/docker/docker-frontend.sh"]
+    env_file:
+      - path: docker/.env
+        required: true
+      - path: docker/.env-local
+        required: false
+    volumes: *superset-volumes
+
 volumes:
+  superset_home_geoset:
+    external: false
+  db_home_geoset:
+    external: false
   geoset_data:
     external: false
