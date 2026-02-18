@@ -289,6 +289,123 @@ function setTooltipContent(o: JsonObject, hoverColumnNames?: string[]) {
   );
 }
 
+/**
+ * Build SolidPolygonLayer (fill) + optional LineLayer (binary stroke) for polygon data.
+ * Shared by both the cached fast path and the standard Polygon case.
+ */
+function buildPolygonLayers(
+  polygonData: ExpandedPolygon[],
+  cacheKey: object,
+  opts: {
+    fd: QueryFormData;
+    filled: boolean | undefined;
+    stroked: boolean | undefined;
+    lineWidth: number | undefined;
+    fillColorArray: number[];
+    strokeColorArray: number[];
+    isMetric: boolean;
+    categories: Record<string, { color: number[]; enabled: boolean }>;
+    dimension: string | undefined;
+    baseLayerProps: Record<string, any>;
+  },
+): Layer[] {
+  const {
+    fd,
+    filled,
+    stroked,
+    lineWidth,
+    fillColorArray,
+    strokeColorArray,
+    isMetric,
+    categories,
+    dimension,
+    baseLayerProps,
+  } = opts;
+
+  const effectiveStroked =
+    (lineWidth ?? fd.lineWidth ?? 1) > 0 ? (stroked ?? fd.stroked) : false;
+
+  const disabledCategories = new Set<string>();
+  if (!isMetric) {
+    for (const [key, state] of Object.entries(categories)) {
+      if (!(state as any).enabled) disabledCategories.add(key);
+    }
+  }
+  const hasDisabled = disabledCategories.size > 0;
+
+  // SolidPolygonLayer for fill (no stroke overhead)
+  const fillLayer = new SolidPolygonLayer<ExpandedPolygon>({
+    id: `polygon-fill-${fd.slice_id}`,
+    data: polygonData,
+    positionFormat: 'XY',
+    filled: filled ?? fd.filled,
+    getPolygon: ((d: ExpandedPolygon) => d.polygon) as any,
+    getFillColor: (d: ExpandedPolygon): [number, number, number, number] => {
+      if (hasDisabled && dimension) {
+        const cat = d.properties?.[dimension];
+        if (cat != null) {
+          const key = String(cat).trim().toLowerCase();
+          if (disabledCategories.has(key)) return [0, 0, 0, 0];
+        }
+      }
+      const c = d.color || fillColorArray;
+      return [c[0] ?? 0, c[1] ?? 0, c[2] ?? 0, c[3] ?? 255];
+    },
+    updateTriggers: {
+      getFillColor: [fillColorArray, categories],
+    },
+    ...baseLayerProps,
+  });
+
+  if (!effectiveStroked) return [fillLayer];
+
+  // LineLayer with binary data for borders — zero JS object allocation,
+  // ~33% fewer GPU vertices than PathLayer, no CPU tessellation.
+  let segments = binarySegmentCache.get(cacheKey);
+  if (!segments) {
+    segments = polygonsToBinarySegments(polygonData);
+    binarySegmentCache.set(cacheKey, segments);
+  }
+
+  const strokeLayer = new LineLayer({
+    id: `polygon-stroke-${fd.slice_id}`,
+    data: {
+      length: segments.length,
+      attributes: {
+        getSourcePosition: { value: segments.sourcePositions, size: 2 },
+        getTargetPosition: { value: segments.targetPositions, size: 2 },
+      },
+    },
+    getColor: hasDisabled
+      ? (
+          _: null,
+          info: { index: number },
+        ): [number, number, number, number] => {
+          if (dimension) {
+            const pi = segments!.polygonIndices[info.index];
+            const poly = polygonData[pi];
+            const cat = poly?.properties?.[dimension];
+            if (cat != null) {
+              const key = String(cat).trim().toLowerCase();
+              if (disabledCategories.has(key)) return [0, 0, 0, 0];
+            }
+          }
+          return strokeColorArray as [number, number, number, number];
+        }
+      : (strokeColorArray as [number, number, number, number]),
+    getWidth: lineWidth ?? (fd.lineWidth || 1),
+    widthUnits: 'pixels',
+    widthScale: 1,
+    widthMinPixels: 0,
+    updateTriggers: {
+      getColor: [strokeColorArray, categories],
+    },
+    pickable: false,
+  });
+
+  return [fillLayer, strokeLayer];
+}
+
 export function getLayer(
   formData: QueryFormData,
   payload: JsonObject,
@@ -370,94 +487,18 @@ export function getLayer(
       : null;
 
   if (cachedPolygonData) {
-    const effectiveStroked =
-      (lineWidth ?? fd.lineWidth ?? 1) > 0 ? (stroked ?? fd.stroked) : false;
-
-    const disabledCategories = new Set<string>();
-    if (!isMetric) {
-      for (const [key, state] of Object.entries(categories)) {
-        if (!(state as any).enabled) disabledCategories.add(key);
-      }
-    }
-    const hasDisabled = disabledCategories.size > 0;
-
-    // SolidPolygonLayer for fill (no stroke overhead)
-    const fillLayer = new SolidPolygonLayer<ExpandedPolygon>({
-      id: `polygon-fill-${fd.slice_id}`,
-      data: cachedPolygonData,
-      positionFormat: 'XY',
-      filled: filled ?? fd.filled,
-      getPolygon: ((d: ExpandedPolygon) => d.polygon) as any,
-      getFillColor: (d: ExpandedPolygon): [number, number, number, number] => {
-        if (hasDisabled && dimension) {
-          const cat = d.properties?.[dimension];
-          if (cat != null) {
-            const key = String(cat).trim().toLowerCase();
-            if (disabledCategories.has(key)) return [0, 0, 0, 0];
-          }
-        }
-        const c = d.color || fillColorArray;
-        return [c[0] ?? 0, c[1] ?? 0, c[2] ?? 0, c[3] ?? 255];
-      },
-      updateTriggers: {
-        getFillColor: [fillColorArray, categories],
-      },
-      ...baseLayerProps,
+    return buildPolygonLayers(cachedPolygonData, payload.data, {
+      fd,
+      filled,
+      stroked,
+      lineWidth,
+      fillColorArray,
+      strokeColorArray,
+      isMetric,
+      categories,
+      dimension,
+      baseLayerProps,
     });
-
-    if (!effectiveStroked) return [fillLayer];
-
-    // LineLayer with binary data for borders — zero JS object allocation,
-    // ~33% fewer GPU vertices than PathLayer, no CPU tessellation.
-    let cachedSegments = binarySegmentCache.get(payload.data);
-    if (!cachedSegments) {
-      cachedSegments = polygonsToBinarySegments(cachedPolygonData);
-      binarySegmentCache.set(payload.data, cachedSegments);
-    }
-
-    const strokeLayer = new LineLayer({
-      id: `polygon-stroke-${fd.slice_id}`,
-      data: {
-        length: cachedSegments.length,
-        attributes: {
-          getSourcePosition: {
-            value: cachedSegments.sourcePositions,
-            size: 2,
-          },
-          getTargetPosition: {
-            value: cachedSegments.targetPositions,
-            size: 2,
-          },
-        },
-      },
-      getColor: hasDisabled
-        ? (
-            _: null,
-            info: { index: number },
-          ): [number, number, number, number] => {
-            if (dimension) {
-              const pi = cachedSegments!.polygonIndices[info.index];
-              const poly = cachedPolygonData[pi];
-              const cat = poly?.properties?.[dimension];
-              if (cat != null) {
-                const key = String(cat).trim().toLowerCase();
-                if (disabledCategories.has(key)) return [0, 0, 0, 0];
-              }
-            }
-            return strokeColorArray as [number, number, number, number];
-          }
-        : (strokeColorArray as [number, number, number, number]),
-      getWidth: lineWidth ?? (fd.lineWidth || 1),
-      widthUnits: 'pixels',
-      widthScale: 1,
-      widthMinPixels: 0,
-      updateTriggers: {
-        getColor: [strokeColorArray, categories],
-      },
-      pickable: false,
-    });
-
-    return [fillLayer, strokeLayer];
   }
 
   // --- Standard path: process features for all layer types ---
@@ -742,96 +783,18 @@ export function getLayer(
         polygonDataCache.set(payload.data, polygonData);
       }
 
-      const effectiveStroked =
-        (lineWidth ?? fd.lineWidth ?? 1) > 0 ? (stroked ?? fd.stroked) : false;
-
-      const disabledCategories = new Set<string>();
-      if (!isMetric) {
-        for (const [key, state] of Object.entries(categories)) {
-          if (!(state as any).enabled) disabledCategories.add(key);
-        }
-      }
-      const hasDisabled = disabledCategories.size > 0;
-
-      // SolidPolygonLayer for fill (no stroke overhead)
-      const fillLayer = new SolidPolygonLayer<ExpandedPolygon>({
-        id: `polygon-fill-${fd.slice_id}`,
-        data: polygonData,
-        positionFormat: 'XY',
-        filled: filled ?? fd.filled,
-        getPolygon: ((d: ExpandedPolygon) => d.polygon) as any,
-        getFillColor: (
-          d: ExpandedPolygon,
-        ): [number, number, number, number] => {
-          if (hasDisabled && dimension) {
-            const cat = d.properties?.[dimension];
-            if (cat != null) {
-              const key = String(cat).trim().toLowerCase();
-              if (disabledCategories.has(key)) return [0, 0, 0, 0];
-            }
-          }
-          const c = d.color || fillColorArray;
-          return [c[0] ?? 0, c[1] ?? 0, c[2] ?? 0, c[3] ?? 255];
-        },
-        updateTriggers: {
-          getFillColor: [fillColorArray, categories],
-        },
-        ...baseLayerProps,
+      return buildPolygonLayers(polygonData, payload.data, {
+        fd,
+        filled,
+        stroked,
+        lineWidth,
+        fillColorArray,
+        strokeColorArray,
+        isMetric,
+        categories,
+        dimension,
+        baseLayerProps,
       });
-
-      if (!effectiveStroked) return [fillLayer];
-
-      // LineLayer with binary data for borders — zero JS object allocation,
-      // ~33% fewer GPU vertices than PathLayer, no CPU tessellation.
-      let segments = binarySegmentCache.get(payload.data);
-      if (!segments) {
-        segments = polygonsToBinarySegments(polygonData);
-        binarySegmentCache.set(payload.data, segments);
-      }
-
-      const strokeLayer = new LineLayer({
-        id: `polygon-stroke-${fd.slice_id}`,
-        data: {
-          length: segments.length,
-          attributes: {
-            getSourcePosition: {
-              value: segments.sourcePositions,
-              size: 2,
-            },
-            getTargetPosition: {
-              value: segments.targetPositions,
-              size: 2,
-            },
-          },
-        },
-        getColor: hasDisabled
-          ? (
-              _: null,
-              info: { index: number },
-            ): [number, number, number, number] => {
-              if (dimension) {
-                const pi = segments!.polygonIndices[info.index];
-                const poly = polygonData![pi];
-                const cat = poly?.properties?.[dimension];
-                if (cat != null) {
-                  const key = String(cat).trim().toLowerCase();
-                  if (disabledCategories.has(key)) return [0, 0, 0, 0];
-                }
-              }
-              return strokeColorArray as [number, number, number, number];
-            }
-          : (strokeColorArray as [number, number, number, number]),
-        getWidth: lineWidth ?? (fd.lineWidth || 1),
-        widthUnits: 'pixels',
-        widthScale: 1,
-        widthMinPixels: 0,
-        updateTriggers: {
-          getColor: [strokeColorArray, categories],
-        },
-        pickable: false,
-      });
-
-      return [fillLayer, strokeLayer];
     }
     // GeoJSON (auto layer type)
     case 'GeoJSON':
