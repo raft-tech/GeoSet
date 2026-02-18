@@ -49,7 +49,3 @@ Shared database utilities (connection, retry, skip-if-populated) live in `db.py`
 4. **Add a dataset YAML** — Create a file in `superset/examples/geoset_configs/datasets/geoset/` that defines the table columns and references the database UUID from `databases/geoset.yaml`
 5. **Add a chart YAML** — Create a file in `superset/examples/geoset_configs/charts/GeoSet/` that defines the viz type, params, and references the dataset UUID from your dataset YAML
 6. **Run it** — `docker compose -f docker-compose-geoset.yml up --build` will pick up everything automatically. The importer traverses the `geoset_configs/` directory and loads any new YAML files it finds
-
-## Upstream Files Touched
-
-None — all GeoSet logic lives in new files (`docker/docker-init-geoset.sh`, `superset/cli/geoset.py`, `superset/examples/geoset_configs/`).

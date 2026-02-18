@@ -1,2 +1,4 @@
+# Required by ImportModelsCommand — the importer validates that a metadata.yaml
+# exists and contains a version before processing any configs in this directory.
 version: 1.0.0
 timestamp: '2024-01-01T00:00:00.000000+00:00'

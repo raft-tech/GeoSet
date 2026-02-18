@@ -157,12 +157,6 @@ class ImportExamplesCommand(ImportModelsCommand):
             ):
                 # update datasource id, type, and name
                 config.update(dataset_info[config["dataset_uuid"]])
-                # fix datasource placeholder in params so the stored JSON
-                # contains the real datasource string (e.g. "5__table")
-                if isinstance(config.get("params"), dict):
-                    config["params"]["datasource"] = (
-                        f"{config['datasource_id']}__{config['datasource_type']}"
-                    )
                 chart = import_chart(
                     config,
                     overwrite=overwrite,
@@ -201,5 +195,4 @@ class ImportExamplesCommand(ImportModelsCommand):
             {"dashboard_id": dashboard_id, "slice_id": chart_id}
             for (dashboard_id, chart_id) in dashboard_chart_ids
         ]
-        if values:
-            db.session.execute(dashboard_slices.insert(), values)
+        db.session.execute(dashboard_slices.insert(), values)
