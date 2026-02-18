@@ -52,7 +52,6 @@ const StyledDiv = styled.div<{
     border: 1px solid ${theme.colorBorder};
     border-radius: ${theme.sizeUnit}px;
     min-width: 120px;
-    max-width: 300px;
     width: max-content;
     white-space: nowrap;
     font-size: ${theme.fontSizeSM}px;
