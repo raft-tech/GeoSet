@@ -61,6 +61,13 @@ services:
       DB_USER: geoset
       DB_PASSWORD: geoset
 
+  # ---------- Redis (cache + Celery broker) ----------
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    volumes:
+      - redis_geoset:/data
+
   # ---------- Superset metadata database ----------
   db-geoset:
     env_file:
@@ -88,6 +95,8 @@ services:
         required: false
     depends_on:
       db-geoset:
+        condition: service_started
+      redis:
         condition: service_started
       postgis:
         condition: service_healthy
@@ -158,4 +167,6 @@ volumes:
   db_home_geoset:
     external: false
   geoset_data:
+    external: false
+  redis_geoset:
     external: false
