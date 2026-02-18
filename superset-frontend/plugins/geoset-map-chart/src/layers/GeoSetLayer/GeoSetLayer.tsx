@@ -348,8 +348,7 @@ export function getLayer(
     setTooltipContent(o, hoverColumnNames);
 
   const hasHoverData =
-    (hoverColumnNames && hoverColumnNames.length > 0) ||
-    Boolean(fd.js_tooltip);
+    (hoverColumnNames && hoverColumnNames.length > 0) || Boolean(fd.js_tooltip);
 
   // Only enable picking when something actually needs it (hover tooltips or
   // click popup).  When pickable is false, deck.gl skips GPU picking entirely
