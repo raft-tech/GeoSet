@@ -10,34 +10,26 @@ params:
   geoJsonLayer: Polygon
   autozoom: true
   row_limit: 100
-  mapbox_style: "mapbox://styles/acf-dart/cm8ov8yl4001401s365rs672z"
+  mapbox_style: mapbox://styles/acf-dart/cm8ov8yl4001401s365rs672z
   adhoc_filters: []
   hoverDataColumns:
-    - state_name
-    - state_abbrev
+  - state_name
+  - state_abbrev
   featureInfoColumns:
-    - state_name
-    - state_abbrev
-    - state_code
-    - land_area
-    - water_area
+  - state_name
+  - state_abbrev
+  - state_code
+  - land_area
+  - water_area
   minMaxZoomSlider:
-    - 0
-    - 22
+  - 0
+  - 22
   schema_version: 2
-  geojsonConfig: >-
-    {
-      "globalColoring": {
-        "fillColor": [40, 147, 179, 120],
-        "strokeColor": [255, 255, 255, 200],
-        "strokeWidth": 1,
-        "fillPattern": "solid"
-      },
-      "legend": {
-        "title": "US Census",
-        "name": "State Boundaries"
-      }
-    }
+  geojsonConfig: "{\n  \"globalColoring\": {\n    \"fillColor\": [40, 147, 179, 120],\n\
+    \    \"strokeColor\": [255, 255, 255, 200],\n    \"strokeWidth\": 1,\n    \"fillPattern\"\
+    : \"solid\"\n  },\n  \"legend\": {\n    \"title\": \"US Census\",\n    \"name\"\
+    : \"State Boundaries\"\n  }\n}"
+  annotation_layers: []
 cache_timeout: null
 uuid: fbe401b9-ea00-4161-ad3a-be062e256922
 version: 1.0.0

@@ -43,9 +43,28 @@ Shared database utilities (connection, retry, skip-if-populated) live in `db.py`
 
 ## Adding a New Example
 
+### Data pipeline
+
 1. **Add the table** — Add a `CREATE TABLE` statement to `init.sql`
 2. **Write an ingest script** — Create a new Python script in `sample-data/` that fetches data from an API, transforms it, and inserts it into the table. Use `db.py` for the connection and call `skip_if_populated()` to keep it idempotent
 3. **Register the script** — Add a line to `entrypoint.sh` to run your new script
-4. **Add a dataset YAML** — Create a file in `superset/examples/geoset_configs/datasets/geoset/` that defines the table columns and references the database UUID from `databases/geoset.yaml`
-5. **Add a chart YAML** — Create a file in `superset/examples/geoset_configs/charts/GeoSet/` that defines the viz type, params, and references the dataset UUID from your dataset YAML
-6. **Run it** — `docker compose -f docker-compose-geoset.yml up --build` will pick up everything automatically. The importer traverses the `geoset_configs/` directory and loads any new YAML files it finds
+
+### Chart config
+
+The easiest way to add chart/dataset YAMLs is to export them from a running Superset instance:
+
+1. **Create the chart in the Superset UI** — configure it in the explore view with your dataset and desired viz settings
+2. **Export it** — go to the Charts list, select your chart, click Actions > Export. This downloads a ZIP containing YAMLs for the chart, dataset, and database
+3. **Unzip and copy the files** into the correct directories:
+   - `charts/*.yaml` → `superset/examples/geoset_configs/charts/GeoSet/`
+   - `datasets/geoset/*.yaml` → `superset/examples/geoset_configs/datasets/geoset/`
+   - `databases/geoset.yaml` — already exists, no need to copy
+4. **Strip the `query_context` field** from the chart YAML (it contains instance-specific IDs that will be regenerated automatically)
+5. **Run it** — `docker compose -f docker-compose-geoset.yml up --build` will pick up everything automatically
+
+The exported YAMLs will have an instance-specific `datasource` value in params (e.g. `28__table`). This is fine — when Superset serves a chart, it overwrites `params.datasource` with the correct value from the model-level `datasource_id` field, which the importer sets correctly via UUID.
+
+### Multi-layer maps
+
+Multi-layer map charts (`deck_geoset_map`) reference sub-layer charts by integer ID in `deck_slices`. Since IDs vary per instance, the YAML should use `deck_slice_uuids` with stable UUIDs instead. The post-import hook in `superset/examples/geoset.py` resolves these to runtime IDs automatically. This is the only chart type that requires the post-import hook.
+
