@@ -4,7 +4,7 @@ certified_by: null
 certification_details: null
 viz_type: deck_geoset_map_layer
 params:
-  datasource: 0__table
+  datasource: 27__table
   viz_type: deck_geoset_map_layer
   geojson: state_boundary
   geoJsonLayer: Polygon
