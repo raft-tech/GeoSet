@@ -347,8 +347,7 @@ export function getLayer(
     setTooltipContent(o, hoverColumnNames);
 
   const hasHoverData =
-    (hoverColumnNames && hoverColumnNames.length > 0) ||
-    Boolean(fd.js_tooltip);
+    (hoverColumnNames && hoverColumnNames.length > 0) || Boolean(fd.js_tooltip);
 
   // Shared props for all layer types.
   // Only enable onHover when hover data is configured — this prevents
