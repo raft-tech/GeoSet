@@ -164,9 +164,10 @@ docker compose up -d
 ![GeoSet Helene Storm Map](docs/static/images/helene-storm-data.png)
 ![Metric Gradient Max Wind Speed](docs/static/images/wind-metrics-chart.png)
 
-![Multi Legend Toggling](docs/static/images/multi-legend-toggling.gif)
-
 <!-- markdownlint-disable MD033 MD045 -->
+<p align="center">
+  <img src="docs/static/images/multi-legend-toggling.gif" alt="Multi Legend Toggling">
+</p>
 <p>
   <img src="docs/static/images/ruler-tool-in-action.gif" alt="Ruler Tool in Action" width="49%">
   <img src="docs/static/images/point-clustering-and-controls.gif" alt="Point Clustering and Controls" width="49%">
