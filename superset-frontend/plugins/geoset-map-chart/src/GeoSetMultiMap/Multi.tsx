@@ -851,6 +851,19 @@ const DeckMulti = (props: DeckMultiProps) => {
     return calculatedViewport;
   }, [sortedLayers, props.viewport, width, height, props.enableStaticViewport]);
 
+  // Redirect viewport syncs to a shadow key (_liveViewport) so the actual
+  // viewport control value is only changed by explicit user Save actions.
+  // ViewportControl reads _liveViewport for the Capture button.
+  const { setControlValue: parentSetControlValue } = props;
+  const viewportSetControlValue = useCallback(
+    (control: string, value: JsonValue) => {
+      if (control === 'viewport') {
+        parentSetControlValue('liveMapViewport', value);
+      }
+    },
+    [parentSetControlValue],
+  );
+
   // Map control handlers - must be defined before any conditional returns
   const handleZoomIn = useCallback(() => {
     containerRef.current?.zoomIn();
@@ -986,6 +999,7 @@ const DeckMulti = (props: DeckMultiProps) => {
         mapboxApiAccessToken={effectiveMapboxKey || 'no-token'}
         viewport={viewport}
         initialViewport={viewport}
+        setControlValue={viewportSetControlValue}
         layerStates={layerStatesWithVisibility}
         mapStyle={mapStyle}
         height={height}

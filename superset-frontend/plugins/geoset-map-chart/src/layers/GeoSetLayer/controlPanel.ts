@@ -97,6 +97,10 @@ const config: ControlPanelConfig = {
               ...viewportControl.config,
               visibility: ({ controls }: { controls: any }) =>
                 controls?.autozoom?.value !== true,
+              shouldMapStateToProps: () => true,
+              mapStateToProps: ({ controls }: { controls: any }) => ({
+                liveViewport: controls?.liveMapViewport?.value,
+              }),
             },
           },
         ],
@@ -189,6 +193,15 @@ const config: ControlPanelConfig = {
                 value: controls?.geojsonConfig?.value ?? undefined,
                 defaultValue: defaultGeojsonConfig,
               }),
+            },
+          },
+        ],
+        [
+          {
+            name: 'liveMapViewport',
+            config: {
+              type: 'HiddenControl',
+              default: null,
             },
           },
         ],

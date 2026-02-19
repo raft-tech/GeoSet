@@ -19,7 +19,7 @@
 import { Component } from 'react';
 import { t } from '@superset-ui/core';
 import PropTypes from 'prop-types';
-import { Popover, FormLabel, Label } from '@superset-ui/core/components';
+import { Popover, FormLabel, Label, Button } from '@superset-ui/core/components';
 import { decimal2sexagesimal } from 'geolib';
 
 import TextControl from './TextControl';
@@ -57,23 +57,32 @@ const defaultProps = {
 export default class ViewportControl extends Component {
   constructor(props) {
     super(props);
-    this.onChange = this.onChange.bind(this);
+    this.state = {
+      popoverVisible: false,
+      draftValue: null,
+    };
+    this.onDraftChange = this.onDraftChange.bind(this);
   }
 
-  onChange(ctrl, value) {
-    this.props.onChange({
-      ...this.props.value,
-      [ctrl]: value,
-    });
+  onDraftChange(ctrl, value) {
+    const rounded = value != null ? Math.round(value * 10000) / 10000 : value;
+    this.setState(prevState => ({
+      draftValue: {
+        ...prevState.draftValue,
+        [ctrl]: rounded,
+      },
+    }));
   }
 
   renderTextControl(ctrl) {
+    const raw = (this.state.draftValue || this.props.value)[ctrl];
+    const display = raw != null ? Math.round(raw * 10000) / 10000 : raw;
     return (
       <div key={ctrl}>
         <FormLabel>{ctrl}</FormLabel>
         <TextControl
-          value={this.props.value[ctrl]}
-          onChange={this.onChange.bind(this, ctrl)}
+          value={display}
+          onChange={this.onDraftChange.bind(this, ctrl)}
           isFloat
         />
       </div>
@@ -84,6 +93,29 @@ export default class ViewportControl extends Component {
     return (
       <div id={`filter-popover-${this.props.name}`}>
         {PARAMS.map(ctrl => this.renderTextControl(ctrl))}
+        <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
+          <Button
+            buttonStyle="secondary"
+            buttonSize="small"
+            onClick={() => this.setState({ popoverVisible: false, draftValue: null })}
+            style={{ flex: 1 }}
+          >
+            {t('Close')}
+          </Button>
+          <Button
+            buttonStyle="primary"
+            buttonSize="small"
+            onClick={() => {
+              if (this.state.draftValue) {
+                this.props.onChange(this.state.draftValue);
+              }
+              this.setState({ popoverVisible: false, draftValue: null });
+            }}
+            style={{ flex: 1 }}
+          >
+            {t('Save')}
+          </Button>
+        </div>
       </div>
     );
   }
@@ -102,11 +134,47 @@ export default class ViewportControl extends Component {
       <div>
         <ControlHeader {...this.props} />
         <Popover
-          container={document.body}
           trigger="click"
           placement="right"
           content={this.renderPopover()}
-          title={t('Viewport')}
+          destroyTooltipOnHide
+          title={
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>{t('Viewport')}</span>
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={() => {
+                  const live = this.props.liveViewport || this.props.value;
+                  this.setState({ draftValue: { ...live } });
+                }}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    const live = this.props.liveViewport || this.props.value;
+                    this.setState({ draftValue: { ...live } });
+                  }
+                }}
+                style={{
+                  color: '#20A7C9',
+                  fontSize: 10,
+                  cursor: 'pointer',
+                  border: '1px solid #20A7C9',
+                  borderRadius: 3,
+                  padding: '1px 5px',
+                }}
+              >
+                {t('Capture Map Viewport')}
+              </span>
+            </div>
+          }
+          open={this.state.popoverVisible}
+          onOpenChange={open => {
+            if (open) {
+              this.setState({ popoverVisible: true, draftValue: { ...this.props.value } });
+            } else {
+              this.setState({ popoverVisible: false, draftValue: null });
+            }
+          }}
         >
           <Label className="pointer">{this.renderLabel()}</Label>
         </Popover>

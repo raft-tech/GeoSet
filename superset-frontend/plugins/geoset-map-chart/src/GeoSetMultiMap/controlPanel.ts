@@ -38,6 +38,10 @@ export default {
               ...viewportControl.config,
               visibility: ({ controls }: { controls: any }) =>
                 controls?.enable_static_viewport?.value === true,
+              shouldMapStateToProps: () => true,
+              mapStateToProps: ({ controls }: { controls: any }) => ({
+                liveViewport: controls?.liveMapViewport?.value,
+              }),
             },
           },
         ],
@@ -62,6 +66,15 @@ export default {
             },
           },
           null,
+        ],
+        [
+          {
+            name: 'liveMapViewport',
+            config: {
+              type: 'HiddenControl',
+              default: null,
+            },
+          },
         ],
       ],
     },
