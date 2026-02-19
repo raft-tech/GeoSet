@@ -199,7 +199,7 @@ export default function transformProps(chartProps: ChartProps) {
           max: upper,
           startColor: noGradient ? start : start,
           endColor: noGradient ? start : end,
-          legendName: valueColumn,
+          legendName: legend?.title || valueColumn,
         };
       }
     } else {

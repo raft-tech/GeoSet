@@ -43,11 +43,13 @@ export default function buildQuery(formData: QueryFormData) {
   checkDupes(hoverCols, 'Hover-Over Data');
   checkDupes(featureCols, 'Additional Details');
 
+  const geojsonExpr = `ST_AsGeoJSON(${geojsonCol}, 6)`;
+
   // Build columns array
   const columns: any[] = [
     {
       label: 'geojson',
-      sqlExpression: `ST_AsGeoJSON(${geojsonCol})`,
+      sqlExpression: geojsonExpr,
       expressionType: 'SQL',
     },
     dimension,
