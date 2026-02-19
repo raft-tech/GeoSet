@@ -10,7 +10,7 @@ params:
   autozoom: true
   geojson: track_line
   row_limit: 1000
-  geoJsonLayer: Polygon
+  geoJsonLayer: Line
   adhoc_filters: []
   minMaxZoomSlider:
   - 0

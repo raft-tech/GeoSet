@@ -16,9 +16,7 @@ def resolve_geoset_multi_map_layers() -> None:
     # Fix datasource in params for all GeoSet charts (layers + multi-maps)
     all_geoset = (
         db.session.query(Slice)
-        .filter(
-            Slice.viz_type.in_(["deck_geoset_map_layer", "deck_geoset_map"])
-        )
+        .filter(Slice.viz_type.in_(["deck_geoset_map_layer", "deck_geoset_map"]))
         .all()
     )
     for chart in all_geoset:
@@ -31,11 +29,7 @@ def resolve_geoset_multi_map_layers() -> None:
             chart.params = json.dumps(chart_params)
 
     # Resolve UUID references to runtime slice IDs for multi-layer maps
-    charts = (
-        db.session.query(Slice)
-        .filter(Slice.viz_type == "deck_geoset_map")
-        .all()
-    )
+    charts = db.session.query(Slice).filter(Slice.viz_type == "deck_geoset_map").all()
     for chart in charts:
         chart_params = json.loads(chart.params or "{}")
         deck_slice_uuids = chart_params.pop("deck_slice_uuids", None)
@@ -45,9 +39,7 @@ def resolve_geoset_multi_map_layers() -> None:
         resolved_slices = []
         for item in deck_slice_uuids:
             uuid_ref = item.get("uuid") if isinstance(item, dict) else str(item)
-            layer_chart = (
-                db.session.query(Slice).filter_by(uuid=uuid_ref).first()
-            )
+            layer_chart = db.session.query(Slice).filter_by(uuid=uuid_ref).first()
             if not layer_chart:
                 continue
             resolved_slices.append(
