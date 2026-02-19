@@ -8,11 +8,29 @@ from superset.utils import json
 def resolve_geoset_multi_map_layers() -> None:
     """Resolve UUID references to runtime chart IDs for GeoSet multi-layer maps.
 
-    The YAML configs store layer references as UUIDs (``deck_slice_uuids``)
-    since chart IDs are not known until after import.  This hook converts
-    them to the runtime integer IDs (``deck_slices``) that the frontend
-    expects.
+    Also fixes the ``datasource`` field inside each GeoSet chart's ``params``
+    JSON so that the Multi Map can query sub-chart data correctly.  The YAML
+    importer sets the chart model's ``datasource_id`` / ``datasource_type`` but
+    leaves the ``params`` blob with the original export ID which won't match.
     """
+    # Fix datasource in params for all GeoSet charts (layers + multi-maps)
+    all_geoset = (
+        db.session.query(Slice)
+        .filter(
+            Slice.viz_type.in_(["deck_geoset_map_layer", "deck_geoset_map"])
+        )
+        .all()
+    )
+    for chart in all_geoset:
+        if not chart.datasource_id:
+            continue
+        chart_params = json.loads(chart.params or "{}")
+        correct_ds = f"{chart.datasource_id}__{chart.datasource_type}"
+        if chart_params.get("datasource") != correct_ds:
+            chart_params["datasource"] = correct_ds
+            chart.params = json.dumps(chart_params)
+
+    # Resolve UUID references to runtime slice IDs for multi-layer maps
     charts = (
         db.session.query(Slice)
         .filter(Slice.viz_type == "deck_geoset_map")

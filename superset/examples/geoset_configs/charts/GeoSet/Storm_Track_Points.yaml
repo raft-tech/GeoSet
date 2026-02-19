@@ -23,7 +23,11 @@ params:
   minMaxZoomSlider:
   - 0
   - 22
-  hoverDataColumns: []
+  hoverDataColumns:
+  - storm_name
+  - formatted_timestamp
+  - max_gust_mph
+  - wind_speed_mph
   featureInfoColumns: []
   geojsonConfig: "{\n  \"colorByValue\": {\n    \"breakpoints\": [],\n    \"endColor\"\
     : [207, 30, 14, 255],\n    \"lowerBound\": 40,\n    \"startColor\": [222, 214,\
