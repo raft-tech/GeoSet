@@ -1,5 +1,5 @@
 slice_name: GeoSet Sample Map
-description: Combined map with NIFC Wildfires, Census State Boundaries, and NHC Forecast Tracks
+description: Combined map with NIFC Wildfires, Census State Boundaries, Storm Track Points, and Storm Track Lines
 certified_by: null
 certification_details: null
 viz_type: deck_geoset_map
@@ -13,7 +13,11 @@ params:
       autozoom: true
       legendCollapsed: false
       initiallyHidden: false
-    - uuid: 1edd99b1-b803-4fa2-8500-16dbc172f053
+    - uuid: 6bf3672d-39e3-4170-b647-a46626cc899c
+      autozoom: true
+      legendCollapsed: false
+      initiallyHidden: false
+    - uuid: a1a862f1-2907-4ff5-a261-0d8e5199f63f
       autozoom: true
       legendCollapsed: false
       initiallyHidden: false
