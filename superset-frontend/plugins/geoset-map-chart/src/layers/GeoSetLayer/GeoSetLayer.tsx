@@ -23,7 +23,6 @@ import {
   IconLayer,
   LineLayer,
   PathLayer,
-  PolygonLayer,
   ScatterplotLayer,
 } from '@deck.gl/layers';
 import { PathStyleExtension } from '@deck.gl/extensions';
@@ -57,13 +56,17 @@ import { calculateAutozoomViewport, Viewport } from '../../utils/fitViewport';
 import { TooltipProps } from '../../components/Tooltip';
 import Legend from '../../components/Legend';
 import MapControls from '../../components/MapControls';
-import { GeoJsonFeature } from '../../types';
+import { GeoJsonFeature, LayerState } from '../../types';
 import { useDebouncedValue } from '../../utils/hooks';
 import { normalizeRGBA } from '../../utils/colorsFallback';
 import { getColoredSvgUrl } from '../../utils/svgIcons';
 import { PointClusterLayer } from '../PointClusterLayer';
 import { validateLayerType } from '../../utilities/utils';
 import { expandPolygonFeatures } from '../../utils/expandPolygonFeatures';
+import {
+  buildPolygonLayers,
+  polygonDataCache,
+} from '../../utils/buildPolygonLayers';
 import {
   fetchMapboxApiKey,
   getCachedMapboxApiKey,
@@ -256,11 +259,57 @@ export function getLayer(
   const fillColorArray = normalizeRGBA(fillColor || fd.fillColorPicker);
   const strokeColorArray = normalizeRGBA(strokeColor || fd.strokeColorPicker);
 
+  const isDashed = lineStyle === 'dashed';
+
+  // Create tooltip content generator with hover column filtering
+  const tooltipContentGenerator = (o: JsonObject) =>
+    setTooltipContent(o, hoverColumnNames);
+
+  const hasHoverData =
+    (hoverColumnNames && hoverColumnNames.length > 0) || Boolean(fd.js_tooltip);
+
+  // Only enable picking when something actually needs it (hover tooltips or
+  // click popup).  When pickable is false, deck.gl skips GPU picking entirely
+  // — a significant per-frame saving for complex polygon layers.
+  const needsPicking = hasHoverData || Boolean(onFeatureClick);
+  const baseLayerProps = {
+    ...commonLayerProps(fd, setTooltip, tooltipContentGenerator),
+    pickable: needsPicking,
+    // Only pick the exact pixel under the cursor (no search radius)
+    pickingRadius: 0,
+    ...(onFeatureClick ? { onClick: onFeatureClick } : {}),
+    ...(hasHoverData ? {} : { onHover: undefined }),
+  };
+
+  // --- Fast path for Polygon layers with cached geometry ---
+  // When only categories/colors change (not underlying data), we can skip ALL
+  // expensive feature processing (recurseGeoJson, visibility map, sort, expand)
+  // and reuse the cached polygon geometry with accessor-based coloring.
+  const requestedLayerType = fd.geoJsonLayer || 'GeoJSON';
+  const cachedPolygonData =
+    requestedLayerType === 'Polygon'
+      ? polygonDataCache.get(payload.data)
+      : null;
+
+  if (cachedPolygonData) {
+    return buildPolygonLayers(cachedPolygonData, payload.data, {
+      fd,
+      filled,
+      stroked,
+      lineWidth,
+      fillColorArray,
+      strokeColorArray,
+      isMetric,
+      categories,
+      dimension,
+      baseLayerProps,
+    });
+  }
+
+  // --- Standard path: process features for all layer types ---
   const propOverrides: JsonObject = {};
   if (fillColorArray[3] > 0) propOverrides.fillColor = fillColorArray;
   if (strokeColorArray[3] > 0) propOverrides.strokeColor = strokeColorArray;
-
-  const isDashed = lineStyle === 'dashed';
 
   const features =
     (recurseGeoJson(payload.data, propOverrides) as GeoJsonFeature[]) || [];
@@ -343,28 +392,8 @@ export function getLayer(
     });
   }
 
-  // Create tooltip content generator with hover column filtering
-  const tooltipContentGenerator = (o: JsonObject) =>
-    setTooltipContent(o, hoverColumnNames);
-
-  const hasHoverData =
-    (hoverColumnNames && hoverColumnNames.length > 0) || Boolean(fd.js_tooltip);
-
-  // Only enable picking when something actually needs it (hover tooltips or
-  // click popup).  When pickable is false, deck.gl skips GPU picking entirely
-  // — a significant per-frame saving for complex polygon layers.
-  const needsPicking = hasHoverData || Boolean(onFeatureClick);
-  const baseLayerProps = {
-    ...commonLayerProps(fd, setTooltip, tooltipContentGenerator),
-    pickable: needsPicking,
-    // Only pick the exact pixel under the cursor (no search radius)
-    pickingRadius: 0,
-    ...(onFeatureClick ? { onClick: onFeatureClick } : {}),
-    ...(hasHoverData ? {} : { onHover: undefined }),
-  };
-
   // validate which layer type to render
-  let layerType = fd.geoJsonLayer || 'GeoJSON';
+  let layerType = requestedLayerType;
   layerType = validateLayerType(
     layerType,
     processedFeatures[0]?.geometry?.type,
@@ -540,34 +569,30 @@ export function getLayer(
         extensions: [new PathStyleExtension({ dash: isDashed })],
         ...baseLayerProps,
       });
-    // POLYGONS
+    // POLYGONS — SolidPolygonLayer (fill) + LineLayer (binary borders)
+    // Separated from composite PolygonLayer for direct control and to skip stroke when disabled.
     case 'Polygon': {
-      // --- Flatten MultiPolygons into individual polygons ---
-      const polygonData = expandPolygonFeatures(
-        sortedFeatures as Feature<Geometry, GeoJsonProperties>[],
-      );
+      // Cache expanded polygons keyed on payload.data, which stays referentially
+      // stable when only categories/colors change (no new data fetch).
+      let polygonData = polygonDataCache.get(payload.data);
+      if (!polygonData) {
+        polygonData = expandPolygonFeatures(
+          sortedFeatures as Feature<Geometry, GeoJsonProperties>[],
+        );
+        polygonDataCache.set(payload.data, polygonData);
+      }
 
-      // Compute effective stroked based on lineWidth
-      const effectiveStroked =
-        (lineWidth ?? fd.lineWidth ?? 1) > 0 ? (stroked ?? fd.stroked) : false;
-
-      return new PolygonLayer({
-        id: `polygon-layer-${fd.slice_id}`,
-        data: polygonData,
-        positionFormat: 'XY',
-        stroked: effectiveStroked,
-        filled: filled ?? fd.filled,
-        getPolygon: (feature: any) => feature.polygon,
-        getFillColor: feature => feature.color || fillColorArray,
-        getLineColor: () => strokeColorArray,
-        getLineWidth: lineWidth ?? (fd.lineWidth || 0),
-        lineWidthUnits: 'pixels',
-        lineWidthScale: 1,
-        lineWidthMinPixels: 0,
-        transitions: {
-          getFillColor: 50,
-        },
-        ...baseLayerProps,
+      return buildPolygonLayers(polygonData, payload.data, {
+        fd,
+        filled,
+        stroked,
+        lineWidth,
+        fillColorArray,
+        strokeColorArray,
+        isMetric,
+        categories,
+        dimension,
+        baseLayerProps,
       });
     }
     // GeoJSON (auto layer type)
@@ -582,7 +607,6 @@ export function getLayer(
           feature: GeoJsonFeature,
         ): [number, number, number, number] => {
           const color = feature.color ?? fillColorArray;
-          // Ensure the color array has exactly 4 elements
           return [color[0] ?? 0, color[1] ?? 0, color[2] ?? 0, color[3] ?? 255];
         },
         getLineColor: (feature: any) =>
@@ -597,8 +621,9 @@ export function getLayer(
         pointRadiusMinPixels: 5,
         lineWidthUnits: 'pixels',
         lineWidthMinPixels: 0,
-        transitions: {
-          getFillColor: 50,
+        updateTriggers: {
+          getFillColor: [fillColorArray, categories],
+          getLineColor: [strokeColorArray, categories],
         },
         ...baseLayerProps,
       });
@@ -614,7 +639,6 @@ export function getLayer(
           feature: GeoJsonFeature,
         ): [number, number, number, number] => {
           const color = feature.color ?? fillColorArray;
-          // Ensure the color array has exactly 4 elements
           return [color[0] ?? 0, color[1] ?? 0, color[2] ?? 0, color[3] ?? 255];
         },
         getLineColor: (feature: any) =>
@@ -629,25 +653,26 @@ export function getLayer(
         pointRadiusMinPixels: 5,
         lineWidthUnits: 'pixels',
         lineWidthMinPixels: 0,
-        transitions: {
-          getFillColor: 50,
+        updateTriggers: {
+          getFillColor: [fillColorArray, categories],
+          getLineColor: [strokeColorArray, categories],
         },
         ...baseLayerProps,
       });
   }
 }
 
-export function getLayerState(
-  layer: Layer | null,
+export function getLayerStates(
+  layers: Layer | Layer[] | null,
   options: { minZoom: number; maxZoom: number },
-) {
-  if (!layer) return null;
-
-  return {
+): LayerState[] {
+  if (!layers) return [];
+  const arr = Array.isArray(layers) ? layers : [layers];
+  return arr.map(layer => ({
     id: layer.id,
     layer,
     options,
-  };
+  }));
 }
 
 export type DeckGLGeoJsonProps = {
@@ -1024,14 +1049,10 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
     [propVisualConfig, parsedGeojsonConfig],
   );
 
-  let { minMaxZoomSlider } = formData;
-  if (minMaxZoomSlider === undefined) {
-    minMaxZoomSlider = [0, 22];
-  }
-  const layerStateOptions = {
-    minZoom: minMaxZoomSlider[0],
-    maxZoom: minMaxZoomSlider[1],
-  };
+  const layerStateOptions = useMemo(() => {
+    const slider = formData.minMaxZoomSlider ?? [0, 22];
+    return { minZoom: slider[0], maxZoom: slider[1] };
+  }, [formData.minMaxZoomSlider]);
 
   // Only pass click handler when there are feature info columns configured.
   // Without this guard, pickable is always true (due to onFeatureClick being
@@ -1042,7 +1063,7 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
       ? handleFeatureClick
       : undefined;
 
-  const layer = useMemo(
+  const layers = useMemo(
     () =>
       getLayer(
         formData,
@@ -1066,7 +1087,10 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
     ],
   );
 
-  const layerState = getLayerState(layer, layerStateOptions);
+  const layerStates = useMemo(
+    () => getLayerStates(layers, layerStateOptions),
+    [layers, layerStateOptions],
+  );
 
   // Adjust map height to accommodate warning banners
   const warningOffset = migrationInfo ? 190 : 60;
@@ -1080,9 +1104,11 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
     metricLegend = {
       startColor: metricLegendObject.startColor,
       endColor: metricLegendObject.endColor,
+
       min: metricLegendObject.min,
       max: metricLegendObject.max,
       legendName:
+        metricLegendObject.legendName ||
         propVisualConfig?.metric?.valueColumn ||
         payload.data.metricLabels?.[0] ||
         'Value',
@@ -1130,7 +1156,7 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
         mapboxApiAccessToken={effectiveMapboxKey || 'no-token'}
         viewport={viewport}
         initialViewport={viewport}
-        layerStates={layerState ? [layerState] : []}
+        layerStates={layerStates}
         mapStyle={mapStyle || formData.mapbox_style}
         height={mapHeight}
         width={width}
