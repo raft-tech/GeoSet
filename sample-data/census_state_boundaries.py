@@ -5,7 +5,6 @@ import json
 import geopandas as gpd
 import pandas as pd
 from shapely.geometry import mapping
-from sqlalchemy import text
 
 from db import get_engine, skip_if_populated, wait_for_db
 
@@ -42,20 +41,5 @@ gdf["state_boundary"] = gdf["state_boundary"].apply(
 df = pd.DataFrame(gdf)
 
 print(f"Writing {len(df)} state boundaries to database...")
-
-insert_sql = text("""
-    INSERT INTO census_state_boundaries
-        (state_code, state_gnis_code, state_abbrev, full_geoid,
-         geoid, legal_statistical_code, land_area, water_area,
-         state_name, state_boundary)
-    VALUES
-        (:state_code, :state_gnis_code, :state_abbrev, :full_geoid,
-         :geoid, :legal_statistical_code, :land_area, :water_area,
-         :state_name, :state_boundary)
-""")
-
-with engine.begin() as conn:
-    for _, row in df.iterrows():
-        conn.execute(insert_sql, row.to_dict())
-
+df.to_sql("census_state_boundaries", con=engine, if_exists="append", index=False)
 print("Done.")

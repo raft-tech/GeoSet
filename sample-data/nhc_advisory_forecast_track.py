@@ -21,7 +21,6 @@ import pandas as pd
 import requests
 import shapely
 from fiona.drvsupport import supported_drivers
-from sqlalchemy import text
 
 from db import get_engine, skip_if_populated, wait_for_db
 
@@ -227,20 +226,5 @@ agg_df["forecast_point"] = agg_df["forecast_point"].apply(
 )
 
 print(f"Writing {len(agg_df)} forecast track points to database...")
-
-insert_sql = text("""
-    INSERT INTO nhc_advisory_forecast_track
-        (effective_timestamp, wind_speed_mph, max_gust_mph, storm_name,
-         nhc_identifier, increment, year, forecast_point)
-    VALUES
-        (:effective_timestamp, :wind_speed_mph, :max_gust_mph, :storm_name,
-         :nhc_identifier, :increment, :year, :forecast_point)
-""")
-
-with engine.begin() as conn:
-    for _, row in agg_df.iterrows():
-        row_dict = row.to_dict()
-        row_dict = {k: (None if pd.isna(v) else v) for k, v in row_dict.items()}
-        conn.execute(insert_sql, row_dict)
-
+agg_df.to_sql("nhc_advisory_forecast_track", con=engine, if_exists="append", index=False)
 print("Done.")

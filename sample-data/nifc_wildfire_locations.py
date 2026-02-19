@@ -1,10 +1,10 @@
 """Load NIFC wildfire location data into PostGIS."""
 
 import json
-import urllib.request
+import time
 
 import pandas as pd
-from sqlalchemy import text
+import requests
 
 from db import get_engine, skip_if_populated, wait_for_db
 
@@ -69,8 +69,18 @@ wait_for_db(engine)
 skip_if_populated(engine, "nifc_wildfire_locations")
 
 print("Fetching wildfire data from NIFC API...")
-with urllib.request.urlopen(FIRE_API_URL, timeout=120) as response:
-    data = json.loads(response.read())
+for attempt in range(3):
+    try:
+        response = requests.get(FIRE_API_URL, timeout=120)
+        response.raise_for_status()
+        data = response.json()
+        break
+    except Exception as e:
+        if attempt < 2:
+            print(f"  Retry {attempt + 1} for NIFC API: {e}")
+            time.sleep(2)
+        else:
+            raise
 features = data["features"]
 
 print(f"Parsing {len(features)} wildfire features...")
@@ -93,29 +103,5 @@ if "is_multijurisdictional" in df.columns:
     df["is_multijurisdictional"] = df["is_multijurisdictional"].fillna(0).astype(bool)
 
 print(f"Writing {len(df)} wildfire locations to database...")
-
-insert_sql = text("""
-    INSERT INTO nifc_wildfire_locations
-        (fire_id, irwin_id, incident_size, containment_time, percent_contained,
-         control_time, incident_description, discovery_acres, final_acres,
-         fire_cause, origin_coordinate, dispatch_center_id, fire_discovery_time,
-         nifc_created_time, nifc_modified_time, estimated_cost_to_date,
-         incident_name, origin_fips_code, origin_city_name, origin_state_code,
-         origin_county_name, landowner_type, is_multijurisdictional)
-    VALUES
-        (:fire_id, :irwin_id, :incident_size, :containment_time, :percent_contained,
-         :control_time, :incident_description, :discovery_acres, :final_acres,
-         :fire_cause, :origin_coordinate, :dispatch_center_id, :fire_discovery_time,
-         :nifc_created_time, :nifc_modified_time, :estimated_cost_to_date,
-         :incident_name, :origin_fips_code, :origin_city_name, :origin_state_code,
-         :origin_county_name, :landowner_type, :is_multijurisdictional)
-""")
-
-with engine.begin() as conn:
-    for _, row in df.iterrows():
-        row_dict = row.to_dict()
-        # Replace pandas NaT/NaN with None for SQL
-        row_dict = {k: (None if pd.isna(v) else v) for k, v in row_dict.items()}
-        conn.execute(insert_sql, row_dict)
-
+df.to_sql("nifc_wildfire_locations", con=engine, if_exists="append", index=False)
 print("Done.")
