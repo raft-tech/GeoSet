@@ -8,6 +8,8 @@
 # ACCESS:
 #   Frontend: http://localhost:9001
 #
+name: geoset
+
 x-superset-user: &superset-user root
 x-superset-volumes: &superset-volumes
   - ./docker:/app/docker
@@ -61,13 +63,6 @@ services:
       DB_USER: geoset
       DB_PASSWORD: geoset
 
-  # ---------- Redis (cache + Celery broker) ----------
-  redis:
-    image: redis:7
-    restart: unless-stopped
-    volumes:
-      - redis_geoset:/data
-
   # ---------- Superset metadata database ----------
   db-geoset:
     env_file:
@@ -96,8 +91,6 @@ services:
     depends_on:
       db-geoset:
         condition: service_started
-      redis:
-        condition: service_started
       postgis:
         condition: service_healthy
     user: *superset-user
@@ -110,6 +103,7 @@ services:
       EXAMPLES_DB: superset_geoset
       EXAMPLES_USER: superset
       EXAMPLES_PASSWORD: superset
+      SUPERSET_CONFIG_PATH: /app/docker/pythonpath_dev/superset_config_docker_light.py
     healthcheck:
       disable: true
 
@@ -138,6 +132,7 @@ services:
       EXAMPLES_DB: superset_geoset
       EXAMPLES_USER: superset
       EXAMPLES_PASSWORD: superset
+      SUPERSET_CONFIG_PATH: /app/docker/pythonpath_dev/superset_config_docker_light.py
 
   superset-node-geoset:
     build:
@@ -167,6 +162,4 @@ volumes:
   db_home_geoset:
     external: false
   geoset_data:
-    external: false
-  redis_geoset:
     external: false
