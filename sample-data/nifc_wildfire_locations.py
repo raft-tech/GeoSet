@@ -5,7 +5,6 @@ import time
 
 import pandas as pd
 import requests
-
 from db import get_engine, skip_if_populated, wait_for_db
 
 FIRE_API_URL = (

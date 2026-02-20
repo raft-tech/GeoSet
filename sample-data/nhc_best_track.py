@@ -19,10 +19,9 @@ import geopandas as gpd
 import pandas as pd
 import requests
 import shapely
+from db import get_engine, skip_if_populated, wait_for_db
 from fiona.drvsupport import supported_drivers
 from sqlalchemy import text
-
-from db import get_engine, skip_if_populated, wait_for_db
 
 # Enable KML support in Fiona/GDAL
 supported_drivers["KML"] = "rw"
@@ -151,9 +150,7 @@ for year in YEARS:
         # Parse HTML descriptions into structured metadata
         # Column name casing varies by geopandas/fiona version
         desc_col = "Description" if "Description" in kmz_df.columns else "description"
-        html_tables = kmz_df[desc_col].apply(
-            lambda html: pd.read_html(StringIO(html))
-        )
+        html_tables = kmz_df[desc_col].apply(lambda html: pd.read_html(StringIO(html)))
 
         extracted = []
         for tables in html_tables:
@@ -169,9 +166,13 @@ for year in YEARS:
         # Remove Z coordinate (3D -> 2D)
         kmz_df["observation_point"] = kmz_df.geometry.apply(shapely.force_2d)
 
-        kmz_df = pd.concat(
-            [kmz_df.reset_index(drop=True), metadata_df], axis=1
-        ).drop(columns=[desc_col, "Name" if "Name" in kmz_df.columns else "name", "geometry"])
+        kmz_df = pd.concat([kmz_df.reset_index(drop=True), metadata_df], axis=1).drop(
+            columns=[
+                desc_col,
+                "Name" if "Name" in kmz_df.columns else "name",
+                "geometry",
+            ]
+        )
 
         kmz_df["storm_name"] = storm_name
 
@@ -190,8 +191,13 @@ agg_df["observation_point"] = agg_df["observation_point"].apply(
 
 # Drop extra columns from KML that aren't in our table
 keep_cols = [
-    "effective_timestamp", "min_sea_level_pressure_mb", "max_gust_mph",
-    "storm_name", "nhc_identifier", "year", "observation_point",
+    "effective_timestamp",
+    "min_sea_level_pressure_mb",
+    "max_gust_mph",
+    "storm_name",
+    "nhc_identifier",
+    "year",
+    "observation_point",
 ]
 agg_df = agg_df[keep_cols]
 

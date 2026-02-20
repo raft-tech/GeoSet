@@ -50,7 +50,7 @@ A run-once container that calls three external data sources, transforms the data
 |--------|--------|-------|
 | `census_state_boundaries.py` | Census Bureau API | `census_state_boundaries` |
 | `nifc_wildfire_locations.py` | NIFC ArcGIS API | `nifc_wildfire_locations` |
-| `nhc_advisory_forecast_track.py` | NHC/NOAA API | `nhc_advisory_forecast_track` |
+| `nhc_best_track.py` | NHC/NOAA API | `nhc_best_track` |
 
 The ingest is **idempotent** — if a table already has data, the script skips it. Shared database utilities (connection, retry, skip-if-populated) live in `db.py`.
 
@@ -102,11 +102,13 @@ The importer walks the entire `geoset_configs/` directory, so dashboards, charts
 
 ## Current Example
 
-The GeoSet example dashboard (`Geoset_example_dashboard`) ships with:
+The GeoSet example dashboard (`Geoset_example_dashboard`) ships with two multi-layer maps side by side:
 
-- **GeoSet Sample Map** — a multi-layer map combining:
-  - **NIFC Wildfire Locations** — active wildfire points colored by landowner type
-  - **Storm Track Points** — NHC forecast points colored by max wind gusts (yellow to red)
-  - **Storm Track Lines** — aggregated storm track lines per storm
+- **Hurricane Tracker** — a multi-layer map combining:
+  - **Storm Track Points** — NHC best track observation points colored by max wind speed (yellow to red)
+  - **Storm Track Lines** — aggregated best track lines per storm per year
   - **Census State Boundaries** — US state boundary polygons
-- **Landowner Type filter** — a native filter on the NIFC wildfire dataset
+- **Wildfire Tracker** — a multi-layer map combining:
+  - **NIFC Wildfire Locations** — active wildfire points colored by fire cause (Human, Natural, Undetermined)
+  - **Census State Boundaries** — US state boundary polygons
+- **Fire Cause filter** — a native filter scoped to the Wildfire Tracker chart
