@@ -1,0 +1,27 @@
+slice_name: Hurricane Tracker
+description: Storm track points and lines overlaid on US state boundaries
+certified_by: null
+certification_details: null
+viz_type: deck_geoset_map
+params:
+  datasource: 0__table
+  viz_type: deck_geoset_map
+  mapbox_style: "mapbox://styles/acf-dart/cm8ov8yl4001401s365rs672z"
+  adhoc_filters: []
+  deck_slice_uuids:
+    - uuid: 6bf3672d-39e3-4170-b647-a46626cc899c
+      autozoom: true
+      legendCollapsed: false
+      initiallyHidden: false
+    - uuid: a1a862f1-2907-4ff5-a261-0d8e5199f63f
+      autozoom: true
+      legendCollapsed: false
+      initiallyHidden: false
+    - uuid: fbe401b9-ea00-4161-ad3a-be062e256922
+      autozoom: false
+      legendCollapsed: false
+      initiallyHidden: false
+cache_timeout: null
+uuid: 2685f6ed-3723-4492-ab0a-ff0ece88f824
+version: 1.0.0
+dataset_uuid: 9a83a2c9-351f-4a8e-97cd-9af903054ccb

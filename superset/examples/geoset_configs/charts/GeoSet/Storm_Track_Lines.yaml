@@ -1,5 +1,5 @@
 slice_name: Storm Track Lines
-description: NHC advisory forecast storm track lines connecting forecast points
+description: NHC best track lines connecting observation points
 certified_by: null
 certification_details: null
 viz_type: deck_geoset_map_layer

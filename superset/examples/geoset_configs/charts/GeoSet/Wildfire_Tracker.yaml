@@ -1,5 +1,5 @@
-slice_name: GeoSet Sample Map
-description: Combined map with NIFC Wildfires, Census State Boundaries, Storm Track Points, and Storm Track Lines
+slice_name: Wildfire Tracker
+description: NIFC wildfire incident locations overlaid on US state boundaries
 certified_by: null
 certification_details: null
 viz_type: deck_geoset_map
@@ -13,19 +13,11 @@ params:
       autozoom: true
       legendCollapsed: false
       initiallyHidden: false
-    - uuid: 6bf3672d-39e3-4170-b647-a46626cc899c
-      autozoom: true
-      legendCollapsed: false
-      initiallyHidden: false
-    - uuid: a1a862f1-2907-4ff5-a261-0d8e5199f63f
-      autozoom: true
-      legendCollapsed: false
-      initiallyHidden: false
     - uuid: fbe401b9-ea00-4161-ad3a-be062e256922
       autozoom: false
       legendCollapsed: false
       initiallyHidden: false
 cache_timeout: null
-uuid: be6e5c5a-99ee-44cb-9b78-c7e189590351
+uuid: e9247c4c-674e-4d78-a028-d63fecfa7714
 version: 1.0.0
 dataset_uuid: 9a83a2c9-351f-4a8e-97cd-9af903054ccb

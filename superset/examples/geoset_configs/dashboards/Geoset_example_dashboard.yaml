@@ -7,24 +7,38 @@ certification_details: ''
 published: false
 uuid: a53b644a-89f2-448b-a894-d2bd04559e30
 position:
-  CHART-JEkUx1E6e0iawt7rYpOpJ:
+  CHART-hurricane-tracker:
     children: []
-    id: CHART-JEkUx1E6e0iawt7rYpOpJ
+    id: CHART-hurricane-tracker
     meta:
       chartId: 122
       height: 94
-      sliceName: GeoSet Sample Map
-      uuid: be6e5c5a-99ee-44cb-9b78-c7e189590351
-      width: 12
+      sliceName: Hurricane Tracker
+      uuid: 2685f6ed-3723-4492-ab0a-ff0ece88f824
+      width: 6
     parents:
     - ROOT_ID
     - GRID_ID
-    - ROW-CmlbBHKXgfZ--6mqO1ny8
+    - ROW-maps-row
+    type: CHART
+  CHART-wildfire-tracker:
+    children: []
+    id: CHART-wildfire-tracker
+    meta:
+      chartId: 123
+      height: 94
+      sliceName: Wildfire Tracker
+      uuid: e9247c4c-674e-4d78-a028-d63fecfa7714
+      width: 6
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-maps-row
     type: CHART
   DASHBOARD_VERSION_KEY: v2
   GRID_ID:
     children:
-    - ROW-CmlbBHKXgfZ--6mqO1ny8
+    - ROW-maps-row
     id: GRID_ID
     parents:
     - ROOT_ID
@@ -39,10 +53,11 @@ position:
     - GRID_ID
     id: ROOT_ID
     type: ROOT
-  ROW-CmlbBHKXgfZ--6mqO1ny8:
+  ROW-maps-row:
     children:
-    - CHART-JEkUx1E6e0iawt7rYpOpJ
-    id: ROW-CmlbBHKXgfZ--6mqO1ny8
+    - CHART-hurricane-tracker
+    - CHART-wildfire-tracker
+    id: ROW-maps-row
     meta:
       background: BACKGROUND_TRANSPARENT
     parents:
@@ -58,6 +73,7 @@ metadata:
       excluded: []
     chartsInScope:
     - 122
+    - 123
   map_label_colors: {}
   color_scheme: ''
   refresh_frequency: 0
@@ -84,18 +100,19 @@ metadata:
     description: ''
     filterType: filter_select
     id: NATIVE_FILTER-6lGB6OEVFI7YKklHTTUwe
-    name: Landowner Type
+    name: Fire Cause
     scope:
-      excluded: []
+      excluded:
+      - 122
       rootPath:
       - ROOT_ID
     targets:
     - column:
-        name: landowner_type
+        name: fire_cause
       datasetUuid: 76d55c98-dfec-4fb9-819e-05a673da945b
     type: NATIVE_FILTER
     chartsInScope:
-    - 122
+    - 123
     tabsInScope: []
 theme_uuid: null
 version: 1.0.0

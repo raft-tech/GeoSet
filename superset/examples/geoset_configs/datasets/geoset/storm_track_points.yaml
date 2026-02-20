@@ -1,15 +1,16 @@
 table_name: storm_track_points
 main_dttm_col: effective_timestamp
-description: Deduplicated NHC advisory forecast track points with formatted timestamps
+description: Deduplicated NHC best track points with formatted timestamps
 default_endpoint: null
 offset: 0
 cache_timeout: null
 catalog: null
 schema: public
-sql: "SELECT DISTINCT ON (storm_name,\n          \"year\",\n          effective_timestamp)\
-  \ *,\n          TO_CHAR(effective_timestamp AT TIME ZONE 'AMERICA/NEW_YORK', 'YYYY-MM-DD\
-  \ HH12:MI AM') \"formatted_timestamp\"\nFROM nhc_advisory_forecast_track\nORDER\
-  \ BY storm_name,\n         \"year\",\n         effective_timestamp"
+sql: "SELECT DISTINCT ON (storm_name, \"year\", effective_timestamp)\n    effective_timestamp,\n\
+  \    min_sea_level_pressure_mb,\n    max_gust_mph,\n    storm_name,\n    nhc_identifier,\n\
+  \    \"year\",\n    ST_AsGeoJSON(observation_point) AS observation_point,\n    TO_CHAR(effective_timestamp\
+  \ AT TIME ZONE 'AMERICA/NEW_YORK', 'YYYY-MM-DD HH12:MI AM') AS formatted_timestamp\n\
+  FROM nhc_best_track\nORDER BY storm_name, \"year\", effective_timestamp"
 params: null
 template_params: null
 filter_select_enabled: true
@@ -54,18 +55,6 @@ columns:
   description: null
   python_date_format: null
   extra: null
-- column_name: wind_speed_mph
-  verbose_name: null
-  is_dttm: false
-  is_active: true
-  type: INTEGER
-  advanced_data_type: null
-  groupby: true
-  filterable: true
-  expression: null
-  description: null
-  python_date_format: null
-  extra: null
 - column_name: year
   verbose_name: null
   is_dttm: false
@@ -90,11 +79,23 @@ columns:
   description: null
   python_date_format: null
   extra: null
-- column_name: forecast_point
+- column_name: observation_point
   verbose_name: null
   is_dttm: false
   is_active: true
   type: STRING
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra: null
+- column_name: min_sea_level_pressure_mb
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: INTEGER
   advanced_data_type: null
   groupby: true
   filterable: true
@@ -115,18 +116,6 @@ columns:
   python_date_format: null
   extra: null
 - column_name: nhc_identifier
-  verbose_name: null
-  is_dttm: false
-  is_active: true
-  type: STRING
-  advanced_data_type: null
-  groupby: true
-  filterable: true
-  expression: null
-  description: null
-  python_date_format: null
-  extra: null
-- column_name: increment
   verbose_name: null
   is_dttm: false
   is_active: true

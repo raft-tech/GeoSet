@@ -24,7 +24,7 @@ params:
   - origin_state_code
   - origin_county_name
   - fire_discovery_time
-  enableClustering: true
+  enableClustering: false
   clusterMaxZoom: 14
   clusterMinPoints: 3
   clusterRadius: 25
@@ -34,13 +34,13 @@ params:
   schema_version: 2
   geojsonConfig: "{\n  \"globalColoring\": {\n    \"fillColor\": [255, 69, 0, 200],\n\
     \    \"strokeColor\": [0, 0, 0, 255],\n    \"strokeWidth\": 1,\n    \"fillPattern\"\
-    : \"solid\"\n  },\n  \"colorByCategory\": {\n    \"dimension\": \"landowner_type\"\
+    : \"solid\"\n  },\n  \"colorByCategory\": {\n    \"dimension\": \"fire_cause\"\
     ,\n    \"defaultLegendName\": [\"Unknown\"],\n    \"categoricalColors\": [\n \
-    \     { \"Federal\": { \"fillColor\": [30, 100, 200, 200], \"legend_entry_name\"\
-    : \"Federal\" } },\n      { \"Private\": { \"fillColor\": [220, 120, 30, 200],\
-    \ \"legend_entry_name\": \"Private\" } },\n      { \"Other\": { \"fillColor\"\
-    : [158, 158, 158, 200], \"legend_entry_name\": \"Other\" } }\n    ]\n  },\n  \"\
-    legend\": {\n    \"title\": \"NIFC Wildfires\",\n    \"name\": null\n  }\n}"
+    \     { \"Human\": { \"fillColor\": [220, 38, 38, 230], \"legend_entry_name\"\
+    : \"Human\" } },\n      { \"Natural\": { \"fillColor\": [22, 163, 74, 230],\
+    \ \"legend_entry_name\": \"Natural\" } },\n      { \"Undetermined\": { \"fillColor\"\
+    : [120, 120, 120, 220], \"legend_entry_name\": \"Undetermined\" } }\n    ]\n  },\n  \"\
+    legend\": {\n    \"title\": \"NIFC Wildfires by Cause\",\n    \"name\": null\n  }\n}"
   annotation_layers: []
 cache_timeout: null
 uuid: e6e168a5-d38c-428c-ab6c-5ecec9e754dd

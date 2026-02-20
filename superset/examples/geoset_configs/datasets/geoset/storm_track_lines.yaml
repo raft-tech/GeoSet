@@ -1,15 +1,15 @@
 table_name: storm_track_lines
 main_dttm_col: null
-description: NHC advisory forecast track lines aggregated per storm per year
+description: NHC best track lines aggregated per storm per year
 default_endpoint: null
 offset: 0
 cache_timeout: null
 catalog: null
 schema: public
 sql: "WITH deduplicated_points AS (\n    SELECT DISTINCT ON (storm_name, \"year\"\
-  , effective_timestamp)\n      storm_name,\n      \"year\",\n      forecast_point\n\
-  \    FROM nhc_advisory_forecast_track\n    ORDER BY storm_name, \"year\", effective_timestamp\n\
-  \  )\n  SELECT\n    storm_name,\n    \"year\",\n    ST_MakeLine(ST_GeomFromGeoJSON(forecast_point))\
+  , effective_timestamp)\n      storm_name,\n      \"year\",\n      observation_point::geometry\n\
+  \    FROM nhc_best_track\n    ORDER BY storm_name, \"year\", effective_timestamp\n\
+  \  )\n  SELECT\n    storm_name,\n    \"year\",\n    ST_MakeLine(observation_point)\
   \ AS track_line\n  FROM deduplicated_points\n  GROUP BY storm_name, \"year\""
 params: null
 template_params: null

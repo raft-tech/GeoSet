@@ -98,6 +98,10 @@ for col in TIME_COLUMNS:
     if col in df.columns:
         df[col] = pd.to_datetime(df[col], unit="ms", utc=True, errors="coerce")
 
+# Default missing fire_cause to 'Undetermined'
+if "fire_cause" in df.columns:
+    df["fire_cause"] = df["fire_cause"].fillna("Undetermined")
+
 # Convert is_multijurisdictional to boolean
 if "is_multijurisdictional" in df.columns:
     df["is_multijurisdictional"] = df["is_multijurisdictional"].fillna(0).astype(bool)

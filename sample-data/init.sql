@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS nifc_wildfire_locations (
     incident_description TEXT,
     discovery_acres DOUBLE PRECISION,
     final_acres DOUBLE PRECISION,
-    fire_cause TEXT,
+    fire_cause TEXT NOT NULL DEFAULT 'Undetermined',
     origin_coordinate TEXT,
     dispatch_center_id TEXT,
     fire_discovery_time TIMESTAMPTZ,
@@ -41,17 +41,22 @@ CREATE TABLE IF NOT EXISTS nifc_wildfire_locations (
     is_multijurisdictional BOOLEAN
 );
 
-CREATE TABLE IF NOT EXISTS nhc_advisory_forecast_track (
+CREATE TABLE IF NOT EXISTS nhc_best_track (
     id SERIAL PRIMARY KEY,
     effective_timestamp TIMESTAMPTZ NOT NULL,
-    wind_speed_mph INTEGER,
+    min_sea_level_pressure_mb INTEGER,
     max_gust_mph INTEGER,
     storm_name TEXT NOT NULL,
     nhc_identifier TEXT,
-    increment TEXT NOT NULL,
     year INTEGER NOT NULL,
-    forecast_point TEXT
+    observation_point GEOGRAPHY(POINT, 4326)
 );
 
-CREATE INDEX IF NOT EXISTS idx_nhc_identifier ON nhc_advisory_forecast_track (nhc_identifier);
-CREATE INDEX IF NOT EXISTS idx_nhc_year ON nhc_advisory_forecast_track (year);
+CREATE INDEX IF NOT EXISTS idx_nhc_identifier ON nhc_best_track (nhc_identifier);
+CREATE INDEX IF NOT EXISTS idx_nhc_year ON nhc_best_track (year);
+
+-- Drop schemas that GeoSet doesn't use so Superset's schema picker only shows public.
+DROP SCHEMA IF EXISTS tiger_data CASCADE;
+DROP SCHEMA IF EXISTS tiger CASCADE;
+DROP SCHEMA IF EXISTS topology CASCADE;
+DROP SCHEMA IF EXISTS information_schema CASCADE;
