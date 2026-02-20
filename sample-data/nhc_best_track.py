@@ -19,9 +19,9 @@ import geopandas as gpd
 import pandas as pd
 import requests
 import shapely
-from utils import fetch_with_retry, get_engine, skip_if_populated, wait_for_db
 from fiona.drvsupport import supported_drivers
 from sqlalchemy import text
+from utils import fetch_with_retry, get_engine, skip_if_populated, wait_for_db
 
 # Enable KML support in Fiona/GDAL
 supported_drivers["KML"] = "rw"
@@ -32,10 +32,12 @@ YEARS = [int(y) for y in os.environ.get("YEARS", "2024,2025").split(",")]
 
 def fetch_url(url, timeout=60):
     """Fetch URL content with retry logic."""
+
     def _do():
         response = requests.get(url, timeout=timeout)
         response.raise_for_status()
         return response
+
     return fetch_with_retry(_do, description=url)
 
 

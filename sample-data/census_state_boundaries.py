@@ -5,7 +5,6 @@ import json
 import geopandas as gpd
 import pandas as pd
 from shapely.geometry import mapping
-
 from utils import fetch_with_retry, get_engine, skip_if_populated, wait_for_db
 
 CENSUS_STATE_SHAPEFILE_URL = (
