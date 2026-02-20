@@ -1,4 +1,4 @@
-"""Shared database utilities for sample data ingest scripts."""
+"""Shared utilities for sample data ingest scripts."""
 
 import os
 import sys
@@ -38,3 +38,16 @@ def skip_if_populated(engine, table_name):
         if count > 0:
             print(f"{table_name} already has {count} rows, skipping.")
             sys.exit(0)
+
+
+def fetch_with_retry(fn, description="request", retries=3, delay=2):
+    """Call fn() with retry logic. Returns the result of fn() on success."""
+    for attempt in range(retries):
+        try:
+            return fn()
+        except Exception as e:
+            if attempt < retries - 1:
+                print(f"  Retry {attempt + 1} for {description}: {e}")
+                time.sleep(delay)
+            else:
+                raise

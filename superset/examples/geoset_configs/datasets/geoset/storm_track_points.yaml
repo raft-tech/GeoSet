@@ -8,7 +8,7 @@ catalog: null
 schema: public
 sql: "SELECT DISTINCT ON (storm_name, \"year\", effective_timestamp)\n    effective_timestamp,\n\
   \    min_sea_level_pressure_mb,\n    max_gust_mph,\n    storm_name,\n    nhc_identifier,\n\
-  \    \"year\",\n    ST_AsGeoJSON(observation_point) AS observation_point,\n    TO_CHAR(effective_timestamp\
+  \    \"year\",\n    observation_point,\n    TO_CHAR(effective_timestamp\
   \ AT TIME ZONE 'AMERICA/NEW_YORK', 'YYYY-MM-DD HH12:MI AM') AS formatted_timestamp\n\
   FROM nhc_best_track\nORDER BY storm_name, \"year\", effective_timestamp"
 params: null

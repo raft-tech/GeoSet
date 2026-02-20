@@ -19,7 +19,7 @@ import geopandas as gpd
 import pandas as pd
 import requests
 import shapely
-from db import get_engine, skip_if_populated, wait_for_db
+from utils import fetch_with_retry, get_engine, skip_if_populated, wait_for_db
 from fiona.drvsupport import supported_drivers
 from sqlalchemy import text
 
@@ -32,17 +32,11 @@ YEARS = [int(y) for y in os.environ.get("YEARS", "2024,2025").split(",")]
 
 def fetch_url(url, timeout=60):
     """Fetch URL content with retry logic."""
-    for attempt in range(3):
-        try:
-            response = requests.get(url, timeout=timeout)
-            response.raise_for_status()
-            return response
-        except Exception as e:
-            if attempt < 2:
-                print(f"  Retry {attempt + 1} for {url}: {e}")
-                time.sleep(2)
-            else:
-                raise
+    def _do():
+        response = requests.get(url, timeout=timeout)
+        response.raise_for_status()
+        return response
+    return fetch_with_retry(_do, description=url)
 
 
 def get_all_storm_urls(year):

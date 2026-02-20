@@ -6,7 +6,13 @@ offset: 0
 cache_timeout: null
 catalog: null
 schema: public
-sql: null
+sql: "SELECT\n    fire_id,\n    irwin_id,\n    incident_size,\n    containment_time,\n\
+  \    percent_contained,\n    control_time,\n    incident_description,\n    discovery_acres,\n\
+  \    final_acres,\n    COALESCE(fire_cause, 'Undetermined') AS fire_cause,\n    origin_coordinate,\n\
+  \    dispatch_center_id,\n    fire_discovery_time,\n    nifc_created_time,\n    nifc_modified_time,\n\
+  \    estimated_cost_to_date,\n    incident_name,\n    origin_fips_code,\n    origin_city_name,\n\
+  \    origin_state_code,\n    origin_county_name,\n    landowner_type,\n    is_multijurisdictional\n\
+  FROM nifc_wildfire_locations"
 params: null
 template_params: null
 filter_select_enabled: true

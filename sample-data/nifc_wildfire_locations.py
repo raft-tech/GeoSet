@@ -1,11 +1,10 @@
 """Load NIFC wildfire location data into PostGIS."""
 
 import json
-import time
 
 import pandas as pd
 import requests
-from db import get_engine, skip_if_populated, wait_for_db
+from utils import fetch_with_retry, get_engine, skip_if_populated, wait_for_db
 
 FIRE_API_URL = (
     "https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/"
@@ -68,18 +67,15 @@ wait_for_db(engine)
 skip_if_populated(engine, "nifc_wildfire_locations")
 
 print("Fetching wildfire data from NIFC API...")
-for attempt in range(3):
-    try:
-        response = requests.get(FIRE_API_URL, timeout=120)
-        response.raise_for_status()
-        data = response.json()
-        break
-    except Exception as e:
-        if attempt < 2:
-            print(f"  Retry {attempt + 1} for NIFC API: {e}")
-            time.sleep(2)
-        else:
-            raise
+
+
+def _fetch_nifc():
+    response = requests.get(FIRE_API_URL, timeout=120)
+    response.raise_for_status()
+    return response.json()
+
+
+data = fetch_with_retry(_fetch_nifc, description="NIFC API")
 features = data["features"]
 
 print(f"Parsing {len(features)} wildfire features...")
@@ -96,10 +92,6 @@ df = df[[c for c in keep_cols if c in df.columns]]
 for col in TIME_COLUMNS:
     if col in df.columns:
         df[col] = pd.to_datetime(df[col], unit="ms", utc=True, errors="coerce")
-
-# Default missing fire_cause to 'Undetermined'
-if "fire_cause" in df.columns:
-    df["fire_cause"] = df["fire_cause"].fillna("Undetermined")
 
 # Convert is_multijurisdictional to boolean
 if "is_multijurisdictional" in df.columns:

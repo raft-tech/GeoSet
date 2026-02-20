@@ -6,7 +6,7 @@ import geopandas as gpd
 import pandas as pd
 from shapely.geometry import mapping
 
-from db import get_engine, skip_if_populated, wait_for_db
+from utils import fetch_with_retry, get_engine, skip_if_populated, wait_for_db
 
 CENSUS_STATE_SHAPEFILE_URL = (
     "https://www2.census.gov/geo/tiger/GENZ2024/shp/cb_2024_us_state_500k.zip"
@@ -30,7 +30,10 @@ wait_for_db(engine)
 skip_if_populated(engine, "census_state_boundaries")
 
 print(f"Reading shapefile from {CENSUS_STATE_SHAPEFILE_URL}...")
-gdf = gpd.read_file(CENSUS_STATE_SHAPEFILE_URL)
+gdf = fetch_with_retry(
+    lambda: gpd.read_file(CENSUS_STATE_SHAPEFILE_URL),
+    description="Census shapefile",
+)
 
 gdf = gdf.rename(columns=COLUMN_MAPPING)
 gdf = gdf[list(COLUMN_MAPPING.values())]

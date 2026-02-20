@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS nifc_wildfire_locations (
     incident_description TEXT,
     discovery_acres DOUBLE PRECISION,
     final_acres DOUBLE PRECISION,
-    fire_cause TEXT NOT NULL DEFAULT 'Undetermined',
+    fire_cause TEXT,
     origin_coordinate TEXT,
     dispatch_center_id TEXT,
     fire_discovery_time TIMESTAMPTZ,

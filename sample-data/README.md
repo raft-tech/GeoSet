@@ -112,3 +112,5 @@ The GeoSet example dashboard (`Geoset_example_dashboard`) ships with two multi-l
   - **NIFC Wildfire Locations** — active wildfire points colored by fire cause (Human, Natural, Undetermined)
   - **Census State Boundaries** — US state boundary polygons
 - **Fire Cause filter** — a native filter scoped to the Wildfire Tracker chart
+- **Hurricane Season filter** — a native filter on year, scoped to the Hurricane Tracker chart
+- **Hurricane Name filter** — a native filter on storm name, cascades from Hurricane Season

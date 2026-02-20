@@ -20,7 +20,7 @@ params:
   geojsonConfig: "{\n  \"globalColoring\": {\n    \"fillColor\": [77, 74, 57, 255],\n\
     \    \"fillPattern\": \"solid\",\n    \"lineStyle\": \"solid\",\n    \"strokeColor\"\
     : [77, 74, 57, 255],\n    \"strokeWidth\": 1\n  },\n  \"legend\": {\n    \"name\"\
-    : \"Storms Tracks\",\n    \"title\": \"Storms Tracks\"\n  }\n}"
+    : \"Storm Tracks\",\n    \"title\": \"Storm Tracks\"\n  }\n}"
   schema_version: 2
   annotation_layers: []
 cache_timeout: null
