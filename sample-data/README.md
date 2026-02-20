@@ -52,7 +52,7 @@ A run-once container that calls three external data sources, transforms the data
 | `nifc_wildfire_locations.py` | NIFC ArcGIS API | `nifc_wildfire_locations` |
 | `nhc_best_track.py` | NHC/NOAA API | `nhc_best_track` |
 
-The ingest is **idempotent** — if a table already has data, the script skips it. Shared database utilities (connection, retry, skip-if-populated) live in `db.py`.
+The ingest is **idempotent** — if a table already has data, the script skips it. Shared utilities (connection, retry, skip-if-populated) live in `utils.py`.
 
 ## Superset Integration
 
@@ -66,7 +66,7 @@ The ingest is **idempotent** — if a table already has data, the script skips i
 ### Data pipeline
 
 1. **Add the table** — Add a `CREATE TABLE` statement to `init.sql`
-2. **Write an ingest script** — Create a new Python script in `sample-data/` that fetches data from an API, transforms it, and inserts it into the table. Use `db.py` for the connection and call `skip_if_populated()` to keep it idempotent
+2. **Write an ingest script** — Create a new Python script in `sample-data/` that fetches data from an API, transforms it, and inserts it into the table. Use `utils.py` for the connection and call `skip_if_populated()` to keep it idempotent
 3. **Register the script** — Add a line to `entrypoint.sh` to run your new script
 
 ### Chart config
