@@ -151,7 +151,7 @@ const Legend = ({
         </span>
         <span>
           {metricLegend.max != null
-            ? `${formatLegendNumber(metricLegend.max)}+`
+            ? `${formatLegendNumber(metricLegend.max)}${metricLegend.min !== metricLegend.max ? '+' : ''}`
             : ''}
         </span>
       </div>

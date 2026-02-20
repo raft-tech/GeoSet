@@ -190,12 +190,16 @@ export default function transformProps(chartProps: ChartProps) {
 
         metricColorScale = computeMetricColorScaleUnified(spec, [lower, upper]);
 
+        // When there's only one value (lower === upper), there's no gradient
+        // to display — use the same color for both ends of the legend.
+        const noGradient = lower === upper;
+
         metricLegend = {
           min: lower,
           max: upper,
-          startColor: start,
-          endColor: end,
-          legendName: valueColumn,
+          startColor: noGradient ? start : start,
+          endColor: noGradient ? start : end,
+          legendName: legend?.title || valueColumn,
         };
       }
     } else {

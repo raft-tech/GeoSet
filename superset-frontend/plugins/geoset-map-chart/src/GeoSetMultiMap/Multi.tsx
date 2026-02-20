@@ -37,7 +37,7 @@ import {
 } from '../DeckGLContainer';
 import {
   getLayer as getGeoSetMapLayer,
-  getLayerState as layerStateGenerator,
+  getLayerStates as layerStatesGenerator,
 } from '../layers/GeoSetLayer/GeoSetLayer';
 import { calculateAutozoomViewport, Viewport } from '../utils/fitViewport';
 import { TooltipProps } from '../components/Tooltip';
@@ -102,7 +102,7 @@ export type DeckMultiProps = {
 
 type SubsliceLayerEntry = {
   sliceId: number;
-  layerState: LayerState;
+  layerStates: LayerState[];
   legendGroup: LegendGroup;
   features: JsonObject[];
   autozoom: boolean;
@@ -442,12 +442,12 @@ const DeckMulti = (props: DeckMultiProps) => {
                   maxZoom: zoomSlider[1],
                 };
 
-                const newLayerState = layerStateGenerator(
+                const newLayerStates = layerStatesGenerator(
                   newLayer,
                   newLayerStateOptions,
                 );
 
-                if (!newLayerState) {
+                if (!newLayerStates.length) {
                   return null;
                 }
 
@@ -457,7 +457,7 @@ const DeckMulti = (props: DeckMultiProps) => {
 
                 return {
                   sliceId: subsliceCopy.slice_id,
-                  layerState: newLayerState,
+                  layerStates: newLayerStates,
                   legendGroup,
                   features: layerFeatures,
                   autozoom: sliceAutozoom,
@@ -678,11 +678,11 @@ const DeckMulti = (props: DeckMultiProps) => {
           return entry;
         }
 
-        const newLayerState = layerStateGenerator(
+        const newLayerStates = layerStatesGenerator(
           newLayer,
           entry.zoomSliderOptions,
         );
-        if (!newLayerState) {
+        if (!newLayerStates.length) {
           return entry;
         }
 
@@ -698,7 +698,7 @@ const DeckMulti = (props: DeckMultiProps) => {
 
         return {
           ...entry,
-          layerState: newLayerState,
+          layerStates: newLayerStates,
           transformedProps: {
             ...entry.transformedProps,
             categories: updatedCategories,
@@ -770,15 +770,16 @@ const DeckMulti = (props: DeckMultiProps) => {
   }, [subSlicesLayers, normalizedDeckSlices]);
 
   // Set layer visibility via options.userVisible (preserves icon atlas for faster toggle)
-  const layerStatesWithVisibility = sortedLayers.map(entry => {
+  // flatMap because polygon layers produce multiple LayerStates (fill + stroke)
+  const layerStatesWithVisibility = sortedLayers.flatMap(entry => {
     const isVisible = layerVisibility[String(entry.sliceId)] !== false;
-    return {
-      ...entry.layerState,
+    return entry.layerStates.map(ls => ({
+      ...ls,
       options: {
-        ...entry.layerState.options,
+        ...ls.options,
         userVisible: isVisible,
       },
-    };
+    }));
   });
 
   // Build legendsBySlice for MultiLegend component, with category enabled state applied

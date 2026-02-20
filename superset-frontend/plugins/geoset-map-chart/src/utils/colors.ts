@@ -464,7 +464,8 @@ export function computeMetricColorScaleUnified(
       const clamped = clampToDomain(val);
       for (let i = 0; i < numSegments; i++) {
         if (clamped <= stops[i + 1]) {
-          const t = (clamped - stops[i]) / (stops[i + 1] - stops[i]);
+          const segRange = stops[i + 1] - stops[i];
+          const t = segRange === 0 ? 0 : (clamped - stops[i]) / segRange;
           return interp(t);
         }
       }
@@ -474,10 +475,13 @@ export function computeMetricColorScaleUnified(
 
   // Continuous metric coloring
   const lerp = interpolateRGBA(startColor, endColor);
+  const range = upper - lower;
   return (val: number) => {
     if (val == null) return [...startColor];
+    // When min === max (single value), avoid NaN from 0/0 division
+    if (range === 0) return [...startColor];
     const clamped = clampToDomain(val);
-    const t = (clamped - lower) / (upper - lower);
+    const t = (clamped - lower) / range;
     return lerp(t);
   };
 }

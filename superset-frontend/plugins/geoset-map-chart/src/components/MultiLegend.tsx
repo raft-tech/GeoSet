@@ -387,7 +387,7 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
                         />
                         <Bounds>
                           <div>{formatLegendNumber(group.metric.lower)}</div>
-                          <div>{`${formatLegendNumber(group.metric.upper)}+`}</div>
+                          <div>{`${formatLegendNumber(group.metric.upper)}${group.metric.lower !== group.metric.upper ? '+' : ''}`}</div>
                         </Bounds>
                       </>
                     )}
