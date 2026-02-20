@@ -82,8 +82,6 @@ The easiest way to add chart/dataset YAMLs is to export them from a running Supe
 4. **Strip the `query_context` field** from the chart YAML (it contains instance-specific IDs that will be regenerated automatically)
 5. **Run it** — `docker compose -f docker-compose-geoset.yml up --build` will pick up everything automatically
 
-The exported YAMLs will have an instance-specific `datasource` value in params (e.g. `28__table`). This is fine — the post-import hook in `superset/examples/geoset.py` rewrites these to the correct runtime IDs.
-
 ### Multi-layer maps
 
 Multi-layer map charts (`deck_geoset_map`) reference sub-layer charts by integer ID in `deck_slices`. Since IDs vary per instance, the YAML should use `deck_slice_uuids` with stable UUIDs instead. The post-import hook resolves these to runtime IDs automatically.
