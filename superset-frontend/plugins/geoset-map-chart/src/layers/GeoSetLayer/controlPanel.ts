@@ -36,6 +36,7 @@ import {
 import { dndGeojsonColumn } from '../../utilities/sharedDndControls';
 import JsonEditorControl from '../../components/JsonEditorControl';
 import { CURRENT_VERSION } from '../common';
+import { getLiveViewport } from '../../utils/liveViewportStore';
 
 const geoJsonLayers = ['GeoJSON', 'Point', 'Line', 'Polygon'];
 
@@ -98,8 +99,8 @@ const config: ControlPanelConfig = {
               visibility: ({ controls }: { controls: any }) =>
                 controls?.autozoom?.value !== true,
               shouldMapStateToProps: () => true,
-              mapStateToProps: ({ controls }: { controls: any }) => ({
-                liveViewport: controls?.liveMapViewport?.value,
+              mapStateToProps: () => ({
+                getLiveViewport,
               }),
             },
           },
@@ -193,15 +194,6 @@ const config: ControlPanelConfig = {
                 value: controls?.geojsonConfig?.value ?? undefined,
                 defaultValue: defaultGeojsonConfig,
               }),
-            },
-          },
-        ],
-        [
-          {
-            name: 'liveMapViewport',
-            config: {
-              type: 'HiddenControl',
-              default: null,
             },
           },
         ],

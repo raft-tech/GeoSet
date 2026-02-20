@@ -51,6 +51,7 @@ import { getGeometryType } from '../utils';
 import { fetchMapboxApiKey, getCachedMapboxApiKey } from '../utils/mapboxApi';
 import { multiChartMigration } from '../utils/migrationApi';
 import ClickPopupBox, { ClickedFeatureInfo } from '../components/ClickPopupBox';
+import { setLiveViewport } from '../utils/liveViewportStore';
 // Utility to convert snake_case or camelCase to Title Case
 const toTitleCase = (str: string) =>
   str
@@ -851,17 +852,16 @@ const DeckMulti = (props: DeckMultiProps) => {
     return calculatedViewport;
   }, [sortedLayers, props.viewport, width, height, props.enableStaticViewport]);
 
-  // Redirect viewport syncs to a shadow key (_liveViewport) so the actual
+  // Write live viewport to module-level store (outside Redux) so the actual
   // viewport control value is only changed by explicit user Save actions.
-  // ViewportControl reads _liveViewport for the Capture button.
-  const { setControlValue: parentSetControlValue } = props;
+  // ViewportControl reads the store on-demand via getLiveViewport.
   const viewportSetControlValue = useCallback(
     (control: string, value: JsonValue) => {
       if (control === 'viewport') {
-        parentSetControlValue('liveMapViewport', value);
+        setLiveViewport(value as Viewport);
       }
     },
-    [parentSetControlValue],
+    [],
   );
 
   // Map control handlers - must be defined before any conditional returns

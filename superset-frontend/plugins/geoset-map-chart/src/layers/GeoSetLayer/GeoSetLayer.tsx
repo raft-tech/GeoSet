@@ -74,6 +74,7 @@ import {
 import { handleSchemaCheck } from '../../utils/migrationApi';
 import MeasureOverlay, { MeasureState } from '../../components/MeasureOverlay';
 import { Coordinate } from '../../utils/measureDistance';
+import { setLiveViewport } from '../../utils/liveViewportStore';
 import ClickPopupBox, {
   ClickedFeatureInfo,
 } from '../../components/ClickPopupBox';
@@ -1043,16 +1044,16 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
     width,
   ]);
 
-  // Redirect viewport syncs to a shadow key (_liveViewport) so the actual
+  // Write live viewport to module-level store (outside Redux) so the actual
   // viewport control value is only changed by explicit user Save actions.
-  // ViewportControl reads _liveViewport for the Capture button.
+  // ViewportControl reads the store on-demand via getLiveViewport.
   const viewportSetControlValue = useCallback(
     (control: string, value: JsonValue) => {
       if (control === 'viewport') {
-        setControlValue('liveMapViewport', value);
+        setLiveViewport(value as Viewport);
       }
     },
-    [setControlValue],
+    [],
   );
 
   const visualConfig = useMemo(

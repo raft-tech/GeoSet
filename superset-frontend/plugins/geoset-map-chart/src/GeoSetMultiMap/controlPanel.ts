@@ -22,6 +22,7 @@ import {
   staticViewport,
   viewportControl,
 } from '../utilities/Shared_DeckGL';
+import { getLiveViewport } from '../utils/liveViewportStore';
 
 export default {
   controlPanelSections: [
@@ -39,8 +40,8 @@ export default {
               visibility: ({ controls }: { controls: any }) =>
                 controls?.enable_static_viewport?.value === true,
               shouldMapStateToProps: () => true,
-              mapStateToProps: ({ controls }: { controls: any }) => ({
-                liveViewport: controls?.liveMapViewport?.value,
+              mapStateToProps: () => ({
+                getLiveViewport,
               }),
             },
           },
@@ -66,15 +67,6 @@ export default {
             },
           },
           null,
-        ],
-        [
-          {
-            name: 'liveMapViewport',
-            config: {
-              type: 'HiddenControl',
-              default: null,
-            },
-          },
         ],
       ],
     },

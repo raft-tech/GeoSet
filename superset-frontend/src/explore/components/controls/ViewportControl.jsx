@@ -60,18 +60,38 @@ export default class ViewportControl extends Component {
     this.state = {
       popoverVisible: false,
       draftValue: null,
+      // Snapshot of props.value when the popover opened.
+      // Close reverts to this; Save keeps the current live values.
+      openValue: null,
+      // Incremented on Capture to force TextControl remount.
+      // TextControl has a stale-state bug: it detects prop changes only once
+      // in render() but never calls setState, so the next re-render reverts
+      // to the old internal value.  Changing the key forces a fresh mount.
+      captureKey: 0,
     };
     this.onDraftChange = this.onDraftChange.bind(this);
   }
 
   onDraftChange(ctrl, value) {
-    const rounded = value != null ? Math.round(value * 10000) / 10000 : value;
-    this.setState(prevState => ({
-      draftValue: {
-        ...prevState.draftValue,
-        [ctrl]: rounded,
+    const num = value === '' || value == null ? null : Number(value);
+    const rounded = num != null && !Number.isNaN(num)
+      ? Math.round(num * 10000) / 10000
+      : null;
+    this.setState(
+      prevState => ({
+        draftValue: {
+          ...prevState.draftValue,
+          [ctrl]: rounded,
+        },
+      }),
+      () => {
+        // Live-update the map only when all fields are valid numbers
+        const draft = this.state.draftValue;
+        if (draft && PARAMS.every(p => draft[p] != null)) {
+          this.props.onChange(draft);
+        }
       },
-    }));
+    );
   }
 
   renderTextControl(ctrl) {
@@ -81,6 +101,7 @@ export default class ViewportControl extends Component {
       <div key={ctrl}>
         <FormLabel>{ctrl}</FormLabel>
         <TextControl
+          key={`${ctrl}-${this.state.captureKey}`}
           value={display}
           onChange={this.onDraftChange.bind(this, ctrl)}
           isFloat
@@ -97,7 +118,13 @@ export default class ViewportControl extends Component {
           <Button
             buttonStyle="secondary"
             buttonSize="small"
-            onClick={() => this.setState({ popoverVisible: false, draftValue: null })}
+            onClick={() => {
+              // Revert map to the viewport from when the popover opened
+              if (this.state.openValue) {
+                this.props.onChange(this.state.openValue);
+              }
+              this.setState({ popoverVisible: false, draftValue: null, openValue: null });
+            }}
             style={{ flex: 1 }}
           >
             {t('Close')}
@@ -106,10 +133,14 @@ export default class ViewportControl extends Component {
             buttonStyle="primary"
             buttonSize="small"
             onClick={() => {
-              if (this.state.draftValue) {
-                this.props.onChange(this.state.draftValue);
+              // Ensure any null fields fall back to 0 before persisting
+              const draft = this.state.draftValue;
+              if (draft) {
+                const cleaned = { ...draft };
+                PARAMS.forEach(p => { if (cleaned[p] == null) cleaned[p] = 0; });
+                this.props.onChange(cleaned);
               }
-              this.setState({ popoverVisible: false, draftValue: null });
+              this.setState({ popoverVisible: false, draftValue: null, openValue: null });
             }}
             style={{ flex: 1 }}
           >
@@ -121,10 +152,9 @@ export default class ViewportControl extends Component {
   }
 
   renderLabel() {
-    if (this.props.value.longitude && this.props.value.latitude) {
-      return `${decimal2sexagesimal(
-        this.props.value.longitude,
-      )} | ${decimal2sexagesimal(this.props.value.latitude)}`;
+    const { longitude, latitude } = this.props.value || {};
+    if (longitude != null && latitude != null) {
+      return `${decimal2sexagesimal(longitude)} | ${decimal2sexagesimal(latitude)}`;
     }
     return 'N/A';
   }
@@ -144,14 +174,32 @@ export default class ViewportControl extends Component {
               <span
                 role="button"
                 tabIndex={0}
-                onClick={() => {
-                  const live = this.props.liveViewport || this.props.value;
-                  this.setState({ draftValue: { ...live } });
+                onClick={e => {
+                  e.stopPropagation();
+                  const live = this.props.getLiveViewport?.() || this.props.value;
+                  this.setState(
+                    prev => ({
+                      draftValue: { ...live },
+                      captureKey: prev.captureKey + 1,
+                    }),
+                    () => {
+                      this.props.onChange(this.state.draftValue);
+                    },
+                  );
                 }}
                 onKeyDown={e => {
                   if (e.key === 'Enter') {
-                    const live = this.props.liveViewport || this.props.value;
-                    this.setState({ draftValue: { ...live } });
+                    e.stopPropagation();
+                    const live = this.props.getLiveViewport?.() || this.props.value;
+                    this.setState(
+                      prev => ({
+                        draftValue: { ...live },
+                        captureKey: prev.captureKey + 1,
+                      }),
+                      () => {
+                        this.props.onChange(this.state.draftValue);
+                      },
+                    );
                   }
                 }}
                 style={{
@@ -169,10 +217,19 @@ export default class ViewportControl extends Component {
           }
           open={this.state.popoverVisible}
           onOpenChange={open => {
-            if (open) {
-              this.setState({ popoverVisible: true, draftValue: { ...this.props.value } });
-            } else {
-              this.setState({ popoverVisible: false, draftValue: null });
+            if (open && !this.state.popoverVisible) {
+              // Only initialize draft when actually opening (not when already open)
+              this.setState({
+                popoverVisible: true,
+                draftValue: { ...this.props.value },
+                openValue: { ...this.props.value },
+              });
+            } else if (!open) {
+              // Clicking outside = revert (same as Close)
+              if (this.state.openValue) {
+                this.props.onChange(this.state.openValue);
+              }
+              this.setState({ popoverVisible: false, draftValue: null, openValue: null });
             }
           }}
         >
