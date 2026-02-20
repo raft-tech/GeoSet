@@ -1,6 +1,6 @@
 #
 # Self-contained GeoSet development environment.
-# Includes PostGIS, sample data ingest, and all Superset services.
+# Includes PostGIS, sample data ingest, and Superset (light mode — no Redis/Celery).
 #
 # USAGE:
 #   docker compose -f docker-compose-geoset.yml up
