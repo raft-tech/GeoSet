@@ -38,22 +38,17 @@ def resolve_geoset_multi_map_layers() -> None:
 
         resolved_slices = []
         for item in deck_slice_uuids:
-            uuid_ref = item.get("uuid") if isinstance(item, dict) else str(item)
+            props = item if isinstance(item, dict) else {}
+            uuid_ref = props.get("uuid", str(item))
             layer_chart = db.session.query(Slice).filter_by(uuid=uuid_ref).first()
             if not layer_chart:
                 continue
             resolved_slices.append(
                 {
                     "sliceId": layer_chart.id,
-                    "autozoom": item.get("autozoom", True)
-                    if isinstance(item, dict)
-                    else True,
-                    "legendCollapsed": item.get("legendCollapsed", False)
-                    if isinstance(item, dict)
-                    else False,
-                    "initiallyHidden": item.get("initiallyHidden", False)
-                    if isinstance(item, dict)
-                    else False,
+                    "autozoom": props.get("autozoom", True),
+                    "legendCollapsed": props.get("legendCollapsed", False),
+                    "initiallyHidden": props.get("initiallyHidden", False),
                 }
             )
 
