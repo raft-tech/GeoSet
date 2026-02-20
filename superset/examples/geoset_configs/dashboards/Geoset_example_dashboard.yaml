@@ -85,6 +85,14 @@ metadata:
   cross_filters_enabled: true
   default_filters: '{}'
   native_filter_configuration:
+  - id: NATIVE_FILTER_DIVIDER-73JcWvNQg5CB4iTF6bZRR
+    type: DIVIDER
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    title: Wildfire Tracker
+    description: ''
   - cascadeParentIds: []
     controlValues:
       creatable: true
@@ -114,5 +122,66 @@ metadata:
     chartsInScope:
     - 123
     tabsInScope: []
+  - id: NATIVE_FILTER_DIVIDER-VNcffpRl9qQ3XFPT6xpjH
+    type: DIVIDER
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    title: Hurricane Tracker
+    description: ''
+  - id: NATIVE_FILTER-_ZF7d8EGhaSuSTcc1cuh5
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      creatable: true
+      multiSelect: true
+      searchAllOptions: false
+      inverseSelection: false
+    name: Hurricane Season
+    filterType: filter_select
+    targets:
+    - column:
+        name: year
+      datasetUuid: 744ddd9c-c69c-4937-88ec-20e30bc098aa
+    defaultDataMask:
+      extraFormData: {}
+      filterState: {}
+      ownState: {}
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded:
+      - 123
+    type: NATIVE_FILTER
+    description: ''
+  - id: NATIVE_FILTER-d-y0xawSsH3xwmFoERD2J
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      creatable: true
+      multiSelect: true
+      searchAllOptions: false
+      inverseSelection: false
+    name: Hurricane Name
+    filterType: filter_select
+    targets:
+    - column:
+        name: storm_name
+      datasetUuid: 05f56898-3fc6-4bba-9c63-8dafb32343ea
+    defaultDataMask:
+      extraFormData: {}
+      filterState: {}
+      ownState: {}
+    cascadeParentIds:
+    - NATIVE_FILTER-_ZF7d8EGhaSuSTcc1cuh5
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded:
+      - 123
+    type: NATIVE_FILTER
+    description: ''
 theme_uuid: null
 version: 1.0.0

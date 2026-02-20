@@ -29,9 +29,9 @@ params:
   - max_gust_mph
   featureInfoColumns: []
   geojsonConfig: "{\n  \"colorByValue\": {\n    \"breakpoints\": [],\n    \"endColor\"\
-    : [207, 30, 14, 255],\n    \"lowerBound\": 40,\n    \"startColor\": [222, 214,\
-    \ 67, 255],\n    \"upperBound\": 173,\n    \"valueColumn\": \"max_gust_mph\"\
-    \n  },\n  \"globalColoring\": {\n    \"fillColor\": [40, 147, 179, 255],\n    \"\
+    : [255, 40, 20, 255],\n    \"lowerBound\": 40,\n    \"startColor\": [255, 235,\
+    \ 59, 255],\n    \"upperBound\": 173,\n    \"valueColumn\": \"max_gust_mph\"\
+    \n  },\n  \"globalColoring\": {\n    \"fillColor\": [60, 180, 220, 255],\n    \"\
     fillPattern\": \"solid\",\n    \"lineStyle\": \"solid\",\n    \"strokeColor\"\
     : [0, 0, 0, 255],\n    \"strokeWidth\": 2\n  },\n  \"legend\": {\n    \"title\"\
     : \"Wind Speed (mph)\"\n  }\n}"
