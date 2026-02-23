@@ -1,0 +1,247 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# -----------------------------------------------------------------------
+# RHEL UBI8-based deployment for zero-CVE image.
+# Usage: docker compose -f docker-compose-rhel.yml up
+#
+# This is an alternative to the default docker-compose.yml which uses
+# Debian-based images. Use this for environments requiring RHEL UBI8
+# base images with hardened security (removed package managers, build
+# tools, and vulnerable system packages).
+# -----------------------------------------------------------------------
+x-superset-user: &superset-user root
+x-superset-volumes: &superset-volumes
+  - ./docker:/app/docker
+  - ./superset:/app/superset
+  - ./superset-frontend:/app/superset-frontend
+  - superset_home:/app/superset_home
+  - ./tests:/app/tests
+x-common-build: &common-build
+  context: .
+  dockerfile: Dockerfile.rhel
+  target: production
+  args:
+    INCLUDE_CHROMIUM: ${INCLUDE_CHROMIUM:-false}
+    INCLUDE_FIREFOX: ${INCLUDE_FIREFOX:-false}
+    BUILD_TRANSLATIONS: ${BUILD_TRANSLATIONS:-false}
+
+services:
+  nginx:
+    env_file:
+      - path: docker/.env # default
+        required: true
+      - path: docker/.env-local # optional override
+        required: false
+    image: nginx:latest
+    container_name: superset_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/templates:/etc/nginx/templates:ro
+
+  redis:
+    image: redis:7
+    container_name: superset_cache
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis:/data
+
+  db:
+    env_file:
+      - path: docker/.env # default
+        required: true
+      - path: docker/.env-local # optional override
+        required: false
+    image: postgres:16
+    container_name: superset_db
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - db_home:/var/lib/postgresql/data
+      - ./docker/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+
+  superset:
+    env_file:
+      - path: docker/.env # default
+        required: true
+      - path: docker/.env-local # optional override
+        required: false
+    build:
+      <<: *common-build
+    container_name: superset_app
+    command: ["/app/docker/docker-bootstrap.sh", "app"]
+    restart: unless-stopped
+    ports:
+      - 8088:8088
+      # When in cypress-mode ->
+      - 8081:8081
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    user: *superset-user
+    depends_on:
+      superset-init:
+        condition: service_completed_successfully
+    volumes: *superset-volumes
+
+  superset-websocket:
+    container_name: superset_websocket
+    build: ./superset-websocket
+    ports:
+      - 8080:8080
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - redis
+    volumes:
+      - ./superset-websocket:/home/superset-websocket
+      - /home/superset-websocket/node_modules
+      - /home/superset-websocket/dist
+      - ./docker/superset-websocket/config.json:/home/superset-websocket/config.json
+    environment:
+      - PORT=8080
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_SSL=false
+
+  superset-init:
+    build:
+      <<: *common-build
+    container_name: superset_init
+    command: ["/app/docker/docker-init.sh"]
+    env_file:
+      - path: docker/.env # default
+        required: true
+      - path: docker/.env-local # optional override
+        required: false
+    depends_on:
+      db:
+        condition: service_started
+      redis:
+        condition: service_started
+    user: *superset-user
+    volumes: *superset-volumes
+    healthcheck:
+      disable: true
+
+  superset-node:
+    build:
+      context: .
+      dockerfile: Dockerfile.rhel
+      target: superset-node
+      args:
+        DEV_MODE: "true"
+        BUILD_TRANSLATIONS: ${BUILD_TRANSLATIONS:-false}
+    environment:
+      BUILD_SUPERSET_FRONTEND_IN_DOCKER: true
+      NPM_RUN_PRUNE: false
+      SCARF_ANALYTICS: "${SCARF_ANALYTICS:-}"
+      superset: "http://superset:8088"
+    ports:
+      - "127.0.0.1:9000:9000"
+    container_name: superset_node
+    command: ["/app/docker/docker-frontend.sh"]
+    env_file:
+      - path: docker/.env # default
+        required: true
+      - path: docker/.env-local # optional override
+        required: false
+    volumes: *superset-volumes
+
+  superset-worker:
+    build:
+      <<: *common-build
+    container_name: superset_worker
+    command: ["/app/docker/docker-bootstrap.sh", "worker"]
+    env_file:
+      - path: docker/.env # default
+        required: true
+      - path: docker/.env-local # optional override
+        required: false
+    environment:
+      CELERYD_CONCURRENCY: 2
+    restart: unless-stopped
+    depends_on:
+      superset-init:
+        condition: service_completed_successfully
+    user: *superset-user
+    volumes: *superset-volumes
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A superset.tasks.celery_app:app inspect ping -d celery@$$HOSTNAME"]
+
+  superset-worker-beat:
+    build:
+      <<: *common-build
+    container_name: superset_worker_beat
+    command: ["/app/docker/docker-bootstrap.sh", "beat"]
+    env_file:
+      - path: docker/.env # default
+        required: true
+      - path: docker/.env-local # optional override
+        required: false
+    restart: unless-stopped
+    depends_on:
+      - superset-worker
+    user: *superset-user
+    volumes: *superset-volumes
+    healthcheck:
+      disable: true
+
+  superset-tests-worker:
+    build:
+      <<: *common-build
+    container_name: superset_tests_worker
+    command: ["/app/docker/docker-bootstrap.sh", "worker"]
+    env_file:
+      - path: docker/.env # default
+        required: true
+      - path: docker/.env-local # optional override
+        required: false
+    profiles:
+      - optional
+    environment:
+      DATABASE_HOST: localhost
+      DATABASE_DB: test
+      REDIS_CELERY_DB: 2
+      REDIS_RESULTS_DB: 3
+      REDIS_HOST: localhost
+      CELERYD_CONCURRENCY: 8
+    network_mode: host
+    depends_on:
+      superset-init:
+        condition: service_completed_successfully
+    user: *superset-user
+    volumes: *superset-volumes
+    healthcheck:
+      test: ["CMD-SHELL", "celery inspect ping -A superset.tasks.celery_app:app -d celery@$$HOSTNAME"]
+
+volumes:
+  superset_home:
+    external: false
+  db_home:
+    external: false
+  redis:
+    external: false
