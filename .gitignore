@@ -135,4 +135,5 @@ scratch/
 .vscode/launch.json
 .vscode/tasks.json
 
-.claude/settings.local.json
+# Untracked personal Claude Code files (e.g. CLAUDE.local.md, commands/my-command.local.md)
+.claude/**/*.local.*
