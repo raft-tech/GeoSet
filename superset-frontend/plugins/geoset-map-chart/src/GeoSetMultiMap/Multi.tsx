@@ -769,7 +769,8 @@ const DeckMulti = (props: DeckMultiProps) => {
     );
   }, [subSlicesLayers, normalizedDeckSlices]);
 
-  // Set layer visibility via options.userVisible (preserves icon atlas for faster toggle)
+  // Mark hidden layers with userVisible: false so deck.gl keeps them alive
+  // but skips rendering. This allows instant toggle-back without reinitializing.
   // flatMap because polygon layers produce multiple LayerStates (fill + stroke)
   const layerStatesWithVisibility = sortedLayers.flatMap(entry => {
     const isVisible = layerVisibility[String(entry.sliceId)] !== false;
