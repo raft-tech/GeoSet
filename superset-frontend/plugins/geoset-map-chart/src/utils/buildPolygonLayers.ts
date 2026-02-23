@@ -9,7 +9,6 @@ export type BinarySegmentData = {
   length: number;
   sourcePositions: Float64Array;
   targetPositions: Float64Array;
-  polygonIndices: Uint32Array;
 };
 
 // Module-level cache: keeps expanded polygon geometry stable across re-renders
@@ -45,11 +44,10 @@ function polygonsToBinarySegments(
 
   const src = new Float64Array(count * 2);
   const tgt = new Float64Array(count * 2);
-  const idx = new Uint32Array(count);
   let offset = 0;
 
-  for (let pi = 0; pi < polygons.length; pi += 1) {
-    for (const ring of polygons[pi].polygon) {
+  for (const poly of polygons) {
+    for (const ring of poly.polygon) {
       const len = ring.length;
       if (len < 2) continue;
       for (let i = 0; i < len - 1; i += 1) {
@@ -58,7 +56,6 @@ function polygonsToBinarySegments(
         src[o2 + 1] = ring[i][1];
         tgt[o2] = ring[i + 1][0];
         tgt[o2 + 1] = ring[i + 1][1];
-        idx[offset] = pi;
         offset += 1;
       }
       // Close the ring if first and last point differ
@@ -70,7 +67,6 @@ function polygonsToBinarySegments(
         src[o2 + 1] = last[1];
         tgt[o2] = first[0];
         tgt[o2 + 1] = first[1];
-        idx[offset] = pi;
         offset += 1;
       }
     }
@@ -80,7 +76,6 @@ function polygonsToBinarySegments(
     length: offset,
     sourcePositions: src.subarray(0, offset * 2),
     targetPositions: tgt.subarray(0, offset * 2),
-    polygonIndices: idx.subarray(0, offset),
   };
 }
 
@@ -128,21 +123,27 @@ export function buildPolygonLayers(
   }
   const hasDisabled = disabledCategories.size > 0;
 
+  // Filter out disabled polygons so deck.gl doesn't allocate GPU resources
+  // for features the user has toggled off. The full polygonData stays cached
+  // upstream (polygonDataCache) so toggling back on is cheap.
+  const filteredPolygonData =
+    hasDisabled && dimension
+      ? polygonData.filter(d => {
+          const cat = d.properties?.[dimension];
+          if (cat == null) return true;
+          const key = String(cat).trim().toLowerCase();
+          return !disabledCategories.has(key);
+        })
+      : polygonData;
+
   // SolidPolygonLayer for fill (no stroke overhead)
   const fillLayer = new SolidPolygonLayer<ExpandedPolygon>({
     id: `polygon-fill-${fd.slice_id}`,
-    data: polygonData,
+    data: filteredPolygonData,
     positionFormat: 'XY',
     filled: filled ?? fd.filled,
     getPolygon: ((d: ExpandedPolygon) => d.polygon) as any,
     getFillColor: (d: ExpandedPolygon): [number, number, number, number] => {
-      if (hasDisabled && dimension) {
-        const cat = d.properties?.[dimension];
-        if (cat != null) {
-          const key = String(cat).trim().toLowerCase();
-          if (disabledCategories.has(key)) return [0, 0, 0, 0];
-        }
-      }
       const c = d.color || fillColorArray;
       return [c[0] ?? 0, c[1] ?? 0, c[2] ?? 0, c[3] ?? 255];
     },
@@ -156,10 +157,17 @@ export function buildPolygonLayers(
 
   // LineLayer with binary data for borders — zero JS object allocation,
   // ~33% fewer GPU vertices than PathLayer, no CPU tessellation.
-  let segments = binarySegmentCache.get(cacheKey);
-  if (!segments) {
-    segments = polygonsToBinarySegments(polygonData);
-    binarySegmentCache.set(cacheKey, segments);
+  // Skip cache when filtering since the polygon set changed.
+  let segments: BinarySegmentData;
+  if (hasDisabled) {
+    segments = polygonsToBinarySegments(filteredPolygonData);
+  } else {
+    let cached = binarySegmentCache.get(cacheKey);
+    if (!cached) {
+      cached = polygonsToBinarySegments(filteredPolygonData);
+      binarySegmentCache.set(cacheKey, cached);
+    }
+    segments = cached;
   }
 
   const strokeLayer = new LineLayer({
@@ -171,23 +179,7 @@ export function buildPolygonLayers(
         getTargetPosition: { value: segments.targetPositions, size: 2 },
       },
     },
-    getColor: hasDisabled
-      ? (
-          _: null,
-          info: { index: number },
-        ): [number, number, number, number] => {
-          if (dimension) {
-            const pi = segments!.polygonIndices[info.index];
-            const poly = polygonData[pi];
-            const cat = poly?.properties?.[dimension];
-            if (cat != null) {
-              const key = String(cat).trim().toLowerCase();
-              if (disabledCategories.has(key)) return [0, 0, 0, 0];
-            }
-          }
-          return strokeColorArray as [number, number, number, number];
-        }
-      : (strokeColorArray as [number, number, number, number]),
+    getColor: strokeColorArray as [number, number, number, number],
     getWidth: lineWidth ?? (fd.lineWidth || 1),
     widthUnits: 'pixels',
     widthScale: 1,
