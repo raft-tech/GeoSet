@@ -234,6 +234,13 @@ We welcome contributions to GeoSet! Here's how to get started:
 - [Creating Viz Plugins](https://superset.apache.org/docs/contributing/creating-viz-plugins/)
 - [Superset API Reference](https://superset.apache.org/docs/rest-api)
 
+## Versioning
+
+GeoSet follows [Semantic Versioning](https://semver.org/). The current version and release history are documented in:
+
+- [GEOSET/VERSION.md](GEOSET/VERSION.md) — current version and versioning policy
+- [GEOSET/CHANGELOG.md](GEOSET/CHANGELOG.md) — release history
+
 ## License
 
 GeoSet is licensed under the [Apache License 2.0](https://opensource.org/license/apache-2-0). See [LICENSE](LICENSE.txt) for the full text.
