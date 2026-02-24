@@ -29,11 +29,25 @@
 #   docker build -f Dockerfile.rhel --target production -t superset-rhel .
 ######################################################################
 
+######################################################################
+# Node stage to deal with static asset construction
+# Using Red Hat UBI8 Node.js image
+######################################################################
+
 # If BUILDPLATFORM is null, set it to 'amd64' (or leave as is otherwise).
 ARG BUILDPLATFORM=${BUILDPLATFORM:-amd64}
 
 # Include translations in the final build
 ARG BUILD_TRANSLATIONS="false"
+
+######################################################################
+# PostgreSQL stage to get ecpg utility (not available in RHEL repos)
+######################################################################
+FROM rockylinux:8 AS postgres-ecpg
+RUN dnf install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-8-$(uname -m)/pgdg-redhat-repo-latest.noarch.rpm \
+    && dnf --nogpgcheck install -y postgresql18-ecpg-devel \
+    && dnf clean all \
+    && rm -rf /var/cache/dnf/*
 
 ######################################################################
 # superset-node-ci used as a base for building frontend assets and CI
@@ -137,14 +151,10 @@ FROM python-base AS python-translation-compiler
 ARG BUILD_TRANSLATIONS
 ENV BUILD_TRANSLATIONS=${BUILD_TRANSLATIONS}
 
-# Install build tools needed for Python package compilation
-RUN dnf install -y gcc gcc-c++ make kernel-headers glibc-headers glibc-devel libxcrypt-devel binutils libstdc++-devel \
-    && dnf clean all
-
-# Install Python dependencies
+# Install Python dependencies using docker/pip-install.sh
 COPY requirements/translations.txt requirements/
 RUN --mount=type=cache,target=/root/.cache/uv \
-    /app/docker/pip-install.sh -r requirements/translations.txt
+    /app/docker/pip-install.sh --requires-build-essential -r requirements/translations.txt
 
 COPY superset/translations/ /app/translations_mo/
 RUN if [ "$BUILD_TRANSLATIONS" = "true" ]; then \
@@ -232,18 +242,13 @@ FROM python-common AS production
 # Build version injected at build time
 ARG BUILD_VERSION="6.0.0"
 
-# Install build tools needed for Python package compilation
-RUN dnf install -y gcc gcc-c++ make kernel-headers glibc-headers glibc-devel libxcrypt-devel binutils libstdc++-devel \
-    && dnf clean all
+# Copy ecpg utility from postgres stage
+COPY --from=postgres-ecpg /usr/pgsql-18/bin/ecpg /usr/bin/ecpg
 
-# Install Python dependencies
-COPY requirements/base.txt requirements/
+# Install Python dependencies using docker/pip-install.sh
+COPY requirements/development.txt requirements/
 RUN --mount=type=cache,target=${SUPERSET_HOME}/.cache/uv \
-    /app/docker/pip-install.sh -r requirements/base.txt
-
-# Explicitly install postgres support
-RUN --mount=type=cache,target=${SUPERSET_HOME}/.cache/uv \
-    uv pip install -e .[postgres]
+    /app/docker/pip-install.sh --requires-build-essential -r requirements/development.txt
 
 # Upgrade packages with known CVEs to patched versions
 RUN uv pip install --no-cache --reinstall \
@@ -265,6 +270,7 @@ RUN rpm -e --nodeps nodejs nodejs-docs nodejs-full-i18n npm 2>/dev/null || true 
     && rpm -e --nodeps dnf dnf-data dnf-plugins-core dnf-plugin-subscription-manager \
                        python3-dnf python3-dnf-plugins-core python3-libdnf libdnf \
                        yum gnupg2 gnupg2-smime 2>/dev/null || true \
+    && rpm -e --nodeps tar 2>/dev/null || true \
     && rpm -qa | grep -i brotli | xargs -r rpm -e --nodeps 2>/dev/null || true \
     && rm -rf /var/cache/dnf/* /var/cache/yum/* /var/lib/dnf/* /var/lib/rpm/__db* \
     && find / -name 'libbrotli*.so*' -delete 2>/dev/null || true
