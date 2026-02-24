@@ -74,6 +74,7 @@ import {
 import { handleSchemaCheck } from '../../utils/migrationApi';
 import MeasureOverlay, { MeasureState } from '../../components/MeasureOverlay';
 import { Coordinate } from '../../utils/measureDistance';
+import { setLiveViewport } from '../../utils/liveViewportStore';
 import ClickPopupBox, {
   ClickedFeatureInfo,
 } from '../../components/ClickPopupBox';
@@ -331,41 +332,7 @@ export function getLayer(
   if (isMetric) {
     sortedFeatures = processedFeatures;
   } else {
-    // Apply category visibility: hide features whose category is disabled
-    // by setting color/stroke to transparent [0,0,0,0].
-    const visibleFeatures = processedFeatures.map(f => {
-      const categoryRaw =
-        (f as any).categoryName ?? f.properties?.[dimension as string];
-      if (categoryRaw == null) return f;
-
-      const lookupKey =
-        typeof categoryRaw === 'string'
-          ? categoryRaw.trim().toLowerCase()
-          : String(categoryRaw).trim().toLowerCase();
-
-      const catState = (categories as Record<string, any>)[lookupKey];
-      if (catState && catState.enabled === false) {
-        const cc = [0, 0, 0, 0];
-        return {
-          ...f,
-          color: cc,
-          strokeColor: cc,
-          properties: {
-            ...f.properties,
-            fillColor: cc,
-            strokeColor: cc,
-          },
-        };
-      }
-      return f;
-    });
-
-    // Sort features by category order for z-index rendering.
-    // Categories earlier in the JSON config render on top (last in draw order).
-    const categoryKeys = Object.keys(categories);
-    const UNCATEGORIZED_INDEX = Number.MAX_SAFE_INTEGER;
-    const categoryIndexMap = new Map(categoryKeys.map((k, i) => [k, i]));
-
+    // Helper to normalize category keys for lookup
     const getCategoryKey = (f: GeoJsonFeature): string | null => {
       const categoryRaw =
         (f as any).categoryName ?? f.properties?.[dimension as string];
@@ -374,6 +341,29 @@ export function getLayer(
         ? categoryRaw.trim().toLowerCase()
         : String(categoryRaw).trim().toLowerCase();
     };
+
+    // Filter out features whose category is disabled (instead of making
+    // them transparent) so deck.gl doesn't allocate GPU resources for them.
+    const disabledCategoryKeys = new Set<string>(
+      Object.entries(categories)
+        .filter(([, cat]) => cat.enabled === false)
+        .map(([key]) => key),
+    );
+
+    const visibleFeatures =
+      disabledCategoryKeys.size > 0
+        ? processedFeatures.filter(f => {
+            const key = getCategoryKey(f);
+            if (key == null) return true; // keep uncategorized
+            return !disabledCategoryKeys.has(key);
+          })
+        : processedFeatures;
+
+    // Sort features by category order for z-index rendering.
+    // Categories earlier in the JSON config render on top (last in draw order).
+    const categoryKeys = Object.keys(categories);
+    const UNCATEGORIZED_INDEX = Number.MAX_SAFE_INTEGER;
+    const categoryIndexMap = new Map(categoryKeys.map((k, i) => [k, i]));
 
     sortedFeatures = [...visibleFeatures].sort((a, b) => {
       const keyA = getCategoryKey(a);
@@ -391,6 +381,9 @@ export function getLayer(
       return idxB - idxA;
     });
   }
+
+  // All features filtered out — nothing to render
+  if (!sortedFeatures.length) return null;
 
   // validate which layer type to render
   let layerType = requestedLayerType;
@@ -412,14 +405,9 @@ export function getLayer(
           let iconName = pointType.replace('-icon', '');
           if (!iconName) iconName = 'circle';
 
-          // Filter out disabled features for IconLayer to avoid transparent icon artifacts
-          const iconFeatures = sortedFeatures.filter(
-            (f: any) => !f.color || f.color[3] !== 0,
-          );
-
           return new IconLayer({
-            id: `icon-layer-${fd.slice_id}-${iconFeatures.length}`,
-            data: iconFeatures as Feature<Geometry, GeoJsonProperties>[],
+            id: `icon-layer-${fd.slice_id}-${sortedFeatures.length}`,
+            data: sortedFeatures as Feature<Geometry, GeoJsonProperties>[],
             getIconColor: (f: any) => f.color,
             getPosition: (f: any) => f.geometry?.coordinates,
             getIcon: (f: any) => {
@@ -436,9 +424,9 @@ export function getLayer(
             sizeScale: 2,
             sizeUnits: 'pixels',
             updateTriggers: {
-              getIcon: [iconName, fillColorArray, iconFeatures.length],
-              getIconColor: [iconFeatures.length],
-              getPosition: [iconFeatures.length],
+              getIcon: [iconName, fillColorArray, sortedFeatures.length],
+              getIconColor: [sortedFeatures.length],
+              getPosition: [sortedFeatures.length],
             },
             loadOptions: {
               imagebitmap: {
@@ -574,10 +562,13 @@ export function getLayer(
     case 'Polygon': {
       // Cache expanded polygons keyed on payload.data, which stays referentially
       // stable when only categories/colors change (no new data fetch).
+      // Cache the FULL (unfiltered) expanded polygons so that toggling
+      // categories on/off always has the complete set available.
+      // buildPolygonLayers handles category filtering downstream.
       let polygonData = polygonDataCache.get(payload.data);
       if (!polygonData) {
         polygonData = expandPolygonFeatures(
-          sortedFeatures as Feature<Geometry, GeoJsonProperties>[],
+          processedFeatures as Feature<Geometry, GeoJsonProperties>[],
         );
         polygonDataCache.set(payload.data, polygonData);
       }
@@ -1021,6 +1012,10 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
   }, [measureState.isActive]);
 
   const viewport: Viewport = useMemo(() => {
+    // Static viewport takes precedence — use the saved viewport as-is.
+    if (formData.enableStaticViewport) {
+      return props.viewport;
+    }
     if (!formData.autozoom || !payload?.data?.features?.length) {
       return props.viewport;
     }
@@ -1031,12 +1026,25 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
       height,
     );
   }, [
+    formData.enableStaticViewport,
     formData.autozoom,
     height,
     payload?.data?.features,
     props.viewport,
     width,
   ]);
+
+  // Write live viewport to module-level store (outside Redux) so the actual
+  // viewport control value is only changed by explicit user Save actions.
+  // ViewportControl reads the store on-demand via getLiveViewport.
+  const viewportSetControlValue = useCallback(
+    (control: string, value: JsonValue) => {
+      if (control === 'viewport') {
+        setLiveViewport(value as Viewport);
+      }
+    },
+    [],
+  );
 
   const visualConfig = useMemo(
     () => ({
@@ -1156,6 +1164,7 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
         mapboxApiAccessToken={effectiveMapboxKey || 'no-token'}
         viewport={viewport}
         initialViewport={viewport}
+        setControlValue={viewportSetControlValue}
         layerStates={layerStates}
         mapStyle={mapStyle || formData.mapbox_style}
         height={mapHeight}
