@@ -51,6 +51,7 @@ import { getGeometryType } from '../utils';
 import { fetchMapboxApiKey, getCachedMapboxApiKey } from '../utils/mapboxApi';
 import { multiChartMigration } from '../utils/migrationApi';
 import ClickPopupBox, { ClickedFeatureInfo } from '../components/ClickPopupBox';
+import { setLiveViewport } from '../utils/liveViewportStore';
 // Utility to convert snake_case or camelCase to Title Case
 const toTitleCase = (str: string) =>
   str
@@ -769,7 +770,8 @@ const DeckMulti = (props: DeckMultiProps) => {
     );
   }, [subSlicesLayers, normalizedDeckSlices]);
 
-  // Set layer visibility via options.userVisible (preserves icon atlas for faster toggle)
+  // Mark hidden layers with userVisible: false so deck.gl keeps them alive
+  // but skips rendering. This allows instant toggle-back without reinitializing.
   // flatMap because polygon layers produce multiple LayerStates (fill + stroke)
   const layerStatesWithVisibility = sortedLayers.flatMap(entry => {
     const isVisible = layerVisibility[String(entry.sliceId)] !== false;
@@ -850,6 +852,18 @@ const DeckMulti = (props: DeckMultiProps) => {
     initialAutozoomViewportRef.current = calculatedViewport;
     return calculatedViewport;
   }, [sortedLayers, props.viewport, width, height, props.enableStaticViewport]);
+
+  // Write live viewport to module-level store (outside Redux) so the actual
+  // viewport control value is only changed by explicit user Save actions.
+  // ViewportControl reads the store on-demand via getLiveViewport.
+  const viewportSetControlValue = useCallback(
+    (control: string, value: JsonValue) => {
+      if (control === 'viewport') {
+        setLiveViewport(value as Viewport);
+      }
+    },
+    [],
+  );
 
   // Map control handlers - must be defined before any conditional returns
   const handleZoomIn = useCallback(() => {
@@ -986,6 +1000,7 @@ const DeckMulti = (props: DeckMultiProps) => {
         mapboxApiAccessToken={effectiveMapboxKey || 'no-token'}
         viewport={viewport}
         initialViewport={viewport}
+        setControlValue={viewportSetControlValue}
         layerStates={layerStatesWithVisibility}
         mapStyle={mapStyle}
         height={height}
