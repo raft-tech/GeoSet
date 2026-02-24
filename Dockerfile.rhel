@@ -6,19 +6,22 @@
 # known CVEs in the final production layer.
 #
 # BUILD STAGES:
-#   1. superset-node-ci  — UBI8 Node.js 20 image. Installs npm deps
+#   1. postgres-ecpg     — Rocky Linux 8 stage that grabs the ecpg
+#                          utility (PostgreSQL ECPG dev tools), which
+#                          isn't available in RHEL UBI repos.
+#   2. superset-node-ci  — UBI8 Node.js 20 image. Installs npm deps
 #                          (skipped in dev mode).
-#   2. superset-node     — Extends superset-node-ci. Runs webpack
+#   3. superset-node     — Extends superset-node-ci. Runs webpack
 #                          build and compiles frontend translations.
-#   3. python-base       — UBI8 Python 3.11. Sets up superset user,
+#   4. python-base       — UBI8 Python 3.11. Sets up superset user,
 #                          home dir, and installs uv (pip replacement).
-#   4. python-translation-compiler
+#   5. python-translation-compiler
 #                        — Compiles .po translation files to .mo.
-#   5. python-common     — Main app layer. Installs system libs
+#   6. python-common     — Main app layer. Installs system libs
 #                          (SASL, PostgreSQL, LDAP), copies built
 #                          frontend assets and translations, sets up
 #                          entrypoints and healthcheck.
-#   6. production        — Final layer. Installs Python deps from
+#   7. production        — Final layer. Installs Python deps from
 #                          requirements/base.txt, pins CVE-patched
 #                          packages, removes build tools / package
 #                          managers / vulnerable OS packages, and
