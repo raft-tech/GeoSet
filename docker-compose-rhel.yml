@@ -1,0 +1,135 @@
+# -----------------------------------------------------------------------
+# RHEL UBI8-based lightweight docker-compose.
+# Based on docker-compose-light.yml — no Redis, nginx, websocket, or workers.
+# To extend with full-stack services (Redis, Celery workers, nginx, websocket),
+# use docker-compose.yml and add "dockerfile: Dockerfile.rhel" to its
+# x-common-build section so all services build from the RHEL image.
+#
+# Usage: docker compose -f docker-compose-rhel.yml up
+# Access at: http://localhost:9001 (or NODE_PORT if specified)
+#
+# RUNNING TESTS:
+#   docker compose -f docker-compose-rhel.yml run --rm pytest-runner pytest tests/unit_tests/
+#   docker compose -f docker-compose-rhel.yml run --rm pytest-runner pytest -v -s -x tests/
+#   docker compose -f docker-compose-rhel.yml run --rm -e FORCE_RELOAD=true pytest-runner pytest tests/
+# -----------------------------------------------------------------------
+x-superset-user: &superset-user root
+x-superset-volumes: &superset-volumes
+  - ./docker:/app/docker
+  - ./superset:/app/superset
+  - ./superset-frontend:/app/superset-frontend
+  - superset_home_rhel:/app/superset_home
+  - ./tests:/app/tests
+x-common-build: &common-build
+  context: .
+  dockerfile: Dockerfile.rhel
+  target: production
+  args:
+    INCLUDE_CHROMIUM: ${INCLUDE_CHROMIUM:-false}
+    INCLUDE_FIREFOX: ${INCLUDE_FIREFOX:-false}
+    BUILD_TRANSLATIONS: ${BUILD_TRANSLATIONS:-false}
+
+services:
+  db:
+    env_file:
+      - path: docker/.env
+        required: true
+      - path: docker/.env-local
+        required: false
+    image: postgres:16
+    restart: unless-stopped
+    volumes:
+      - db_home:/var/lib/postgresql/data
+      - ./docker/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+    command: postgres -c max_connections=200
+
+  superset-rhel:
+    env_file:
+      - path: docker/.env
+        required: true
+      - path: docker/.env-local
+        required: false
+    build:
+      <<: *common-build
+    command: ["/app/docker/docker-bootstrap.sh", "app"]
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    user: *superset-user
+    depends_on:
+      superset-init-rhel:
+        condition: service_completed_successfully
+    volumes: *superset-volumes
+    environment:
+      SUPERSET_CONFIG_PATH: /app/docker/pythonpath_dev/superset_config_docker_light.py
+
+  superset-init-rhel:
+    build:
+      <<: *common-build
+    command: ["/app/docker/docker-init.sh"]
+    env_file:
+      - path: docker/.env
+        required: true
+      - path: docker/.env-local
+        required: false
+    depends_on:
+      db:
+        condition: service_started
+    user: *superset-user
+    volumes: *superset-volumes
+    environment:
+      SUPERSET_CONFIG_PATH: /app/docker/pythonpath_dev/superset_config_docker_light.py
+    healthcheck:
+      disable: true
+
+  superset-node-rhel:
+    build:
+      context: .
+      dockerfile: Dockerfile.rhel
+      target: superset-node
+      args:
+        DEV_MODE: "true"
+        BUILD_TRANSLATIONS: ${BUILD_TRANSLATIONS:-false}
+    environment:
+      BUILD_SUPERSET_FRONTEND_IN_DOCKER: true
+      NPM_RUN_PRUNE: false
+      SCARF_ANALYTICS: "${SCARF_ANALYTICS:-}"
+      superset: "http://superset-rhel:8088"
+    ports:
+      - "127.0.0.1:${NODE_PORT:-9001}:9000"
+    command: ["/app/docker/docker-frontend.sh"]
+    env_file:
+      - path: docker/.env
+        required: true
+      - path: docker/.env-local
+        required: false
+    volumes: *superset-volumes
+
+  pytest-runner:
+    build:
+      <<: *common-build
+    entrypoint: ["/app/docker/docker-pytest-entrypoint.sh"]
+    env_file:
+      - path: docker/.env
+        required: true
+      - path: docker/.env-local
+        required: false
+    profiles:
+      - test
+    depends_on:
+      db:
+        condition: service_started
+    user: *superset-user
+    volumes: *superset-volumes
+    environment:
+      DATABASE_DB: test
+      POSTGRES_DB: test
+      SUPERSET__SQLALCHEMY_DATABASE_URI: postgresql+psycopg2://superset:superset@db:5432/test
+      SUPERSET_CONFIG: superset_test_config_light
+      PYTHONPATH: /app/pythonpath:/app/docker/pythonpath_dev:/app
+
+volumes:
+  superset_home_rhel:
+    external: false
+  db_home:
+    external: false
