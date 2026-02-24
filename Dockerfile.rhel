@@ -1,0 +1,285 @@
+######################################################################
+# Dockerfile.rhel — RHEL UBI8 zero-CVE GeoSet image
+#
+# A hardened alternative to the default Debian-based Dockerfile with
+# 0 high or critical CVEs present within the final image.
+#
+# BUILD STAGES:
+#   1. postgres-ecpg     — Rocky Linux 8 stage that grabs the ecpg
+#                          utility (PostgreSQL ECPG dev tools), which
+#                          isn't available in RHEL UBI repos.
+#   2. superset-node-ci  — UBI8 Node.js 20 image. Installs npm deps
+#                          (skipped in dev mode).
+#   3. superset-node     — Extends superset-node-ci. Runs webpack
+#                          build and compiles frontend translations.
+#   4. python-base       — UBI8 Python 3.11. Sets up superset user,
+#                          home dir, and installs uv (pip replacement).
+#   5. python-translation-compiler
+#                        — Compiles .po translation files to .mo.
+#   6. python-common     — Main app layer. Installs system libs
+#                          (SASL, PostgreSQL, LDAP), copies built
+#                          frontend assets and translations, sets up
+#                          entrypoints and healthcheck.
+#   7. production        — Final layer. Installs Python deps from
+#                          requirements/base.txt, pins CVE-patched
+#                          packages, removes build tools / package
+#                          managers / vulnerable OS packages, and
+#                          compiles .pyc bytecode.
+#
+# USAGE:
+#   docker compose -f docker-compose-rhel.yml up
+#   docker build -f Dockerfile.rhel --target production -t superset-rhel .
+######################################################################
+
+######################################################################
+# Node stage to deal with static asset construction
+# Using Red Hat UBI8 Node.js image
+######################################################################
+
+# If BUILDPLATFORM is null, set it to 'amd64' (or leave as is otherwise).
+ARG BUILDPLATFORM=${BUILDPLATFORM:-amd64}
+
+# Include translations in the final build
+ARG BUILD_TRANSLATIONS="false"
+
+######################################################################
+# PostgreSQL stage to get ecpg utility (not available in RHEL repos)
+######################################################################
+FROM rockylinux:8 AS postgres-ecpg
+RUN dnf install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-8-$(uname -m)/pgdg-redhat-repo-latest.noarch.rpm \
+    && dnf --nogpgcheck install -y postgresql18-ecpg-devel \
+    && dnf clean all \
+    && rm -rf /var/cache/dnf/*
+
+######################################################################
+# superset-node-ci used as a base for building frontend assets and CI
+######################################################################
+FROM --platform=${BUILDPLATFORM} registry.access.redhat.com/ubi8/nodejs-20:latest AS superset-node-ci
+ARG BUILD_TRANSLATIONS
+ENV BUILD_TRANSLATIONS=${BUILD_TRANSLATIONS}
+ARG DEV_MODE="false"           # Skip frontend build in dev mode
+ENV DEV_MODE=${DEV_MODE}
+
+USER root
+
+COPY docker/ /app/docker/
+# Arguments for build configuration
+ARG NPM_BUILD_CMD="build"
+
+# Install system dependencies required for node-gyp
+RUN /app/docker/dnf-install.sh gcc gcc-c++ make python3 zstd
+
+# Define environment variables for frontend build
+ENV BUILD_CMD=${NPM_BUILD_CMD} \
+    PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+
+# Run the frontend memory monitoring script
+RUN /app/docker/frontend-mem-nag.sh
+
+WORKDIR /app/superset-frontend
+
+# Create necessary folders to avoid errors in subsequent steps
+RUN mkdir -p /app/superset/static/assets \
+             /app/superset/translations
+
+# Mount package files and install dependencies if not in dev mode
+# NOTE: we mount packages and plugins as they are referenced in package.json as workspaces
+# ideally we'd COPY only their package.json. Here npm ci will be cached as long
+# as the full content of these folders don't change, yielding a decent cache reuse rate.
+# Note that it's not possible to selectively COPY or mount using blobs.
+RUN --mount=type=bind,source=./superset-frontend/package.json,target=./package.json \
+    --mount=type=bind,source=./superset-frontend/package-lock.json,target=./package-lock.json \
+    --mount=type=cache,target=/root/.cache \
+    --mount=type=cache,target=/root/.npm \
+    if [ "$DEV_MODE" = "false" ]; then \
+        npm ci; \
+    else \
+        echo "Skipping 'npm ci' in dev mode"; \
+    fi
+
+# Runs the webpack build process
+COPY superset-frontend /app/superset-frontend
+
+######################################################################
+# superset-node is used for compiling frontend assets
+######################################################################
+FROM superset-node-ci AS superset-node
+
+# Build the frontend if not in dev mode
+RUN --mount=type=cache,target=/root/.npm \
+    if [ "$DEV_MODE" = "false" ]; then \
+        echo "Running 'npm run ${BUILD_CMD}'"; \
+        npm run ${BUILD_CMD}; \
+    else \
+        echo "Skipping 'npm run ${BUILD_CMD}' in dev mode"; \
+    fi;
+
+# Copy translation files
+COPY superset/translations /app/superset/translations
+
+# Build translations if enabled, then cleanup localization files
+RUN if [ "$BUILD_TRANSLATIONS" = "true" ]; then \
+        npm run build-translation; \
+    fi; \
+    rm -rf /app/superset/translations/*/*/*.po; \
+    rm -rf /app/superset/translations/*/*/*.mo;
+
+
+######################################################################
+# Base python layer using Red Hat UBI8
+######################################################################
+FROM registry.access.redhat.com/ubi8/python-311:latest AS python-base
+
+USER root
+
+ARG SUPERSET_HOME="/app/superset_home"
+ENV SUPERSET_HOME=${SUPERSET_HOME}
+
+RUN mkdir -p $SUPERSET_HOME
+RUN useradd --user-group -d ${SUPERSET_HOME} -m --no-log-init --shell /bin/bash superset \
+    && chmod -R 1777 $SUPERSET_HOME \
+    && chown -R superset:superset $SUPERSET_HOME
+
+# Some bash scripts needed throughout the layers
+COPY --chmod=755 docker/*.sh /app/docker/
+
+RUN pip install --no-cache-dir --upgrade uv
+
+######################################################################
+# Python translation compiler layer
+######################################################################
+FROM python-base AS python-translation-compiler
+
+ARG BUILD_TRANSLATIONS
+ENV BUILD_TRANSLATIONS=${BUILD_TRANSLATIONS}
+
+# Install Python dependencies using docker/pip-install.sh
+COPY requirements/translations.txt requirements/
+RUN --mount=type=cache,target=/root/.cache/uv \
+    /app/docker/pip-install.sh --requires-build-essential -r requirements/translations.txt
+
+COPY superset/translations/ /app/translations_mo/
+RUN if [ "$BUILD_TRANSLATIONS" = "true" ]; then \
+        pybabel compile -d /app/translations_mo | true; \
+    fi; \
+    rm -f /app/translations_mo/*/*/*.po; \
+    rm -f /app/translations_mo/*/*/*.json;
+
+######################################################################
+# Python APP common layer
+######################################################################
+FROM python-base AS python-common
+
+ENV SUPERSET_HOME="/app/superset_home" \
+    HOME="/app/superset_home" \
+    SUPERSET_ENV="production" \
+    FLASK_APP="superset.app:create_app()" \
+    PYTHONPATH="/app/pythonpath" \
+    SUPERSET_PORT="8088"
+
+# Copy the entrypoints, make them executable in userspace
+COPY --chmod=755 docker/entrypoints /app/docker/entrypoints
+
+WORKDIR /app
+# Set up necessary directories and user
+RUN mkdir -p \
+      ${PYTHONPATH} \
+      superset/static \
+      requirements \
+      superset-frontend \
+      apache_superset.egg-info \
+      requirements \
+    && touch superset/static/version_info.json
+
+# Install Playwright and optionally setup headless browsers
+ARG INCLUDE_CHROMIUM="false"
+ARG INCLUDE_FIREFOX="false"
+RUN --mount=type=cache,target=${SUPERSET_HOME}/.cache/uv \
+    if [ "$INCLUDE_CHROMIUM" = "true" ] || [ "$INCLUDE_FIREFOX" = "true" ]; then \
+        uv pip install playwright && \
+        playwright install-deps && \
+        if [ "$INCLUDE_CHROMIUM" = "true" ]; then playwright install chromium; fi && \
+        if [ "$INCLUDE_FIREFOX" = "true" ]; then playwright install firefox; fi; \
+    else \
+        echo "Skipping browser installation"; \
+    fi
+
+# Copy required files for Python build
+COPY pyproject.toml setup.py MANIFEST.in README.md ./
+COPY superset-frontend/package.json superset-frontend/
+COPY scripts/check-env.py scripts/
+
+# keeping for backward compatibility
+COPY --chmod=755 ./docker/entrypoints/run-server.sh /usr/bin/
+
+# Install RHEL packages equivalent to Debian libs
+RUN /app/docker/dnf-install.sh \
+      curl \
+      cyrus-sasl-devel \
+      cyrus-sasl-gssapi \
+      postgresql-devel \
+      openldap-devel
+
+# Copy compiled things from previous stages
+COPY --from=superset-node /app/superset/static/assets superset/static/assets
+
+# TODO, when the next version comes out, use --exclude superset/translations
+COPY superset superset
+# TODO in the meantime, remove the .po files
+RUN rm superset/translations/*/*/*.po
+
+# Merging translations from backend and frontend stages
+COPY --from=superset-node /app/superset/translations superset/translations
+COPY --from=python-translation-compiler /app/translations_mo superset/translations
+
+HEALTHCHECK CMD /app/docker/docker-healthcheck.sh
+CMD ["/app/docker/entrypoints/run-server.sh"]
+EXPOSE ${SUPERSET_PORT}
+
+######################################################################
+# Final production image
+######################################################################
+FROM python-common AS production
+
+# Build version injected at build time
+ARG BUILD_VERSION="6.0.0"
+
+# Copy ecpg utility from postgres stage
+COPY --from=postgres-ecpg /usr/pgsql-18/bin/ecpg /usr/bin/ecpg
+
+# Install Python dependencies using docker/pip-install.sh
+COPY requirements/development.txt requirements/
+RUN --mount=type=cache,target=${SUPERSET_HOME}/.cache/uv \
+    /app/docker/pip-install.sh --requires-build-essential -r requirements/development.txt
+
+# Upgrade packages with known CVEs to patched versions
+RUN uv pip install --no-cache --reinstall \
+        "brotli>=1.2.0" \
+        "cryptography>=46.0.5" \
+        "pillow>=12.1.1" \
+        "pyasn1>=0.6.2" \
+        "urllib3>=2.6.3" \
+        "setuptools>=78.1.1"
+
+# Remove vulnerable setuptools from system Python (not used by app)
+RUN rm -rf /usr/lib/python3.11/site-packages/setuptools-65.5.1* \
+           /usr/lib/python3.11/site-packages/setuptools \
+           /usr/lib/python3.11/site-packages/pkg_resources \
+    || true
+
+# Remove OS packages with CVEs and package managers not needed at runtime
+RUN rpm -e --nodeps nodejs nodejs-docs nodejs-full-i18n npm 2>/dev/null || true \
+    && rpm -e --nodeps dnf dnf-data dnf-plugins-core dnf-plugin-subscription-manager \
+                       python3-dnf python3-dnf-plugins-core python3-libdnf libdnf \
+                       yum gnupg2 gnupg2-smime 2>/dev/null || true \
+    && rpm -e --nodeps tar 2>/dev/null || true \
+    && rpm -qa | grep -i brotli | xargs -r rpm -e --nodeps 2>/dev/null || true \
+    && rm -rf /var/cache/dnf/* /var/cache/yum/* /var/lib/dnf/* /var/lib/rpm/__db* \
+    && find / -name 'libbrotli*.so*' -delete 2>/dev/null || true
+
+RUN python -m compileall /app/superset
+
+# Write version info at build time
+RUN printf '{"GIT_SHA":"","version":"%s"}' "$BUILD_VERSION" > /app/superset/static/version_info.json
+
+USER superset
