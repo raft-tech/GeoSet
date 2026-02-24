@@ -27,7 +27,7 @@
 #                          compiles .pyc bytecode.
 #
 # USAGE:
-#   docker compose -f docker-compose-rhel.yml up
+#   docker compose -f docker-compose-geoset.yml up
 #   docker build -f Dockerfile.rhel --target production -t superset-rhel .
 ######################################################################
 

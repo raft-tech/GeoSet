@@ -19,11 +19,9 @@ x-superset-volumes: &superset-volumes
   - ./tests:/app/tests
 x-common-build: &common-build
   context: .
-  target: ${SUPERSET_BUILD_TARGET:-dev}
-  cache_from:
-    - apache/superset-cache:3.10-slim-bookworm
+  dockerfile: Dockerfile.rhel
+  target: production
   args:
-    DEV_MODE: "true"
     INCLUDE_CHROMIUM: ${INCLUDE_CHROMIUM:-false}
     INCLUDE_FIREFOX: ${INCLUDE_FIREFOX:-false}
     BUILD_TRANSLATIONS: ${BUILD_TRANSLATIONS:-false}
@@ -137,6 +135,7 @@ services:
   superset-node-geoset:
     build:
       context: .
+      dockerfile: Dockerfile.rhel
       target: superset-node
       args:
         DEV_MODE: "true"
