@@ -171,8 +171,9 @@ docker compose up -d
 ![Metric Gradient Max Wind Speed](docs/static/images/wind-metrics-chart.png)
 
 <!-- markdownlint-disable MD033 MD045 -->
-<p align="center">
-  <img src="docs/static/images/multi-legend-toggling.gif" alt="Multi Legend Toggling">
+<p>
+  <img src="docs/static/images/multi-legend-toggling.gif" alt="Multi Legend Toggling" width="49%">
+  <img src="docs/static/images/static-viewport-functionality.gif" alt="Static Viewport Functionality" width="49%">
 </p>
 <p>
   <img src="docs/static/images/ruler-tool-in-action.gif" alt="Ruler Tool in Action" width="49%">
