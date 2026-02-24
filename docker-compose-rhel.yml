@@ -3,10 +3,7 @@
 # Based on docker-compose-light.yml — no Redis, nginx, websocket, or workers.
 #
 # Usage: docker compose -f docker-compose-rhel.yml up
-#
-# RUNNING MULTIPLE INSTANCES:
-# - Use different project names: docker compose -p project1 -f docker-compose-rhel.yml up
-# - Use different NODE_PORT values: NODE_PORT=9002 docker compose -p project2 -f docker-compose-rhel.yml up
+# Access at: http://localhost:9001 (or NODE_PORT if specified)
 #
 # RUNNING TESTS:
 #   docker compose -f docker-compose-rhel.yml run --rm pytest-runner pytest tests/unit_tests/
@@ -30,7 +27,7 @@ x-common-build: &common-build
     BUILD_TRANSLATIONS: ${BUILD_TRANSLATIONS:-false}
 
 services:
-  db-rhel:
+  db:
     env_file:
       - path: docker/.env
         required: true
@@ -39,10 +36,8 @@ services:
     image: postgres:16
     restart: unless-stopped
     volumes:
-      - db_home_rhel:/var/lib/postgresql/data
+      - db_home:/var/lib/postgresql/data
       - ./docker/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
-    environment:
-      POSTGRES_DB: superset_rhel
     command: postgres -c max_connections=200
 
   superset-rhel:
@@ -63,13 +58,6 @@ services:
         condition: service_completed_successfully
     volumes: *superset-volumes
     environment:
-      DATABASE_HOST: db-rhel
-      DATABASE_DB: superset_rhel
-      POSTGRES_DB: superset_rhel
-      EXAMPLES_HOST: db-rhel
-      EXAMPLES_DB: superset_rhel
-      EXAMPLES_USER: superset
-      EXAMPLES_PASSWORD: superset
       SUPERSET_CONFIG_PATH: /app/docker/pythonpath_dev/superset_config_docker_light.py
 
   superset-init-rhel:
@@ -82,18 +70,11 @@ services:
       - path: docker/.env-local
         required: false
     depends_on:
-      db-rhel:
+      db:
         condition: service_started
     user: *superset-user
     volumes: *superset-volumes
     environment:
-      DATABASE_HOST: db-rhel
-      DATABASE_DB: superset_rhel
-      POSTGRES_DB: superset_rhel
-      EXAMPLES_HOST: db-rhel
-      EXAMPLES_DB: superset_rhel
-      EXAMPLES_USER: superset
-      EXAMPLES_PASSWORD: superset
       SUPERSET_CONFIG_PATH: /app/docker/pythonpath_dev/superset_config_docker_light.py
     healthcheck:
       disable: true
@@ -133,20 +114,19 @@ services:
     profiles:
       - test
     depends_on:
-      db-rhel:
+      db:
         condition: service_started
     user: *superset-user
     volumes: *superset-volumes
     environment:
-      DATABASE_HOST: db-rhel
       DATABASE_DB: test
       POSTGRES_DB: test
-      SUPERSET__SQLALCHEMY_DATABASE_URI: postgresql+psycopg2://superset:superset@db-rhel:5432/test
+      SUPERSET__SQLALCHEMY_DATABASE_URI: postgresql+psycopg2://superset:superset@db:5432/test
       SUPERSET_CONFIG: superset_test_config_light
       PYTHONPATH: /app/pythonpath:/app/docker/pythonpath_dev:/app
 
 volumes:
   superset_home_rhel:
     external: false
-  db_home_rhel:
+  db_home:
     external: false

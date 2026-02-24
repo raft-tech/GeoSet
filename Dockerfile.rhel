@@ -6,22 +6,19 @@
 # known CVEs in the final production layer.
 #
 # BUILD STAGES:
-#   1. postgres-ecpg     — Rocky Linux 8 stage that grabs the ecpg
-#                          utility (PostgreSQL ECPG dev tools), which
-#                          isn't available in RHEL UBI repos.
-#   2. superset-node-ci  — UBI8 Node.js 20 image. Installs npm deps
+#   1. superset-node-ci  — UBI8 Node.js 20 image. Installs npm deps
 #                          (skipped in dev mode).
-#   3. superset-node     — Extends superset-node-ci. Runs webpack
+#   2. superset-node     — Extends superset-node-ci. Runs webpack
 #                          build and compiles frontend translations.
-#   4. python-base       — UBI8 Python 3.11. Sets up superset user,
+#   3. python-base       — UBI8 Python 3.11. Sets up superset user,
 #                          home dir, and installs uv (pip replacement).
-#   5. python-translation-compiler
+#   4. python-translation-compiler
 #                        — Compiles .po translation files to .mo.
-#   6. python-common     — Main app layer. Installs system libs
+#   5. python-common     — Main app layer. Installs system libs
 #                          (SASL, PostgreSQL, LDAP), copies built
 #                          frontend assets and translations, sets up
 #                          entrypoints and healthcheck.
-#   7. production        — Final layer. Installs Python deps from
+#   6. production        — Final layer. Installs Python deps from
 #                          requirements/base.txt, pins CVE-patched
 #                          packages, removes build tools / package
 #                          managers / vulnerable OS packages, and
@@ -37,15 +34,6 @@ ARG BUILDPLATFORM=${BUILDPLATFORM:-amd64}
 
 # Include translations in the final build
 ARG BUILD_TRANSLATIONS="false"
-
-######################################################################
-# PostgreSQL stage to get ecpg utility (not available in RHEL repos)
-######################################################################
-FROM rockylinux:8 AS postgres-ecpg
-RUN dnf install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-8-$(uname -m)/pgdg-redhat-repo-latest.noarch.rpm \
-    && dnf --nogpgcheck install -y postgresql18-ecpg-devel \
-    && dnf clean all \
-    && rm -rf /var/cache/dnf/*
 
 ######################################################################
 # superset-node-ci used as a base for building frontend assets and CI
@@ -243,9 +231,6 @@ FROM python-common AS production
 
 # Build version injected at build time
 ARG BUILD_VERSION="6.0.0"
-
-# Copy ecpg utility from postgres stage
-COPY --from=postgres-ecpg /usr/pgsql-18/bin/ecpg /usr/bin/ecpg
 
 # Install build tools needed for Python package compilation
 RUN dnf install -y gcc gcc-c++ make kernel-headers glibc-headers glibc-devel libxcrypt-devel binutils libstdc++-devel \
