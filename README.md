@@ -117,7 +117,13 @@ Once all containers are healthy, open **http://localhost** in your browser.
 ### Useful Commands
 
 ```bash
-# Start all services
+# Start all services (GeoSet Full Stack w/ Examples)
+docker compose -f docker-compose-geoset.yml up
+
+# Rebuild after Dockerfile changes (GeoSet stack)
+docker compose -f docker-compose-geoset.yml up --build
+
+# Start all services (Base Superset)
 docker compose up -d
 
 # View logs for a specific service
