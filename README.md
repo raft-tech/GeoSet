@@ -97,13 +97,22 @@ docker compose up -d
 
 This starts all services:
 
-| Service | Port | Description |
+| Base Service | Port | Description |
 |---|---|---|
 | **nginx** | 80 | Reverse proxy (main entry point) |
 | **superset** | 8088 | Flask backend API |
 | **superset-node** | 9000 | Webpack frontend dev server |
 | **superset-websocket** | 8080 | WebSocket server for real-time updates |
 | **db** | 5432 | PostgreSQL database |
+| **redis** | 6379 | Cache and Celery broker |
+
+|GeoSet Service | Port | Description |
+|---|---|---|
+| **nginx** | 80 | Reverse proxy (main entry point) |
+| **superset** | 8088 | Flask backend API |
+| **superset-node-geoset-1** | 9001 | Webpack frontend dev server (GeoSet) |
+| **superset-websocket** | 8080 | WebSocket server |
+| **superset_postgis** | 5433 | PostgreSQL (Geospatial data) |
 | **redis** | 6379 | Cache and Celery broker |
 
 On first run, the `superset-init` container will automatically:
@@ -173,10 +182,10 @@ docker compose up -d
 <!-- markdownlint-disable MD033 MD045 -->
 <p>
   <img src="docs/static/images/multi-legend-toggling.gif" alt="Multi Legend Toggling" width="49%">
-  <img src="docs/static/images/static-viewport-functionality.gif" alt="Static Viewport Functionality" width="49%">
+  <img src="docs/static/images/ruler-tool-in-action.gif" alt="Ruler Tool in Action" width="49%">
 </p>
 <p>
-  <img src="docs/static/images/ruler-tool-in-action.gif" alt="Ruler Tool in Action" width="49%">
+  <img src="docs/static/images/static-viewport-functionality.gif" alt="Static Viewport Functionality" width="49%">
   <img src="docs/static/images/point-clustering-and-controls.gif" alt="Point Clustering and Controls" width="49%">
 </p>
 <!-- markdownlint-enable MD033 MD045 -->
