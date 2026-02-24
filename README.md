@@ -174,9 +174,9 @@ docker compose up -d
 ### Screenshots & Videos
 
 <!-- markdownlint-disable MD033 MD045 -->
+<img src="docs/static/images/helene-storm-data.png" alt="GeoSet Helene Storm Map" height="550">
 <!-- markdownlint-enable MD033 MD045 -->
 
-![GeoSet Helene Storm Map](docs/static/images/helene-storm-data.png)
 ![Metric Gradient Max Wind Speed](docs/static/images/wind-metrics-chart.png)
 
 <!-- markdownlint-disable MD033 MD045 -->
@@ -185,8 +185,10 @@ docker compose up -d
   <img src="docs/static/images/ruler-tool-in-action.gif" alt="Ruler Tool in Action" width="49%">
 </p>
 <p>
-  <img src="docs/static/images/static-viewport-functionality.gif" alt="Static Viewport Functionality" width="49%">
-  <img src="docs/static/images/point-clustering-and-controls.gif" alt="Point Clustering and Controls" width="49%">
+  <img src="docs/static/images/static-viewport-functionality.gif" alt="Static Viewport Functionality">
+</p>
+<p>
+  <img src="docs/static/images/point-clustering-and-controls.gif" alt="Point Clustering and Controls">
 </p>
 <!-- markdownlint-enable MD033 MD045 -->
 
