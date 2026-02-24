@@ -1,8 +1,9 @@
 # -----------------------------------------------------------------------
 # RHEL UBI8-based lightweight docker-compose.
 # Based on docker-compose-light.yml — no Redis, nginx, websocket, or workers.
-# To add Redis, Celery workers, nginx, or websocket services, use
-# docker-compose.yml as a reference and add those services here.
+# To extend with full-stack services (Redis, Celery workers, nginx, websocket),
+# use docker-compose.yml and add "dockerfile: Dockerfile.rhel" to its
+# x-common-build section so all services build from the RHEL image.
 #
 # Usage: docker compose -f docker-compose-rhel.yml up
 # Access at: http://localhost:9001 (or NODE_PORT if specified)
