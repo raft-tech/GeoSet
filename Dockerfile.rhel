@@ -1,6 +1,35 @@
 ######################################################################
-# Node stage to deal with static asset construction
-# Using Red Hat UBI8 Node.js image
+# Dockerfile.rhel — RHEL UBI8 zero-CVE Superset image
+#
+# A hardened alternative to the default Debian-based Dockerfile.
+# Targets environments requiring Red Hat UBI8 base images with no
+# known CVEs in the final production layer.
+#
+# BUILD STAGES:
+#   1. postgres-ecpg     — Rocky Linux 8 stage that grabs the ecpg
+#                          utility (PostgreSQL ECPG dev tools), which
+#                          isn't available in RHEL UBI repos.
+#   2. superset-node-ci  — UBI8 Node.js 20 image. Installs npm deps
+#                          (skipped in dev mode).
+#   3. superset-node     — Extends superset-node-ci. Runs webpack
+#                          build and compiles frontend translations.
+#   4. python-base       — UBI8 Python 3.11. Sets up superset user,
+#                          home dir, and installs uv (pip replacement).
+#   5. python-translation-compiler
+#                        — Compiles .po translation files to .mo.
+#   6. python-common     — Main app layer. Installs system libs
+#                          (SASL, PostgreSQL, LDAP), copies built
+#                          frontend assets and translations, sets up
+#                          entrypoints and healthcheck.
+#   7. production        — Final layer. Installs Python deps from
+#                          requirements/base.txt, pins CVE-patched
+#                          packages, removes build tools / package
+#                          managers / vulnerable OS packages, and
+#                          compiles .pyc bytecode.
+#
+# USAGE:
+#   docker compose -f docker-compose-rhel.yml up
+#   docker build -f Dockerfile.rhel --target production -t superset-rhel .
 ######################################################################
 
 # If BUILDPLATFORM is null, set it to 'amd64' (or leave as is otherwise).
@@ -223,9 +252,9 @@ RUN dnf install -y gcc gcc-c++ make kernel-headers glibc-headers glibc-devel lib
     && dnf clean all
 
 # Install Python dependencies
-COPY requirements/base.txt requirements/rhel.txt requirements/
+COPY requirements/base.txt requirements/
 RUN --mount=type=cache,target=${SUPERSET_HOME}/.cache/uv \
-    /app/docker/pip-install.sh -r requirements/rhel.txt
+    /app/docker/pip-install.sh -r requirements/base.txt
 
 # Explicitly install postgres support
 RUN --mount=type=cache,target=${SUPERSET_HOME}/.cache/uv \
