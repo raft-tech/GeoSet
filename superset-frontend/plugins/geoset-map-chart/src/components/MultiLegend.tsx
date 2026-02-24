@@ -235,6 +235,9 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
 
   const [isLegendOpen, setIsLegendOpen] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [optimisticVisibility, setOptimisticVisibility] = useState<
+    Record<string, boolean>
+  >({});
 
   const toggle = (id: string) => {
     const group = legendsBySlice[id];
@@ -283,7 +286,10 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
             const isOpen = expanded[id] ?? !group.initialCollapsed;
             const { fill, stroke } = getDefaultColors(group);
 
-            const isVisible = layerVisibility[id] !== false; // default to visible
+            const isVisible =
+              id in optimisticVisibility
+                ? optimisticVisibility[id]
+                : layerVisibility[id] !== false; // default to visible
 
             // Calculate indeterminate state for categorical layers
             const categories = group.categories || [];
@@ -305,6 +311,10 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
                       indeterminate={isIndeterminate}
                       onChange={e => {
                         e.stopPropagation();
+                        setOptimisticVisibility(prev => ({
+                          ...prev,
+                          [id]: !isVisible,
+                        }));
                         onToggleLayerVisibility?.(id);
                       }}
                     />
