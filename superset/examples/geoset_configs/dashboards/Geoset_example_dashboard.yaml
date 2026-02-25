@@ -1,7 +1,7 @@
-dashboard_title: Geoset example dashboard
+dashboard_title: GeoSet Example Dashboard
 description: null
 css: ''
-slug: null
+slug: geoset-example-dashboard
 certified_by: ''
 certification_details: ''
 published: false
@@ -13,7 +13,7 @@ position:
     meta:
       chartId: 122
       height: 94
-      sliceName: Hurricane Tracker
+      sliceName: 2024 and 2025 Hurricanes and Tropical Storms
       uuid: 2685f6ed-3723-4492-ab0a-ff0ece88f824
       width: 6
     parents:
@@ -27,7 +27,7 @@ position:
     meta:
       chartId: 123
       height: 94
-      sliceName: Wildfire Tracker
+      sliceName: NIFC Wildfire Locations
       uuid: e9247c4c-674e-4d78-a028-d63fecfa7714
       width: 6
     parents:
@@ -46,7 +46,7 @@ position:
   HEADER_ID:
     id: HEADER_ID
     meta:
-      text: Geoset example dashboard
+      text: GeoSet Example Dashboard
     type: HEADER
   ROOT_ID:
     children:
@@ -91,7 +91,7 @@ metadata:
       rootPath:
       - ROOT_ID
       excluded: []
-    title: Wildfire Tracker
+    title: Wildfire
     description: ''
   - cascadeParentIds: []
     controlValues:
@@ -128,7 +128,7 @@ metadata:
       rootPath:
       - ROOT_ID
       excluded: []
-    title: Hurricane Tracker
+    title: Hurricane
     description: ''
   - id: NATIVE_FILTER-_ZF7d8EGhaSuSTcc1cuh5
     controlValues:

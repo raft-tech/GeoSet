@@ -24,9 +24,15 @@ params:
   - 0
   - 22
   hoverDataColumns:
-  - storm_name
-  - formatted_timestamp
-  - max_gust_mph
+  - label: Storm Name
+    sqlExpression: storm_name
+    expressionType: SQL
+  - label: Timestamp
+    sqlExpression: formatted_timestamp
+    expressionType: SQL
+  - label: Max Gust (mph)
+    sqlExpression: max_gust_mph
+    expressionType: SQL
   featureInfoColumns: []
   geojsonConfig: "{\n  \"colorByValue\": {\n    \"breakpoints\": [],\n    \"endColor\"\
     : [255, 40, 20, 255],\n    \"lowerBound\": 40,\n    \"startColor\": [255, 235,\
