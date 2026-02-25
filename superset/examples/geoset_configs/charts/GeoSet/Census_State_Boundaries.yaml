@@ -1,0 +1,44 @@
+slice_name: Census State Boundaries
+description: US state boundary polygons from Census TIGER/Line 2024 shapefiles
+certified_by: null
+certification_details: null
+viz_type: deck_geoset_map_layer
+params:
+  datasource: 27__table
+  viz_type: deck_geoset_map_layer
+  geojson: state_boundary
+  geoJsonLayer: Polygon
+  autozoom: true
+  row_limit: 100
+  mapbox_style: mapbox://styles/acf-dart/cm8ov8yl4001401s365rs672z
+  adhoc_filters: []
+  hoverDataColumns: []
+  featureInfoColumns:
+  - label: State Name
+    sqlExpression: state_name
+    expressionType: SQL
+  - label: State Abbreviation
+    sqlExpression: state_abbrev
+    expressionType: SQL
+  - label: State Code
+    sqlExpression: state_code
+    expressionType: SQL
+  - label: Land Area (m²)
+    sqlExpression: land_area
+    expressionType: SQL
+  - label: Water Area (m²)
+    sqlExpression: water_area
+    expressionType: SQL
+  minMaxZoomSlider:
+  - 0
+  - 6
+  schema_version: 2
+  geojsonConfig: "{\n  \"globalColoring\": {\n    \"fillColor\": [40, 147, 179, 60],\n\
+    \    \"strokeColor\": [255, 255, 255, 200],\n    \"strokeWidth\": 1,\n    \"fillPattern\"\
+    : \"solid\"\n  },\n  \"legend\": {\n    \"title\": \"US Census\",\n    \"name\"\
+    : \"State Boundaries\"\n  }\n}"
+  annotation_layers: []
+cache_timeout: null
+uuid: fbe401b9-ea00-4161-ad3a-be062e256922
+version: 1.0.0
+dataset_uuid: 9a83a2c9-351f-4a8e-97cd-9af903054ccb
