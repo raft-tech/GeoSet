@@ -12,7 +12,9 @@ __GeoSet brings robust geospatial visualization capabilities to [Apache Superset
 - [What is GeoSet?](#what-is-geoset)
 - [How GeoSet Differs from Apache Superset](#how-geoset-differs-from-apache-superset)
 - [Quick Start](#quick-start)
-  - [Alternative Docker Image](#alternative-docker-image)
+  - [Step 1 - Create a Copy of docker/.env.example](#step-1---create-a-copy-of-dockerenvexample)
+  - [Step 2 - Launch Docker Compose](#step-2---launch-docker-compose)
+  - [Step 3 - Open GeoSet and Explore](#step-3---open-geoset-and-explore)
 - [Contributing](#contributing)
   - [Development Guide](#development-guide)
 
@@ -35,19 +37,39 @@ GeoSet is an extension of Superset. Everything that can be done within Superset 
 
 ## Quick Start
 
-There is a Docker Compose file at the root of the repository. This file is based off [docker-compose-light.yml](https://github.com/apache/superset/blob/master/docker-compose-light.yml) in the upstream Apache Superset repository. We add a PostGIS database service to the stack and preload it with example data. Run the following command from the root of the repository and geoset will be accessible at [http://localhost:9001] with username `admin` and password `admin`.
+There is a Docker Compose file at the root of the repository. This file is based off [docker-compose-light.yml](https://github.com/apache/superset/blob/master/docker-compose-light.yml) in the upstream Apache Superset repository. We add a PostGIS database service to the stack and preload it with example data. 
+
+### Step 1 - Create a Copy of docker/.env.example
+
+Create a copy of the the file [docker/.env.example](./docker/.env.example) and store at `docker/.env`.
+
+```bash
+cp docker/.env.example docker/.env
+```
+
+You'll need to supply a Mapbox API key in order to render the maps. Update the line `MAPBOX_API_KEY=''` with your Mapbox API token. You can create a token for free within your Mapbox account. Create the token, copy it into the quotes, and save the file.
+
+### Step 2 - Launch Docker Compose
+
+Run the following command from the root of the repository. GeoSet will be accessible at [http://localhost:9001] with username `admin` and password `admin` when the build completes. This can take about 5 to 10 minutes on the first run.
 
 ```bash
 docker compose up
 ```
 
-### Alternative Docker Image
+#### Alternative Docker Image
 
 The Dockerfile at the root of the repository uses the same Debian-based image used by upstream Superset. This image suffers from numerous high and critical CVEs. For environments with increased security requirements we offer an image based on RHEL 8 with 0 high and 0 critical CVEs. This image can be used in place of the Debian image by running the following command. Note, these images have identical behavior.
 
 ```bash
 DOCKERFILE=Dockerfile.rhel docker compose up
 ```
+
+### Step 3 - Open GeoSet and Explore
+
+We've created an example dashboard accessible at [http://localhost:9001/superset/dashboard/geoset-example-dashboard](http://localhost:9001/superset/dashboard/geoset-example-dashboard). 
+
+TODO: put pictures here
 
 ## Contributing
 
