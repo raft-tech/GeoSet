@@ -1,266 +1,58 @@
-<!--
-Licensed to the Apache Software Foundation (ASF) under one
-or more contributor license agreements.  See the NOTICE file
-distributed with this work for additional information
-regarding copyright ownership.  The ASF licenses this file
-to you under the Apache License, Version 2.0 (the
-"License"); you may not use this file except in compliance
-with the License.  You may obtain a copy of the License at
-
-  http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing,
-software distributed under the License is distributed on an
-"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-KIND, either express or implied.  See the License for the
-specific language governing permissions and limitations
-under the License.
--->
-
 # GeoSet
+
+TODO: LOGO!
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/license/apache-2-0)
 
-A geospatial data monitoring and visualization platform built on [Apache Superset](https://github.com/apache/superset).
+TODO: MORE BANNERS
+TODO: WE NEED TO RECREATE THE PICTURES WITH THE GEOSET LOGO
 
-![GeoSet Wildfire Dashboard](docs/static/images/usa-wildfire-dashboard.png)
+__GeoSet brings robust geospatial visualization capabilities to [Apache Superset](https://github.com/apache/superset) with [PostGIS](https://postgis.net/) compatibility built in.__
 
-## Summary
+- [What is GeoSet?](#what-is-geoset)
+- [How GeoSet Differs from Apache Superset](#how-geoset-differs-from-apache-superset)
+- [Quick Start](#quick-start)
+  - [Alternative Docker Image](#alternative-docker-image)
+- [Contributing](#contributing)
+  - [Development Guide](#development-guide)
 
-GeoSet extends Apache Superset with a custom deck.gl-based map visualization plugin purpose-built for geospatial data exploration. It allows users to visualize geographic data (points, lines, polygons) on interactive maps with features like category-based coloring, metric gradients, clustering, measurement tools, and configurable legends — all within the familiar Superset dashboard experience.
+## What is GeoSet?
 
-## Purpose
+GeoSet bridges the gap between Superset and GIS tooling. This is accomplished by extending Apache Superset with custom deck.gl-based map visualization plugins purpose-built for geospatial data. It allows users to visualize points, lines, and polygons stored natively within PostGIS's `Geography` or `Geometry` data types. Features include:
 
-GeoSet is designed for teams that need to monitor and analyze geospatial data at scale. It combines Superset's powerful data exploration capabilities (SQL editor, no-code chart builder, dashboard system, role-based access control) with specialized geospatial visualizations that go beyond what standard Superset chart types offer.
+- Single and multilayer maps
+- Visibility toggling by zoom
+- Hover over and additional details pane
+- Color by category or value
+- Collapsible legend with layer toggling and dynamic iconography
+- Native dashboard integration
+
+TODO: PUT PRETTY PICTURES HERE
 
 ## How GeoSet Differs from Apache Superset
 
-GeoSet is a fork of Apache Superset with the following additions:
+GeoSet is an extension of Superset. Everything that can be done within Superset can be done within GeoSet. GeoSet was created to improve Superset's geospatial visualization capabilities. While Superset _does_ provide various map charts, their functionality is limited and varying data formatting requirements and inconsistent configurability make them difficult to use.
 
-| Feature | Superset | GeoSet |
-|---|---|---|
-| Map visualization | Basic deck.gl GeoJSON layer | Full-featured GeoSet Map Chart with points, lines, polygons, icons, and clustering |
-| Geometry rendering | Limited styling options | Configurable fill/stroke colors, category-based coloring, metric gradient coloring, dashed lines |
-| Interactivity | Basic tooltips | Hover tooltips, click popups for feature details, measurement/ruler tool, zoom-based layer visibility |
-| Legends | Standard chart legends | Categorical legends with toggle/isolate, metric gradient legends, multi-layer legends |
-| Performance | Default deck.gl settings | Server-side geometry simplification (PostGIS), polygon caching, GPU picking optimizations, hover throttling |
-| GeoJSON configuration | Manual setup | JSON-based config with schema validation, versioned migrations, color-by-category and color-by-value modes |
-| Point clustering | Not available | Supercluster-based automatic clustering with configurable radius, zoom, and min-points |
+## Quick Start
 
-### GeoSet Chart Selection
-
-![GeoSet Chart Selection](docs/static/images/geoset-chart-selection.png)
-
-#### GeoSet Layer Chart Builder
-
-![GeoSet Layer Chart Builder](docs/static/images/geojson-config-control-chart-builder.png)
-
-#### GeoSet Multi Layer Chart Builder
-
-![GeoSet Multi Layer Chart Builder](docs/static/images/geoset-multi-chart-builder.png)
-
-## Getting Started
-
-### Prerequisites
-
-- [Docker](https://docs.docker.com/get-docker/) and [Docker Compose](https://docs.docker.com/compose/install/)
-- [Git](https://git-scm.com/)
-
-### Clone the Repository
+There is a Docker Compose file at the root of the repository. This file is based off [docker-compose-light.yml](https://github.com/apache/superset/blob/master/docker-compose-light.yml) in the upstream Apache Superset repository. We add a PostGIS database service to the stack and preload it with example data. Run the following command from the root of the repository and geoset will be accessible at [http://localhost:9001] with username `admin` and password `admin`.
 
 ```bash
-git clone https://github.com/raft-tech/GeoSet.git
-cd GeoSet
+docker compose up
 ```
 
-### Environment Setup
+### Alternative Docker Image
 
-1. Copy the example environment file and configure it:
+The Dockerfile at the root of the repository uses the same Debian-based image used by upstream Superset. This image suffers from numerous high and critical CVEs. For environments with increased security requirements we offer an image based on RHEL 8 with 0 high and 0 critical CVEs. This image can be used in place of the Debian image by running the following command. Note, these images have identical behavior.
 
 ```bash
-cp docker/.env.example docker/.env
-```
-
-2. Edit `docker/.env` with your settings. At minimum, you should set:
-
-```env
-MAPBOX_API_KEY=<your-mapbox-token>
-```
-
-> You can get a free Mapbox access token at [mapbox.com](https://www.mapbox.com/).
-
-### Start the Application
-
-```bash
-docker compose up -d
-```
-
-This starts all services:
-
-| Base Service | Port | Description |
-|---|---|---|
-| **nginx** | 80 | Reverse proxy (main entry point) |
-| **superset** | 8088 | Flask backend API |
-| **superset-node** | 9000 | Webpack frontend dev server |
-| **superset-websocket** | 8080 | WebSocket server for real-time updates |
-| **db** | 5432 | PostgreSQL database |
-| **redis** | 6379 | Cache and Celery broker |
-
-|GeoSet Service | Port | Description |
-|---|---|---|
-| **nginx** | 80 | Reverse proxy (main entry point) |
-| **superset** | 8088 | Flask backend API |
-| **superset-node-geoset-1** | 9001 | Webpack frontend dev server (GeoSet) |
-| **superset-websocket** | 8080 | WebSocket server |
-| **superset_postgis** | 5433 | PostgreSQL (Geospatial data) |
-| **redis** | 6379 | Cache and Celery broker |
-
-On first run, the `superset-init` container will automatically:
-
-- Run database migrations
-- Create an admin user (`admin` / `admin`)
-- Set up default roles and permissions
-
-Once all containers are healthy, open **http://localhost** in your browser.
-
-### Useful Commands
-
-```bash
-# Start all services (GeoSet Full Stack w/ Examples)
-docker compose -f docker-compose-geoset.yml up
-
-# Rebuild after Dockerfile changes (GeoSet stack)
-docker compose -f docker-compose-geoset.yml up --build
-
-# Start all services (Base Superset)
-docker compose up -d
-
-# View logs for a specific service
-docker compose logs -f superset
-
-# Restart the frontend dev server
-docker compose restart superset-node
-
-# Stop all services
-docker compose down
-
-# Stop and remove all data (fresh start)
-docker compose down -v
-
-# Rebuild containers after Dockerfile changes
-docker compose up -d --build
-```
-
-### Local Development
-
-For plugin development with hot reload:
-
-```bash
-# Install dependencies and build the plugins
-cd superset-frontend
-npm install
-npm run build
-# or, to build only plugins:
-npm run plugins:build
-
-# Start the dev server with hot reload
-npm run dev-server
-
-# Start all services (includes hot reload for plugin changes)
-cd ..
-docker compose up -d
-```
-
-### Screenshots & Videos
-
-<!-- markdownlint-disable MD033 MD045 -->
-<p align="center"><img src="docs/static/images/helene-storm-data.png" alt="GeoSet Helene Storm Map" height="550"></p>
-<!-- markdownlint-enable MD033 MD045 -->
-
-![Metric Gradient Max Wind Speed](docs/static/images/wind-metrics-chart.png)
-
-<!-- markdownlint-disable MD033 MD045 -->
-<p>
-  <img src="docs/static/images/multi-legend-toggling.gif" alt="Multi Legend Toggling">
-</p>
-<p>
-  <img src="docs/static/images/ruler-tool-in-action.gif" alt="Ruler Tool in Action">
-</p>
-<p>
-  <img src="docs/static/images/static-viewport-functionality.gif" alt="Static Viewport Functionality">
-</p>
-<p>
-  <img src="docs/static/images/point-clustering-and-controls.gif" alt="Point Clustering and Controls">
-</p>
-<!-- markdownlint-enable MD033 MD045 -->
-
-## Project Structure
-
-```text
-GeoSet/
-├── superset/                          # Python backend (Flask)
-├── superset-frontend/                 # React frontend
-│   └── plugins/
-│       └── geoset-map-chart/          # Custom GeoSet map visualization
-│           └── src/
-│               ├── layers/            # deck.gl layer implementations
-│               ├── components/        # Legend, Tooltip, MapControls, etc.
-│               ├── utils/             # Color utilities, geometry helpers
-│               ├── buildQuery.ts      # PostGIS query builder
-│               └── transformProps.ts  # Data transformation pipeline
-├── superset-websocket/                # WebSocket service
-├── docker/                            # Docker configuration and init scripts
-└── docker-compose.yml                 # Service orchestration
+DOCKERFILE=Dockerfile.rhel docker compose up
 ```
 
 ## Contributing
 
-We welcome contributions to GeoSet! Here's how to get started:
+Contributions are always welcome! Please take a look at [open issues](https://github.com/raft-tech/GeoSet/issues) or you can create a new issue / feature request. __Note__: the scope of issues and feature requests must correspond with GeoSet functionality. Any issue or feature request pertaining to Superset core should be made [here](https://github.com/apache/superset/issues).
 
-### Branch Strategy
+### Development Guide
 
-- `main` — stable branch, target for all PRs
-- Feature branches — create from `main` with a descriptive name (e.g., `45-polygon-performance`)
-
-### Development Workflow
-
-1. **Fork and clone** the repository
-2. **Create a feature branch** from `main`:
-
-   ```bash
-   git checkout -b your-feature-name main
-   ```
-
-3. **Make your changes** — see the project structure above for where things live
-4. **Test locally** using Docker Compose or the local dev setup
-5. **Submit a PR** against `main` on [raft-tech/GeoSet](https://github.com/raft-tech/GeoSet)
-
-### PR Guidelines
-
-- Keep PRs focused on a single concern
-- Include a clear description of what changed and why
-- Add screenshots for any UI changes
-- Ensure the frontend builds without errors
-
-### Key Areas for Contribution
-
-- **GeoSet Map Plugin** (`superset-frontend/plugins/geoset-map-chart/`) — the custom map visualization
-- **Backend** (`superset/`) — API endpoints, database connectors, security
-- **Docker/Infrastructure** (`docker/`) — deployment configuration, init scripts
-
-### Resources
-
-- [Apache Superset Contributing Guide](https://superset.apache.org/docs/contributing/)
-- [Creating Viz Plugins](https://superset.apache.org/docs/contributing/creating-viz-plugins/)
-- [Superset API Reference](https://superset.apache.org/docs/rest-api)
-
-## Versioning
-
-GeoSet follows [Semantic Versioning](https://semver.org/). The current version and release history are documented in:
-
-- [GEOSET/VERSION.md](GEOSET/VERSION.md) — current version and versioning policy
-- [GEOSET/CHANGELOG.md](GEOSET/CHANGELOG.md) — release history
-
-## License
-
-GeoSet is licensed under the [Apache License 2.0](https://opensource.org/license/apache-2-0). See [LICENSE](LICENSE.txt) for the full text.
+Please refer to the [Development Guide](https://github.com/raft-tech/GeoSet/wiki/Development-Guide) wiki page for details regarding environment setup and details regarding core code directories for GeoSet.
