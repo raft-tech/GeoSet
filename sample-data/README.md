@@ -8,38 +8,38 @@ This directory contains the data ingest pipeline for GeoSet sample data. It fetc
 
 ```bash
 # Start the stack
-docker compose -f docker-compose-geoset.yml up
+docker compose up
 
 # Start with a full rebuild
-docker compose -f docker-compose-geoset.yml up --build
+docker compose up --build
 
 # Stop
-docker compose -f docker-compose-geoset.yml down
+docker compose down
 
 # Stop and wipe all data (full reset)
-docker compose -f docker-compose-geoset.yml down -v
+docker compose down -v
 ```
 
 **Frontend:** http://localhost:9001
 
 ## Architecture
 
-`docker-compose-geoset.yml` is a self-contained stack based on `docker-compose-light.yml` (no Redis, no Celery workers, no nginx). It is **completely independent** from the main `docker-compose.yml` — separate metadata databases, separate volumes, different ports (9001 vs 9000). The `name: geoset` project name keeps the two stacks from interfering.
+`docker-compose.yml` is a self-contained GeoSet stack (no Redis, no Celery workers, no nginx). It defaults to the standard `Dockerfile` and can be switched to the RHEL image with `DOCKERFILE=Dockerfile.rhel docker compose up`.
 
 ```
 Browser (:9001)
     │
     ▼
-superset-node-geoset          ← Webpack dev server (hot reload)
+superset-node                 ← Webpack dev server (hot reload)
     │
     ▼ API calls
-superset-geoset (:8088)       ← Flask backend (REST API, charts)
+superset (:8088)              ← Flask backend (REST API, charts)
     │
-    ├──▶ db-geoset             ← PostgreSQL 16 (Superset metadata)
+    ├──▶ db                    ← PostgreSQL 16 (Superset metadata)
     └──▶ postgis (:5433)       ← PostGIS 16-3.4 (geospatial data)
               │
               ▼
-         geoset-sample-data-ingest  ← One-shot: loads sample geodata
+         sample-data-ingest    ← One-shot: loads sample geodata
 ```
 
 ## Data Ingest
@@ -80,7 +80,7 @@ The easiest way to add chart/dataset YAMLs is to export them from a running Supe
    - `datasets/geoset/*.yaml` → `superset/examples/geoset_configs/datasets/geoset/`
    - `databases/geoset.yaml` — already exists, no need to copy
 4. **Strip the `query_context` field** from the chart YAML (it contains instance-specific IDs that will be regenerated automatically)
-5. **Run it** — `docker compose -f docker-compose-geoset.yml up --build` will pick up everything automatically
+5. **Run it** — `docker compose up --build` will pick up everything automatically
 
 ### Multi-layer maps
 

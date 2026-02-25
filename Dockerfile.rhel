@@ -27,7 +27,7 @@
 #                          compiles .pyc bytecode.
 #
 # USAGE:
-#   docker compose -f docker-compose-geoset.yml up
+#   DOCKERFILE=Dockerfile.rhel docker compose up
 #   docker build -f Dockerfile.rhel --target production -t superset-rhel .
 ######################################################################
 
@@ -283,3 +283,6 @@ RUN python -m compileall /app/superset
 RUN printf '{"GIT_SHA":"","version":"%s"}' "$BUILD_VERSION" > /app/superset/static/version_info.json
 
 USER superset
+
+# Alias so `target: dev` works for both Dockerfile and Dockerfile.rhel
+FROM production AS dev
