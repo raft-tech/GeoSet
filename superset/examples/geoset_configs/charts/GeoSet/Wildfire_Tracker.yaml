@@ -1,0 +1,23 @@
+slice_name: NIFC Wildfire Locations
+description: NIFC wildfire incident locations overlaid on US state boundaries
+certified_by: null
+certification_details: null
+viz_type: deck_geoset_map
+params:
+  datasource: 0__table
+  viz_type: deck_geoset_map
+  mapbox_style: "mapbox://styles/acf-dart/cm8ov8yl4001401s365rs672z"
+  adhoc_filters: []
+  deck_slice_uuids:
+    - uuid: e6e168a5-d38c-428c-ab6c-5ecec9e754dd
+      autozoom: true
+      legendCollapsed: false
+      initiallyHidden: false
+    - uuid: fbe401b9-ea00-4161-ad3a-be062e256922
+      autozoom: false
+      legendCollapsed: false
+      initiallyHidden: false
+cache_timeout: null
+uuid: e9247c4c-674e-4d78-a028-d63fecfa7714
+version: 1.0.0
+dataset_uuid: 9a83a2c9-351f-4a8e-97cd-9af903054ccb

@@ -1,0 +1,65 @@
+slice_name: NIFC Wildfire Locations
+description: Active wildfire incident locations from the NIFC WFIGS API
+certified_by: null
+certification_details: null
+viz_type: deck_geoset_map_layer
+params:
+  datasource: 28__table
+  viz_type: deck_geoset_map_layer
+  geojson: origin_coordinate
+  geoJsonLayer: Point
+  autozoom: true
+  row_limit: 10000
+  mapbox_style: mapbox://styles/acf-dart/cm8ov8yl4001401s365rs672z
+  adhoc_filters: []
+  hoverDataColumns:
+  - label: Incident Name
+    sqlExpression: incident_name
+    expressionType: SQL
+  - label: Incident Size (acres)
+    sqlExpression: incident_size
+    expressionType: SQL
+  - label: State
+    sqlExpression: origin_state_code
+    expressionType: SQL
+  featureInfoColumns:
+  - label: Incident Name
+    sqlExpression: incident_name
+    expressionType: SQL
+  - label: Fire Cause
+    sqlExpression: fire_cause
+    expressionType: SQL
+  - label: Incident Size (acres)
+    sqlExpression: incident_size
+    expressionType: SQL
+  - label: State
+    sqlExpression: origin_state_code
+    expressionType: SQL
+  - label: County
+    sqlExpression: origin_county_name
+    expressionType: SQL
+  - label: Discovery Time
+    sqlExpression: fire_discovery_time
+    expressionType: SQL
+  enableClustering: false
+  clusterMaxZoom: 14
+  clusterMinPoints: 3
+  clusterRadius: 25
+  minMaxZoomSlider:
+  - 0
+  - 22
+  schema_version: 2
+  geojsonConfig: "{\n  \"globalColoring\": {\n    \"fillColor\": [255, 69, 0, 200],\n\
+    \    \"strokeColor\": [0, 0, 0, 255],\n    \"strokeWidth\": 1,\n    \"fillPattern\"\
+    : \"solid\"\n  },\n  \"colorByCategory\": {\n    \"dimension\": \"fire_cause\"\
+    ,\n    \"defaultLegendName\": [\"Unknown\"],\n    \"categoricalColors\": [\n \
+    \     { \"Human\": { \"fillColor\": [220, 38, 38, 230], \"legend_entry_name\"\
+    : \"Human\" } },\n      { \"Natural\": { \"fillColor\": [22, 163, 74, 230],\
+    \ \"legend_entry_name\": \"Natural\" } },\n      { \"Undetermined\": { \"fillColor\"\
+    : [120, 120, 120, 220], \"legend_entry_name\": \"Undetermined\" } }\n    ]\n  },\n  \"\
+    legend\": {\n    \"title\": \"NIFC Wildfires by Cause\",\n    \"name\": null\n  }\n}"
+  annotation_layers: []
+cache_timeout: null
+uuid: e6e168a5-d38c-428c-ab6c-5ecec9e754dd
+version: 1.0.0
+dataset_uuid: 76d55c98-dfec-4fb9-819e-05a673da945b
