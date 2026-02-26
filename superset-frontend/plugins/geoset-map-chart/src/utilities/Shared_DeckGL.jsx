@@ -210,6 +210,19 @@ export const featureInfoColumns = {
   },
 };
 
+export const textLabelColumn = {
+  name: 'textLabelColumn',
+  config: {
+    ...sharedControls.groupby,
+    label: t('Text Label Column'),
+    multi: false,
+    default: null,
+    description: t(
+      'Select the column whose values will be displayed as text labels at each point location.',
+    ),
+  },
+};
+
 export const jsDataMutator = {
   name: 'js_data_mutator',
   config: jsFunctionControl(

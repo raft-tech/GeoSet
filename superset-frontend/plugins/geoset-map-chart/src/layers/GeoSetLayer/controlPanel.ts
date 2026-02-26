@@ -32,13 +32,20 @@ import {
   clusterMaxZoom,
   clusterMinPoints,
   clusterRadius,
+  textLabelColumn,
 } from '../../utilities/Shared_DeckGL';
 import { dndGeojsonColumn } from '../../utilities/sharedDndControls';
 import JsonEditorControl from '../../components/JsonEditorControl';
 import { CURRENT_VERSION } from '../common';
 import { getLiveViewport } from '../../utils/liveViewportStore';
 
-const geoJsonLayers = ['GeoJSON', 'Point', 'Line', 'Polygon'];
+const geoJsonLayers: [string, string][] = [
+  ['GeoJSON', 'GeoJSON'],
+  ['Point', 'Point'],
+  ['Line', 'Line'],
+  ['Polygon', 'Polygon'],
+  ['TextOverlay', 'Text Overlay'],
+];
 
 const defaultGeojsonConfig = JSON.stringify(
   {
@@ -116,7 +123,7 @@ const config: ControlPanelConfig = {
               label: t('Layer Type'),
               clearable: false,
               default: 'Polygon',
-              choices: geoJsonLayers.map(layer => [layer, layer]),
+              choices: geoJsonLayers,
               description: t(
                 'Select the Geospatial data layer type to render: Polygon, Line, Point, or GeoJSON.',
               ),
@@ -172,6 +179,16 @@ const config: ControlPanelConfig = {
               mapStateToProps: ({ controls }: { controls: any }) => ({
                 disabled: controls?.enableClustering?.value !== true,
               }),
+            },
+          },
+        ],
+        [
+          {
+            name: textLabelColumn.name,
+            config: {
+              ...textLabelColumn.config,
+              visibility: ({ controls }: { controls: any }) =>
+                controls?.geoJsonLayer?.value === 'TextOverlay',
             },
           },
         ],
