@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import getPointsFromPolygon from '../../src/utils/getPointsFromPolygon';
+import getPointsFromPolygon from '../../src/utils/layerBuilders/getPointsFromPolygon';
 
 describe('getPointsFromPolygon', () => {
   it('handle Polygon GeoJSON Feature', () => {
