@@ -63,8 +63,8 @@ export class Theme {
 
   private static readonly defaultTokens = {
     // Brand
-    brandLogoAlt: 'Apache Superset',
-    brandLogoUrl: '/static/assets/images/superset-logo-horiz.png',
+    brandLogoAlt: 'GeoSet',
+    brandLogoUrl: '/static/assets/images/geoset-logo.svg',
     brandLogoMargin: '18px',
     brandLogoHref: '/',
     brandLogoHeight: '24px',

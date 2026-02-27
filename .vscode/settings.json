@@ -20,6 +20,10 @@
             "packageManager": "ms-python.python:pip"
         }
     ],
+    "[markdown]": {
+        "editor.defaultFormatter": "yzhang.markdown-all-in-one",
+        "editor.formatOnSave": true
+    },
     "[javascript][javascriptreact][typescript][typescriptreact]": {
         "editor.formatOnSave": true,
         "editor.defaultFormatter": "esbenp.prettier-vscode",
