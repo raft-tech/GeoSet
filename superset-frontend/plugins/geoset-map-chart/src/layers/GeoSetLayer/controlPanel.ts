@@ -20,7 +20,7 @@
  * under the License.
  */
 import { ControlPanelConfig } from '@superset-ui/chart-controls';
-import { t } from '@superset-ui/core';
+import { t, validateNonEmpty } from '@superset-ui/core';
 import {
   featureInfoColumns,
   hoverDataColumns,
@@ -32,13 +32,20 @@ import {
   clusterMaxZoom,
   clusterMinPoints,
   clusterRadius,
+  textLabelColumn,
 } from '../../utilities/Shared_DeckGL';
 import { dndGeojsonColumn } from '../../utilities/sharedDndControls';
 import JsonEditorControl from '../../components/JsonEditorControl';
 import { CURRENT_VERSION } from '../common';
 import { getLiveViewport } from '../../utils/liveViewportStore';
 
-const geoJsonLayers = ['GeoJSON', 'Point', 'Line', 'Polygon'];
+const geoJsonLayers: [string, string][] = [
+  ['GeoJSON', 'GeoJSON'],
+  ['Point', 'Point'],
+  ['Line', 'Line'],
+  ['Polygon', 'Polygon'],
+  ['TextOverlay', 'Text Overlay'],
+];
 
 const defaultGeojsonConfig = JSON.stringify(
   {
@@ -116,9 +123,10 @@ const config: ControlPanelConfig = {
               label: t('Layer Type'),
               clearable: false,
               default: 'Polygon',
-              choices: geoJsonLayers.map(layer => [layer, layer]),
+              choices: geoJsonLayers,
+              rerender: ['textLabelColumn'],
               description: t(
-                'Select the Geospatial data layer type to render: Polygon, Line, Point, or GeoJSON.',
+                'Select the Geospatial data layer type to render: Polygon, Line, Point, Text Overlay, or GeoJSON.',
               ),
             },
           },
@@ -172,6 +180,32 @@ const config: ControlPanelConfig = {
               mapStateToProps: ({ controls }: { controls: any }) => ({
                 disabled: controls?.enableClustering?.value !== true,
               }),
+            },
+          },
+        ],
+        [
+          {
+            name: textLabelColumn.name,
+            config: {
+              ...textLabelColumn.config,
+              visibility: ({ controls }: { controls: any }) =>
+                controls?.geoJsonLayer?.value === 'TextOverlay',
+              // Conditionally require non-empty only for TextOverlay
+              // (re-evaluated on layer change via rerender on geoJsonLayer).
+              shouldMapStateToProps: () => true,
+              mapStateToProps: (state: any, controlState: any) => {
+                const baseProps =
+                  textLabelColumn.config.mapStateToProps?.(
+                    state,
+                    controlState,
+                  ) ?? {};
+                const isTextOverlay =
+                  state?.controls?.geoJsonLayer?.value === 'TextOverlay';
+                return {
+                  ...baseProps,
+                  validators: isTextOverlay ? [validateNonEmpty] : [],
+                };
+              },
             },
           },
         ],
