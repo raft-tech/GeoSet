@@ -16,12 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/* eslint camelcase: 0 */
-
-export function formatSelectOptions(options: (string | number)[]) {
-  return options.map(opt => [opt, opt.toString()]);
-}
-
 export function validateLayerType(
   userLayerType: string,
   geometryType?: string,

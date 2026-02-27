@@ -28,8 +28,8 @@ import {
   SequentialScheme,
 } from '@superset-ui/core';
 import { isNumber } from 'lodash';
-import { hexToRGB } from './utils/colors';
-import { GeoJsonFeature } from './types';
+import { hexToRGB } from './colors';
+import { GeoJsonFeature } from '../types';
 
 const DEFAULT_NUM_BUCKETS = 10;
 
