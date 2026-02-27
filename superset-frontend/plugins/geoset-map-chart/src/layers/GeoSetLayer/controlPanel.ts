@@ -32,8 +32,8 @@ import {
   clusterMaxZoom,
   clusterMinPoints,
   clusterRadius,
-} from '../../utilities/Shared_DeckGL';
-import { dndGeojsonColumn } from '../../utilities/sharedDndControls';
+} from '../../utils/Shared_DeckGL';
+import { dndGeojsonColumn } from '../../utils/sharedDndControls';
 import JsonEditorControl from '../../components/JsonEditorControl';
 import { CURRENT_VERSION } from '../common';
 import { getLiveViewport } from '../../utils/liveViewportStore';
