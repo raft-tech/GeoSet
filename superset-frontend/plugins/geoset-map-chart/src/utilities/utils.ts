@@ -28,6 +28,9 @@ export function validateLayerType(
 ): string {
   if (!geometryType) return userLayerType;
 
+  // Text Overlay uses point geometry but renders as text — don't override to 'Point'
+  if (userLayerType === 'TextOverlay') return 'TextOverlay';
+
   // If user selected GeoJSON, always allow it
   if (userLayerType === 'GeoJSON') return 'GeoJSON';
 

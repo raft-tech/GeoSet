@@ -63,6 +63,7 @@ const defaultsByGeometry: Record<
   Line: { filled: false, stroked: true, extruded: false },
   Point: { filled: true, stroked: false, extruded: false },
   GeoJSON: { filled: true, stroked: true, extruded: true },
+  TextOverlay: { filled: false, stroked: false, extruded: false },
 };
 
 export default function transformProps(chartProps: ChartProps) {

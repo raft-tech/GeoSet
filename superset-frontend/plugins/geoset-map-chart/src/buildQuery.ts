@@ -34,6 +34,7 @@ export default function buildQuery(formData: QueryFormData) {
       : undefined;
   const hoverCols = (formData.hoverDataColumns ?? []) as any[];
   const featureCols = (formData.featureInfoColumns ?? []) as any[];
+  const textLabelCol = formData.textLabelColumn;
 
   // Throw if duplicates within a column group
   const checkDupes = (cols: any[], label: string) => {
@@ -62,6 +63,7 @@ export default function buildQuery(formData: QueryFormData) {
     ...featureCols,
     metricColumn,
     sizeColumn,
+    textLabelCol,
   ].filter(Boolean);
 
   // Dedupe by label to prevent backend errors
