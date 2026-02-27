@@ -7,7 +7,7 @@ TODO: LOGO!
 TODO: MORE BANNERS
 TODO: WE NEED TO RECREATE THE PICTURES WITH THE GEOSET LOGO
 
-__GeoSet brings robust geospatial visualization capabilities to [Apache Superset](https://github.com/apache/superset) with [PostGIS](https://postgis.net/) compatibility built in.__
+__GeoSet brings robust geospatial visualization capabilities to [Apache Superset](https://github.com/apache/superset) with native [PostGIS](https://postgis.net/) compatibility.__
 
 - [What is GeoSet?](#what-is-geoset)
 - [How GeoSet Differs from Apache Superset](#how-geoset-differs-from-apache-superset)
