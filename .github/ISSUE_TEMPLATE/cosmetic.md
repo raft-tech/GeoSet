@@ -1,22 +1,23 @@
 ---
 name: Cosmetic Issue
-about: Describe a cosmetic issue with CSS, positioning, layout, labeling, or similar
-title: ''
-labels: ''
-assignees: ethanbienstock
-
+about: Report a cosmetic issue with CSS, positioning, layout, labeling, or similar
+labels: cosmetic
 ---
+
+## Summary/Description
+
+<!-- Describe the cosmetic issue. -->
 
 ## Screenshot
 
-[drag & drop image(s) here!]
+<!-- Drag & drop image(s) here. -->
 
-## Description
+## Location
 
-[describe the issue here!]
+<!-- Which page or component is affected? -->
 
-## Design input
-[describe any input/collaboration you'd like from designers, and
-tag accordingly. For design review, add the
-label `design:review`. If this includes a design proposal,
-include the label `design:suggest`]
+## Design Input
+
+<!-- Describe any input or collaboration needed from designers. Tag accordingly:
+  - For design review, add the label `design:review`
+  - For a design proposal, add the label `design:suggest` -->
