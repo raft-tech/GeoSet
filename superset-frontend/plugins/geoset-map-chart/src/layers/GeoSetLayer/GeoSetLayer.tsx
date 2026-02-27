@@ -1132,14 +1132,8 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
     };
   }
 
-  // Don't render chart if there's a validation or config error
-  const configError =
-    formData.geoJsonLayer === 'TextOverlay' && !formData.textLabelColumn
-      ? t('Text Overlay requires a Text Label Column to be selected.')
-      : null;
-  const displayError = validationError || configError;
-
-  if (displayError) {
+  // Don't render chart if there's a validation error
+  if (validationError) {
     return (
       <div
         style={{
@@ -1151,11 +1145,7 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
       >
         <Alert
           type="error"
-          message={
-            configError
-              ? t('Configuration required')
-              : t('Schema validation error')
-          }
+          message={t('Schema validation error')}
           description={
             <div
               style={{
@@ -1166,7 +1156,7 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
                 overflow: 'auto',
               }}
             >
-              {displayError}
+              {validationError}
             </div>
           }
           showIcon

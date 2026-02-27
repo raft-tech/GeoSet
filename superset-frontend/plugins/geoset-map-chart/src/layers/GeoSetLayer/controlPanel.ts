@@ -20,7 +20,7 @@
  * under the License.
  */
 import { ControlPanelConfig } from '@superset-ui/chart-controls';
-import { t } from '@superset-ui/core';
+import { t, validateNonEmpty } from '@superset-ui/core';
 import {
   featureInfoColumns,
   hoverDataColumns,
@@ -124,6 +124,7 @@ const config: ControlPanelConfig = {
               clearable: false,
               default: 'Polygon',
               choices: geoJsonLayers,
+              rerender: ['textLabelColumn'],
               description: t(
                 'Select the Geospatial data layer type to render: Polygon, Line, Point, Text Overlay, or GeoJSON.',
               ),
@@ -189,6 +190,22 @@ const config: ControlPanelConfig = {
               ...textLabelColumn.config,
               visibility: ({ controls }: { controls: any }) =>
                 controls?.geoJsonLayer?.value === 'TextOverlay',
+              // Conditionally require non-empty only for TextOverlay
+              // (re-evaluated on layer change via rerender on geoJsonLayer).
+              shouldMapStateToProps: () => true,
+              mapStateToProps: (state: any, controlState: any) => {
+                const baseProps =
+                  textLabelColumn.config.mapStateToProps?.(
+                    state,
+                    controlState,
+                  ) ?? {};
+                const isTextOverlay =
+                  state?.controls?.geoJsonLayer?.value === 'TextOverlay';
+                return {
+                  ...baseProps,
+                  validators: isTextOverlay ? [validateNonEmpty] : [],
+                };
+              },
             },
           },
         ],
