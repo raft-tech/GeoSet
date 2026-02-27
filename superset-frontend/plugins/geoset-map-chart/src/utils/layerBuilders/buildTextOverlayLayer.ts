@@ -1,6 +1,6 @@
 import { TextLayer } from '@deck.gl/layers';
 import { QueryFormData } from '@superset-ui/core';
-import { GeoJsonFeature } from '../../../types';
+import { GeoJsonFeature } from '../../types';
 
 interface TextOverlayParams {
   fd: QueryFormData;

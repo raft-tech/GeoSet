@@ -39,7 +39,6 @@ import {
 } from '@superset-ui/core';
 import { Alert } from 'antd';
 import Layer from '@deck.gl/core/dist/lib/layer';
-import { buildTextOverlayLayer } from './layerBuilders/buildTextOverlayLayer';
 import {
   DeckGLContainerHandle,
   DeckGLContainerStyledWrapper,
@@ -63,11 +62,12 @@ import { normalizeRGBA } from '../../utils/colorsFallback';
 import { getColoredSvgUrl } from '../../utils/svgIcons';
 import { PointClusterLayer } from '../PointClusterLayer';
 import { validateLayerType } from '../../utilities/utils';
-import { expandPolygonFeatures } from '../../utils/expandPolygonFeatures';
+import { buildTextOverlayLayer } from '../../utils/layerBuilders/buildTextOverlayLayer';
+import { expandPolygonFeatures } from '../../utils/layerBuilders/expandPolygonFeatures';
 import {
   buildPolygonLayers,
   polygonDataCache,
-} from '../../utils/buildPolygonLayers';
+} from '../../utils/layerBuilders/buildPolygonLayers';
 import {
   fetchMapboxApiKey,
   getCachedMapboxApiKey,
