@@ -93,6 +93,13 @@ const StyledLegend = styled.div`
 
 const categoryDelimiter = ' - ';
 
+export type SizeLegend = {
+  lower: number;
+  upper: number;
+  startSize: number;
+  endSize: number;
+};
+
 export type LegendProps = {
   format: string | null;
   forceCategorical?: boolean;
@@ -102,6 +109,7 @@ export type LegendProps = {
     { enabled: boolean; color: number[] | undefined; legend_name?: string }
   >;
   metricLegend?: MetricLegend | null;
+  sizeLegend?: SizeLegend | null;
   toggleCategory?: (key: string) => void;
   showSingleCategory?: (key: string) => void;
   icon?: string;
@@ -121,6 +129,7 @@ const Legend = ({
   position = 'tr',
   categories: categoriesObject = {},
   metricLegend,
+  sizeLegend,
   toggleCategory = () => {},
   showSingleCategory = () => {},
   icon,
@@ -158,8 +167,74 @@ const Legend = ({
     </div>
   ) : null;
 
+  // --- Render size legend if present ---
+  const sizeLegendContent =
+    sizeLegend && sizeLegend.startSize !== sizeLegend.endSize ? (
+      <div className="metric-legend">
+        <div className="legend-title">Point Size</div>
+        {(() => {
+          const { startSize, endSize, lower, upper } = sizeLegend;
+          // Clamp circle radii to reasonable display sizes
+          const r1 = Math.min(startSize, 12);
+          const r2 = Math.min(endSize, 18);
+          const svgH = r2 * 2 + 4;
+          const smallCy = svgH - r1;
+          const largeCy = svgH - r2;
+          const gap = 20;
+          const svgW = r1 * 2 + gap + r2 * 2;
+          const dashY = svgH - r1;
+          const dashX1 = r1 * 2 + 2;
+          const dashX2 = svgW - r2 * 2 - 2;
+          return (
+            <>
+              <svg
+                width={svgW}
+                height={svgH}
+                style={{ margin: '6px 0', overflow: 'visible', display: 'block' }}
+              >
+                <circle
+                  cx={r1}
+                  cy={smallCy}
+                  r={r1}
+                  fill="rgba(0,122,135,0.7)"
+                />
+                <line
+                  x1={dashX1}
+                  y1={dashY}
+                  x2={dashX2}
+                  y2={dashY}
+                  stroke="currentColor"
+                  strokeWidth={1}
+                  strokeDasharray="3,2"
+                  opacity={0.5}
+                />
+                <circle
+                  cx={svgW - r2}
+                  cy={largeCy}
+                  r={r2}
+                  fill="rgba(0,122,135,0.7)"
+                />
+              </svg>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  fontSize: 11,
+                  color: 'var(--ant-color-text-secondary, #888)',
+                }}
+              >
+                <span>{formatLegendNumber(lower)}</span>
+                <span>{formatLegendNumber(upper)}</span>
+              </div>
+            </>
+          );
+        })()}
+      </div>
+    ) : null;
+
   if (
     !metricLegend &&
+    !sizeLegendContent &&
     (Object.keys(categoriesObject).length === 0 || position === null)
   ) {
     console.error('Returning null for Legend');
@@ -230,6 +305,7 @@ const Legend = ({
   return (
     <StyledLegend style={style}>
       {metricLegendContent}
+      {sizeLegendContent}
       <ul>{categories}</ul>
     </StyledLegend>
   );

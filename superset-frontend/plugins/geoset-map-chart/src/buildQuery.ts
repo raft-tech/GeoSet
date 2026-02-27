@@ -27,6 +27,11 @@ export default function buildQuery(formData: QueryFormData) {
   const colorByValue = geojsonConfig?.colorByValue ?? {};
   const dimension = colorByCategory.dimension || formData.dimension;
   const metricColumn = colorByValue.valueColumn;
+  const pointSizeConfig = geojsonConfig?.pointSize;
+  const sizeColumn =
+    pointSizeConfig && typeof pointSizeConfig === 'object'
+      ? pointSizeConfig.valueColumn
+      : undefined;
   const hoverCols = (formData.hoverDataColumns ?? []) as any[];
   const featureCols = (formData.featureInfoColumns ?? []) as any[];
 
@@ -56,6 +61,7 @@ export default function buildQuery(formData: QueryFormData) {
     ...hoverCols,
     ...featureCols,
     metricColumn,
+    sizeColumn,
   ].filter(Boolean);
 
   // Dedupe by label to prevent backend errors

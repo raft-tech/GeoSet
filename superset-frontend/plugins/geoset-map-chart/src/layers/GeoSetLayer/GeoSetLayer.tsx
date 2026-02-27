@@ -405,6 +405,10 @@ export function getLayer(
           let iconName = pointType.replace('-icon', '');
           if (!iconName) iconName = 'circle';
 
+          const hasDynamicSize = sortedFeatures.some(
+            f => (f as any).sizeValue != null,
+          );
+
           return new IconLayer({
             id: `icon-layer-${fd.slice_id}-${sortedFeatures.length}`,
             data: sortedFeatures as Feature<Geometry, GeoJsonProperties>[],
@@ -420,13 +424,16 @@ export function getLayer(
                 anchorY: 128,
               };
             },
-            getSize: () => iconSize,
+            getSize: hasDynamicSize
+              ? (f: any) => (f as any).sizeValue ?? iconSize
+              : () => iconSize,
             sizeScale: 2,
             sizeUnits: 'pixels',
             updateTriggers: {
               getIcon: [iconName, fillColorArray, sortedFeatures.length],
               getIconColor: [sortedFeatures.length],
               getPosition: [sortedFeatures.length],
+              getSize: [iconSize, hasDynamicSize],
             },
             loadOptions: {
               imagebitmap: {
@@ -438,6 +445,10 @@ export function getLayer(
           });
         }
 
+        const hasDynamicRadius = sortedFeatures.some(
+          f => (f as any).sizeValue != null,
+        );
+
         return new ScatterplotLayer({
           id: `point-layer-${fd.slice_id}`,
           data: sortedFeatures as Feature<Geometry, GeoJsonProperties>[],
@@ -448,11 +459,16 @@ export function getLayer(
           getFillColor: (feature: any) => feature.color || fillColorArray,
           getLineColor: () => strokeColorArray,
           getLineWidth: lineWidth ?? (fd.lineWidth || 1),
-          getRadius: () => iconSize,
+          getRadius: hasDynamicRadius
+            ? (f: any) => (f as any).sizeValue ?? iconSize
+            : () => iconSize,
           radiusUnits: 'pixels',
           radiusMinPixels: 1,
-          radiusMaxPixels: 50,
+          radiusMaxPixels: 200,
           radiusScale: 1,
+          updateTriggers: {
+            getRadius: [iconSize, hasDynamicRadius],
+          },
           ...baseLayerProps,
         });
       }
@@ -693,6 +709,12 @@ export type DeckGLGeoJsonProps = {
     categoryColorMapping?: {};
     strokeColorMapping?: {};
     metricLegend?: MetricLegend | null;
+    sizeLegend?: {
+      lower: number;
+      upper: number;
+      startSize: number;
+      endSize: number;
+    } | null;
   };
 };
 
@@ -1180,6 +1202,7 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
         forceCategorical
         categories={categories}
         metricLegend={metricLegend}
+        sizeLegend={propVisualConfig?.sizeLegend}
         format={props.formData.legend_format}
         position="tl"
         showSingleCategory={showSingleCategory}

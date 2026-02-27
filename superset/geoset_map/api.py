@@ -10,6 +10,7 @@ from superset.constants import MODEL_API_RW_METHOD_PERMISSION_MAP
 from superset.geoset_map.schemas import (
     GeoSetLayerV1Schema,
     GeoSetLayerV2Schema,
+    GeoSetLayerV3Schema,
     MapboxApiKeySchema,
 )
 from superset.extensions import event_logger
@@ -35,11 +36,14 @@ class GeoSetMapRestApi(BaseSupersetApi):
     geoset_layer_schemas = {
         "v1": GeoSetLayerV1Schema(),
         "v2": GeoSetLayerV2Schema(),
+        "v3": GeoSetLayerV3Schema(),
     }
     # mapping of (from_version, to_version) to upgrade function
     # when new upgrade paths are added, add them here
     schema_upgrade_paths = {
         ("v1", "v2"): GeoSetLayerV2Schema.upgrade_from_previous_version,
+        ("v2", "v3"): GeoSetLayerV3Schema.upgrade_from_previous_version,
+        ("v1", "v3"): GeoSetLayerV3Schema.upgrade_from_v1,
     }
 
     method_permission_name = MODEL_API_RW_METHOD_PERMISSION_MAP
@@ -50,6 +54,7 @@ class GeoSetMapRestApi(BaseSupersetApi):
     openapi_spec_component_schemas = (
         GeoSetLayerV1Schema,
         GeoSetLayerV2Schema,
+        GeoSetLayerV3Schema,
         MapboxApiKeySchema,
     )
 

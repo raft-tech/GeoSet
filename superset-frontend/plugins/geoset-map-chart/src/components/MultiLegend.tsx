@@ -21,6 +21,13 @@ export type MetricEntry = {
   endColor: RGBAColor;
 };
 
+export type SizeEntry = {
+  lower: number;
+  upper: number;
+  startSize: number;
+  endSize: number;
+};
+
 export type LegendGroup = {
   legendName: string;
   legendParentTitle?: string;
@@ -31,6 +38,7 @@ export type LegendGroup = {
   simpleStyle?: { fillColor: RGBAColor; strokeColor: RGBAColor };
   categories?: CategoryEntry[];
   metric?: MetricEntry;
+  sizeEntry?: SizeEntry;
   initialCollapsed?: boolean; // Whether this legend entry starts collapsed
 };
 
@@ -401,6 +409,66 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
                         </Bounds>
                       </>
                     )}
+
+                    {/* SIZE LEGEND — two circles with dashed range line */}
+                    {group.sizeEntry &&
+                      group.sizeEntry.startSize !== group.sizeEntry.endSize &&
+                      (() => {
+                        const { startSize, endSize, lower, upper } =
+                          group.sizeEntry;
+                        // Clamp for display without distorting the legend panel
+                        const r1 = Math.min(startSize, 12);
+                        const r2 = Math.min(endSize, 18);
+                        const svgH = r2 * 2 + 4;
+                        const smallCy = svgH - r1;
+                        const largeCy = svgH - r2;
+                        const gap = 20;
+                        const svgW = r1 * 2 + gap + r2 * 2;
+                        const dashY = svgH - r1;
+                        const dashX1 = r1 * 2 + 2;
+                        const dashX2 = svgW - r2 * 2 - 2;
+                        const fillColor = fill;
+                        return (
+                          <>
+                            <svg
+                              width={svgW}
+                              height={svgH}
+                              style={{
+                                margin: '6px 0',
+                                overflow: 'visible',
+                                display: 'block',
+                              }}
+                            >
+                              <circle
+                                cx={r1}
+                                cy={smallCy}
+                                r={r1}
+                                fill={`rgba(${fillColor[0]},${fillColor[1]},${fillColor[2]},0.8)`}
+                              />
+                              <line
+                                x1={dashX1}
+                                y1={dashY}
+                                x2={dashX2}
+                                y2={dashY}
+                                stroke="currentColor"
+                                strokeWidth={1}
+                                strokeDasharray="3,2"
+                                opacity={0.5}
+                              />
+                              <circle
+                                cx={svgW - r2}
+                                cy={largeCy}
+                                r={r2}
+                                fill={`rgba(${fillColor[0]},${fillColor[1]},${fillColor[2]},0.8)`}
+                              />
+                            </svg>
+                            <Bounds>
+                              <div>{formatLegendNumber(lower)}</div>
+                              <div>{formatLegendNumber(upper)}</div>
+                            </Bounds>
+                          </>
+                        );
+                      })()}
                   </Content>
                 )}
               </Group>

@@ -44,6 +44,29 @@ export type ColorByValueConfig = {
   breakpoints?: number[];
 };
 
+export type PointSizeConfig = {
+  valueColumn: string;
+  startSize: number; // pixel size at lowerBound
+  endSize: number; // pixel size at upperBound
+  lowerBound?: number | null;
+  upperBound?: number | null;
+};
+
+export function computeSizeScale(
+  config: PointSizeConfig,
+  dataDomain: [number, number],
+): (val: number) => number {
+  const [min, max] = dataDomain;
+  const lower = config.lowerBound ?? min;
+  const upper = config.upperBound ?? max;
+  const range = upper - lower;
+  return (val: number) => {
+    if (val == null || range === 0) return config.startSize;
+    const t = Math.max(0, Math.min(1, (val - lower) / range));
+    return Math.round(config.startSize + t * (config.endSize - config.startSize));
+  };
+}
+
 export type MetricLegend = {
   min: number;
   max: number;
