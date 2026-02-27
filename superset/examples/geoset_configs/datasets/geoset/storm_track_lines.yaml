@@ -1,0 +1,71 @@
+table_name: storm_track_lines
+main_dttm_col: null
+description: NHC best track lines aggregated per storm per year
+default_endpoint: null
+offset: 0
+cache_timeout: null
+catalog: null
+schema: public
+sql: "WITH deduplicated_points AS (\n    SELECT DISTINCT ON (storm_name, \"year\"\
+  , effective_timestamp)\n      storm_name,\n      \"year\",\n      observation_point::geometry\n\
+  \    FROM nhc_best_track\n    ORDER BY storm_name, \"year\", effective_timestamp\n\
+  \  )\n  SELECT\n    storm_name,\n    \"year\",\n    ST_MakeLine(observation_point)\
+  \ AS track_line\n  FROM deduplicated_points\n  GROUP BY storm_name, \"year\""
+params: null
+template_params: null
+filter_select_enabled: true
+fetch_values_predicate: null
+extra: null
+normalize_columns: false
+always_filter_main_dttm: false
+folders: null
+uuid: 744ddd9c-c69c-4937-88ec-20e30bc098aa
+metrics:
+- metric_name: count
+  verbose_name: COUNT(*)
+  metric_type: count
+  expression: COUNT(*)
+  description: null
+  d3format: null
+  currency: null
+  extra: null
+  warning_text: null
+columns:
+- column_name: year
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: INTEGER
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra: null
+- column_name: track_line
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: STRING
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra: null
+- column_name: storm_name
+  verbose_name: null
+  is_dttm: false
+  is_active: true
+  type: STRING
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: null
+  description: null
+  python_date_format: null
+  extra: null
+version: 1.0.0
+database_uuid: d601f9bf-b076-46fa-bd78-5aa1bd0b74b1

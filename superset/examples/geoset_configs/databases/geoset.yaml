@@ -1,0 +1,12 @@
+database_name: geoset
+sqlalchemy_uri: postgresql://geoset:geoset@postgis:5432/geoset
+cache_timeout: null
+expose_in_sqllab: true
+allow_run_async: false
+allow_ctas: false
+allow_cvas: false
+allow_dml: false
+allow_file_upload: false
+extra: {}
+uuid: d601f9bf-b076-46fa-bd78-5aa1bd0b74b1
+version: 1.0.0
