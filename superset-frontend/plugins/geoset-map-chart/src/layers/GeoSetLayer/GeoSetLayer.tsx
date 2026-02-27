@@ -61,7 +61,7 @@ import { useDebouncedValue } from '../../utils/hooks';
 import { normalizeRGBA } from '../../utils/colorsFallback';
 import { getColoredSvgUrl } from '../../utils/svgIcons';
 import { PointClusterLayer } from '../PointClusterLayer';
-import { validateLayerType } from '../../utils/utils';
+import { validateLayerType } from '../../utils/validateLayerType';
 import { buildTextOverlayLayer } from '../../utils/layerBuilders/buildTextOverlayLayer';
 import { expandPolygonFeatures } from '../../utils/layerBuilders/expandPolygonFeatures';
 import {
