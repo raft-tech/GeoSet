@@ -125,7 +125,7 @@ const config: ControlPanelConfig = {
               default: 'Polygon',
               choices: geoJsonLayers,
               description: t(
-                'Select the Geospatial data layer type to render: Polygon, Line, Point, or GeoJSON.',
+                'Select the Geospatial data layer type to render: Polygon, Line, Point, Text Overlay, or GeoJSON.',
               ),
             },
           },
