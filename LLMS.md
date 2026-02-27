@@ -28,7 +28,7 @@ GeoSet/
 ├── docker/                          # Docker configuration
 ├── CLAUDE.md                        # Claude-specific instructions
 └── LLMS.md                          # This file (all LLM tools)
-└── VERSION.md                       # GeoSet version tracking
+└── VERSIONING.md                    # GeoSet version tracking
 ```
 
 ## GeoSet-Specific Architecture

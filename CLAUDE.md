@@ -18,6 +18,10 @@ Details related to the frontend and plugin development can be found within the `
 
 This is a fork of Apache Superset. When using `gh` CLI commands (PRs, issues, etc.), always target the fork repo explicitly with `--repo raft-tech/GeoSet`.
 
+## Versioning
+
+When pulling in upstream Apache Superset changes, update the **"Based on"** field in `VERSIONING.md` to reflect the upstream version that was synced (e.g., `Apache Superset 6.1.0`).
+
 ## Important Notes
 
 - Always use context7 when I need code generation, setup or configuration steps, or
