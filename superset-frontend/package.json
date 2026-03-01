@@ -148,7 +148,7 @@
     "geostyler-wfs-parser": "^2.0.3",
     "global-box": "^2.0.2",
     "googleapis": "^154.1.0",
-    "immer": "^10.1.1",
+    "immer": "^11.1.4",
     "interweave": "^13.1.0",
     "jquery": "^3.7.1",
     "jspdf": "^3.0.1",
