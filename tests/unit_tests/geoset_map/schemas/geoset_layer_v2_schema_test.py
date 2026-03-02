@@ -409,13 +409,11 @@ class TestTextOverlayStyleSchema:
             "fontFamily": "Times New Roman, serif",
             "fontSize": 20,
             "bold": True,
-            "italic": True,
         }
         result = schema.load(data)
         assert result["font_family"] == "Times New Roman, serif"
         assert result["font_size"] == 20
         assert result["bold"] is True
-        assert result["italic"] is True
 
     def test_defaults_applied(self):
         """Empty object should use defaults for all fields."""
@@ -424,7 +422,6 @@ class TestTextOverlayStyleSchema:
         assert result["font_family"] == "Arial, sans-serif"
         assert result["font_size"] == 14
         assert result["bold"] is False
-        assert result["italic"] is False
 
     def test_invalid_font_size_too_small(self):
         """fontSize below 1 should fail validation."""
@@ -447,7 +444,6 @@ class TestTextOverlayStyleSchema:
         assert result["font_family"] == "Arial, sans-serif"
         assert result["font_size"] == 14
         assert result["bold"] is True
-        assert result["italic"] is False
 
 
 class TestTextOverlayStyleInV2Schema:
@@ -461,13 +457,11 @@ class TestTextOverlayStyleInV2Schema:
             "fontFamily": "Courier New, monospace",
             "fontSize": 18,
             "bold": True,
-            "italic": False,
         }
         result = schema.load(data)
         assert result["text_overlay_style"]["font_family"] == "Courier New, monospace"
         assert result["text_overlay_style"]["font_size"] == 18
         assert result["text_overlay_style"]["bold"] is True
-        assert result["text_overlay_style"]["italic"] is False
 
     def test_valid_schema_without_text_overlay_style(self, minimal_valid_schema):
         """Schema without textOverlayStyle should default to None."""

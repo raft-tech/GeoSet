@@ -27,8 +27,7 @@ class TextOverlayStyleSchema(Schema):
         {
             "fontFamily": "Arial, sans-serif",
             "fontSize": 14,
-            "bold": false,
-            "italic": false
+            "bold": false
         }
     """
 
@@ -42,7 +41,6 @@ class TextOverlayStyleSchema(Schema):
         validate=validate.Range(min=1, max=128),
     )
     bold = fields.Boolean(load_default=False)
-    italic = fields.Boolean(load_default=False)
 
 
 class LegendSchemaV2(Schema):
