@@ -17,6 +17,43 @@ interface TextOverlayParams {
   textOverlayStyle?: TextOverlayStyle;
 }
 
+// Unicode Mathematical Alphanumeric Symbols for italic text.
+// deck.gl's TextLayer doesn't support fontStyle, so we convert characters
+// to their Unicode italic equivalents instead.
+const ITALIC_UPPER_START = 0x1d434; // 𝐴
+const ITALIC_LOWER_START = 0x1d44e; // 𝑎
+const BOLD_ITALIC_UPPER_START = 0x1d468; // 𝑨
+const BOLD_ITALIC_LOWER_START = 0x1d482; // 𝒂
+
+// U+1D455 is reserved in Unicode; the italic lowercase 'h' lives at U+210E instead.
+const ITALIC_H = 0x210e; // ℎ (Planck constant)
+
+function toUnicodeStyle(text: string, bold: boolean, italic: boolean): string {
+  if (!italic) return text;
+
+  const upperStart = bold ? BOLD_ITALIC_UPPER_START : ITALIC_UPPER_START;
+  const lowerStart = bold ? BOLD_ITALIC_LOWER_START : ITALIC_LOWER_START;
+
+  let result = '';
+  for (const ch of text) {
+    const code = ch.charCodeAt(0);
+    if (code >= 65 && code <= 90) {
+      // A-Z
+      result += String.fromCodePoint(upperStart + (code - 65));
+    } else if (code >= 97 && code <= 122) {
+      // a-z — handle the 'h' gap in the italic (non-bold) block
+      if (!bold && code === 104) {
+        result += String.fromCodePoint(ITALIC_H);
+      } else {
+        result += String.fromCodePoint(lowerStart + (code - 97));
+      }
+    } else {
+      result += ch;
+    }
+  }
+  return result;
+}
+
 export function buildTextOverlayLayer({
   fd,
   sortedFeatures,
@@ -34,20 +71,20 @@ export function buildTextOverlayLayer({
   }
 
   const style = textOverlayStyle ?? {};
-  const baseFontFamily = style.fontFamily || 'Arial, sans-serif';
+  const fontFamily = style.fontFamily || 'Arial, sans-serif';
   const fontSize = style.fontSize ?? 14;
   const fontWeight = style.bold ? 'bold' : 'normal';
-
-  // deck.gl TextLayer builds the font atlas via Canvas ctx.font, which
-  // accepts the CSS font shorthand.  Prepending "italic" to the fontFamily
-  // string is the supported way to get italic rendering.
-  const fontFamily = style.italic ? `italic ${baseFontFamily}` : baseFontFamily;
+  const useItalic = style.italic ?? false;
+  const useBold = style.bold ?? false;
 
   return new TextLayer({
     id: `text-overlay-layer-${fd.slice_id}`,
     data: sortedFeatures,
     getPosition: (f: any) => f.geometry?.coordinates,
-    getText: (f: any) => String(f.properties?.[textColumn] ?? ''),
+    getText: (f: any) => {
+      const raw = String(f.properties?.[textColumn] ?? '');
+      return useItalic ? toUnicodeStyle(raw, useBold, true) : raw;
+    },
     getColor: (f: any) => f.color || fillColorArray,
     getSize: fontSize,
     sizeUnits: 'pixels',
@@ -58,8 +95,9 @@ export function buildTextOverlayLayer({
     billboard: true,
     fontFamily,
     fontWeight,
+    characterSet: 'auto',
     updateTriggers: {
-      getText: [textColumn],
+      getText: [textColumn, useItalic, useBold],
       getColor: [fillColorArray, sortedFeatures.length],
       getSize: [fontSize],
     },
