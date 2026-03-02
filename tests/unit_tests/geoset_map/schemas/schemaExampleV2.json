@@ -69,7 +69,8 @@
   "textOverlayStyle": {
     "fontFamily": "Arial, sans-serif",
     "fontSize": 14,
-    "bold": false
+    "bold": false,
+    "offset": [0, 0]
   },
   "legend": {
     "title": "legend_title",

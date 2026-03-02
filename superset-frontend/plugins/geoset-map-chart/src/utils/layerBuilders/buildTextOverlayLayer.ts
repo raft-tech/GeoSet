@@ -6,6 +6,7 @@ export interface TextOverlayStyle {
   fontFamily?: string;
   fontSize?: number;
   bold?: boolean;
+  offset?: [number, number];
 }
 
 interface TextOverlayParams {
@@ -36,6 +37,7 @@ export function buildTextOverlayLayer({
   const fontFamily = style.fontFamily || 'Arial, sans-serif';
   const fontSize = style.fontSize ?? 14;
   const fontWeight = style.bold ? 'bold' : 'normal';
+  const pixelOffset: [number, number] = style.offset ?? [0, 0];
 
   return new TextLayer({
     id: `text-overlay-layer-${fd.slice_id}`,
@@ -49,6 +51,7 @@ export function buildTextOverlayLayer({
     sizeMaxPixels: 128,
     getTextAnchor: 'middle',
     getAlignmentBaseline: 'center',
+    getPixelOffset: pixelOffset,
     billboard: true,
     fontFamily,
     fontWeight,

@@ -27,7 +27,8 @@ class TextOverlayStyleSchema(Schema):
         {
             "fontFamily": "Arial, sans-serif",
             "fontSize": 14,
-            "bold": false
+            "bold": false,
+            "offset": [0, 0]
         }
     """
 
@@ -41,6 +42,11 @@ class TextOverlayStyleSchema(Schema):
         validate=validate.Range(min=1, max=128),
     )
     bold = fields.Boolean(load_default=False)
+    offset = fields.List(
+        fields.Integer(validate=validate.Range(min=-500, max=500)),
+        load_default=[0, 0],
+        validate=validate.Length(equal=2),
+    )
 
 
 class LegendSchemaV2(Schema):

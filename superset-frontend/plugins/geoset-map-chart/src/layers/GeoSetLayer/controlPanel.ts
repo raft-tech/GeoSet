@@ -85,6 +85,7 @@ const defaultGeojsonConfig = JSON.stringify(
     //   fontFamily: 'Arial, sans-serif',
     //   fontSize: 14,
     //   bold: false,
+    //   offset: [0, 0],
     // },
     legend: {
       title: 'legend_parent_title',
