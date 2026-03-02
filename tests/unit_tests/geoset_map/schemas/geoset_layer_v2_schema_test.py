@@ -10,6 +10,7 @@ from marshmallow import ValidationError
 from superset.geoset_map.schemas.GeoSetLayerV2Schema import (
     GeoSetLayerV2Schema,
     LegendSchemaV2,
+    TextOverlayStyleSchema,
 )
 
 
@@ -391,3 +392,103 @@ class TestSchemaUpgrade:
         assert isinstance(result, dict)
         assert result["legend"]["title"] == "my_legend_name"
         assert result["legend"]["name"] is None
+
+
+# =============================================================================
+# Text Overlay Style Tests
+# =============================================================================
+
+
+class TestTextOverlayStyleSchema:
+    """Tests for TextOverlayStyleSchema validation."""
+
+    def test_valid_full_style(self):
+        """Full text overlay style should pass validation."""
+        schema = TextOverlayStyleSchema()
+        data = {
+            "fontFamily": "Times New Roman, serif",
+            "fontSize": 20,
+            "bold": True,
+            "italic": True,
+        }
+        result = schema.load(data)
+        assert result["font_family"] == "Times New Roman, serif"
+        assert result["font_size"] == 20
+        assert result["bold"] is True
+        assert result["italic"] is True
+
+    def test_defaults_applied(self):
+        """Empty object should use defaults for all fields."""
+        schema = TextOverlayStyleSchema()
+        result = schema.load({})
+        assert result["font_family"] == "Arial, sans-serif"
+        assert result["font_size"] == 14
+        assert result["bold"] is False
+        assert result["italic"] is False
+
+    def test_invalid_font_size_too_small(self):
+        """fontSize below 1 should fail validation."""
+        schema = TextOverlayStyleSchema()
+        with pytest.raises(ValidationError) as exc_info:
+            schema.load({"fontSize": 0})
+        assert "fontSize" in exc_info.value.messages
+
+    def test_invalid_font_size_too_large(self):
+        """fontSize above 128 should fail validation."""
+        schema = TextOverlayStyleSchema()
+        with pytest.raises(ValidationError) as exc_info:
+            schema.load({"fontSize": 200})
+        assert "fontSize" in exc_info.value.messages
+
+    def test_partial_override(self):
+        """Providing only some fields should use defaults for the rest."""
+        schema = TextOverlayStyleSchema()
+        result = schema.load({"bold": True})
+        assert result["font_family"] == "Arial, sans-serif"
+        assert result["font_size"] == 14
+        assert result["bold"] is True
+        assert result["italic"] is False
+
+
+class TestTextOverlayStyleInV2Schema:
+    """Tests for textOverlayStyle nested in GeoSetLayerV2Schema."""
+
+    def test_valid_schema_with_text_overlay_style(self, minimal_valid_schema):
+        """Schema with textOverlayStyle should pass validation."""
+        schema = GeoSetLayerV2Schema()
+        data = copy.deepcopy(minimal_valid_schema)
+        data["textOverlayStyle"] = {
+            "fontFamily": "Courier New, monospace",
+            "fontSize": 18,
+            "bold": True,
+            "italic": False,
+        }
+        result = schema.load(data)
+        assert result["text_overlay_style"]["font_family"] == "Courier New, monospace"
+        assert result["text_overlay_style"]["font_size"] == 18
+        assert result["text_overlay_style"]["bold"] is True
+        assert result["text_overlay_style"]["italic"] is False
+
+    def test_valid_schema_without_text_overlay_style(self, minimal_valid_schema):
+        """Schema without textOverlayStyle should default to None."""
+        schema = GeoSetLayerV2Schema()
+        result = schema.load(minimal_valid_schema)
+        assert result["text_overlay_style"] is None
+
+    def test_dump_excludes_null_text_overlay_style(self, minimal_valid_schema):
+        """Dumped schema should not include textOverlayStyle when it is None."""
+        schema = GeoSetLayerV2Schema()
+        result = schema.load(minimal_valid_schema)
+        dumped = schema.dump(result)
+        assert "textOverlayStyle" not in dumped
+
+    def test_dump_includes_text_overlay_style_when_set(self, minimal_valid_schema):
+        """Dumped schema should include textOverlayStyle when provided."""
+        schema = GeoSetLayerV2Schema()
+        data = copy.deepcopy(minimal_valid_schema)
+        data["textOverlayStyle"] = {"fontSize": 24, "bold": True}
+        result = schema.load(data)
+        dumped = schema.dump(result)
+        assert "textOverlayStyle" in dumped
+        assert dumped["textOverlayStyle"]["fontSize"] == 24
+        assert dumped["textOverlayStyle"]["bold"] is True

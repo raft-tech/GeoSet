@@ -81,6 +81,12 @@ const defaultGeojsonConfig = JSON.stringify(
     //   endColor: [255, 0, 0, 255],
     //   breakpoints: [],
     // },
+    // textOverlayStyle: {
+    //   fontFamily: 'Arial, sans-serif',
+    //   fontSize: 14,
+    //   bold: false,
+    //   italic: false,
+    // },
     legend: {
       title: 'legend_parent_title',
       name: 'human_readable_legend_chart_title',
