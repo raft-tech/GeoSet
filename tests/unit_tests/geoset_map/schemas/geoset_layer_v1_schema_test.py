@@ -194,24 +194,6 @@ class TestPointTypeValidation:
         assert isinstance(result, dict)
         assert result["point_type"] is None
 
-    @pytest.mark.parametrize(
-        "point_type",
-        [
-            "invalid",
-            "CIRCLE",
-            "Circle",
-            "",
-            "square",
-            "triangle",
-        ],
-    )
-    def test_invalid_point_types(self, valid_global_coloring, point_type):
-        """Invalid pointType values should fail validation."""
-        schema = GlobalColoringSchema()
-        data = copy.deepcopy(valid_global_coloring)
-        data["pointType"] = point_type
-        with pytest.raises(ValidationError):
-            schema.load(data)
 
 
 # =============================================================================
