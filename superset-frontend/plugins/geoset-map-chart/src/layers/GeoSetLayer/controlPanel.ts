@@ -46,13 +46,6 @@ const geoJsonLayers: [string, string][] = [
   ['Polygon', 'Polygon'],
   ['TextOverlay', 'Text Overlay'],
 ];
-const geoJsonLayers: [string, string][] = [
-  ['GeoJSON', 'GeoJSON'],
-  ['Point', 'Point'],
-  ['Line', 'Line'],
-  ['Polygon', 'Polygon'],
-  ['TextOverlay', 'Text Overlay'],
-];
 
 const defaultGeojsonConfig = JSON.stringify(
   {

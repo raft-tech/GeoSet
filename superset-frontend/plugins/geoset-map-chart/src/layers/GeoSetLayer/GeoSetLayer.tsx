@@ -61,7 +61,7 @@ import { useDebouncedValue } from '../../utils/hooks';
 import { normalizeRGBA } from '../../utils/colorsFallback';
 import { getColoredSvgUrl } from '../../utils/svgIcons';
 import { PointClusterLayer } from '../PointClusterLayer';
-import { validateLayerType } from '../../utilities/utils';
+import { validateLayerType } from '../../utils/validateLayerType';
 import {
   buildTextOverlayLayer,
   TextOverlayStyle,
@@ -70,7 +70,6 @@ import { expandPolygonFeatures } from '../../utils/layerBuilders/expandPolygonFe
 import {
   buildPolygonLayers,
   polygonDataCache,
-} from '../../utils/layerBuilders/buildPolygonLayers';
 } from '../../utils/layerBuilders/buildPolygonLayers';
 import {
   fetchMapboxApiKey,
