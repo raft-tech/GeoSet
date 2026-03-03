@@ -33,12 +33,19 @@ import {
   clusterMinPoints,
   clusterRadius,
   textLabelColumn,
-} from '../../utilities/Shared_DeckGL';
-import { dndGeojsonColumn } from '../../utilities/sharedDndControls';
+} from '../../utils/Shared_DeckGL';
+import { dndGeojsonColumn } from '../../utils/sharedDndControls';
 import JsonEditorControl from '../../components/JsonEditorControl';
 import { CURRENT_VERSION } from '../common';
 import { getLiveViewport } from '../../utils/liveViewportStore';
 
+const geoJsonLayers: [string, string][] = [
+  ['GeoJSON', 'GeoJSON'],
+  ['Point', 'Point'],
+  ['Line', 'Line'],
+  ['Polygon', 'Polygon'],
+  ['TextOverlay', 'Text Overlay'],
+];
 const geoJsonLayers: [string, string][] = [
   ['GeoJSON', 'GeoJSON'],
   ['Point', 'Point'],

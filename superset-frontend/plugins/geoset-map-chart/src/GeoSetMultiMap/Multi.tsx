@@ -47,7 +47,7 @@ import transformGeoSetMapLayerProps from '../transformProps';
 import MultiLegend, { LegendGroup } from '../components/MultiLegend';
 import MapControls from '../components/MapControls';
 import { CategoryState, MetricLegend, RGBAColor } from '../utils/colors';
-import { getGeometryType } from '../utils';
+import { getGeometryType } from '../utils/dataProcessing';
 import { fetchMapboxApiKey, getCachedMapboxApiKey } from '../utils/mapboxApi';
 import { multiChartMigration } from '../utils/migrationApi';
 import ClickPopupBox, { ClickedFeatureInfo } from '../components/ClickPopupBox';

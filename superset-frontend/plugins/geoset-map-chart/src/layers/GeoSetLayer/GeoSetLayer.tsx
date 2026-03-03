@@ -71,6 +71,7 @@ import {
   buildPolygonLayers,
   polygonDataCache,
 } from '../../utils/layerBuilders/buildPolygonLayers';
+} from '../../utils/layerBuilders/buildPolygonLayers';
 import {
   fetchMapboxApiKey,
   getCachedMapboxApiKey,

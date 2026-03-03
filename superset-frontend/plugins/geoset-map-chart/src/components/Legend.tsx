@@ -162,7 +162,6 @@ const Legend = ({
     !metricLegend &&
     (Object.keys(categoriesObject).length === 0 || position === null)
   ) {
-    console.error('Returning null for Legend');
     return null;
   }
 
