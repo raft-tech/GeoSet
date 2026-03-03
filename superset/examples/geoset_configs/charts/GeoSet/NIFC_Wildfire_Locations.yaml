@@ -10,7 +10,7 @@ params:
   geoJsonLayer: Point
   autozoom: true
   row_limit: 10000
-  mapbox_style: mapbox://styles/acf-dart/cm8ov8yl4001401s365rs672z
+  mapbox_style: mapbox://styles/mapbox/light-v9
   adhoc_filters: []
   hoverDataColumns:
   - label: Incident Name
