@@ -37,7 +37,9 @@ export function buildTextOverlayLayer({
   const fontFamily = style.fontFamily || 'Arial, sans-serif';
   const fontSize = style.fontSize ?? 14;
   const fontWeight = style.bold ? 'bold' : 'normal';
-  const pixelOffset: [number, number] = style.offset ?? [0, 0];
+  // Negate Y so positive = up, negative = down (deck.gl uses screen coords)
+  const rawOffset = style.offset ?? [0, 0];
+  const pixelOffset: [number, number] = [rawOffset[0], -rawOffset[1]];
 
   return new TextLayer({
     id: `text-overlay-layer-${fd.slice_id}`,
