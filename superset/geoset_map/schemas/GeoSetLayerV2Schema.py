@@ -6,7 +6,7 @@ when colorByCategory or colorByValue is used.
 
 from typing import Any
 
-from marshmallow import fields, Schema, validate, validates_schema, ValidationError
+from marshmallow import fields, Schema, validates_schema, ValidationError
 
 from superset.geoset_map.schemas.base import BaseGeoSetLayerSchema
 from superset.geoset_map.schemas.GeoSetLayerV1Schema import (
@@ -14,39 +14,6 @@ from superset.geoset_map.schemas.GeoSetLayerV1Schema import (
     ColorByValueSchema,
     GlobalColoringSchema,
 )
-
-
-class TextOverlayStyleSchema(Schema):
-    """Schema for text overlay styling configuration.
-
-    Controls the appearance of text annotations rendered on the map.
-    Color is inherited from globalColoring.fillColor and is not duplicated here.
-
-    Example::
-
-        {
-            "fontFamily": "Arial, sans-serif",
-            "fontSize": 14,
-            "bold": false,
-            "offset": [0, 0]
-        }
-    """
-
-    font_family = fields.String(
-        load_default="Arial, sans-serif",
-        data_key="fontFamily",
-    )
-    font_size = fields.Integer(
-        load_default=14,
-        data_key="fontSize",
-        validate=validate.Range(min=1, max=128),
-    )
-    bold = fields.Boolean(load_default=False)
-    offset = fields.List(
-        fields.Integer(validate=validate.Range(min=-500, max=500)),
-        load_default=[0, 0],
-        validate=validate.Length(equal=2),
-    )
 
 
 class LegendSchemaV2(Schema):
@@ -143,9 +110,6 @@ class GeoSetLayerV2Schema(BaseGeoSetLayerSchema):
         ColorByValueSchema, load_default=None, data_key="colorByValue"
     )
     legend = fields.Nested(LegendSchemaV2, required=True)
-    text_overlay_style = fields.Nested(
-        TextOverlayStyleSchema, load_default=None, data_key="textOverlayStyle"
-    )
 
     @validates_schema
     def validate_coloring_options(self, data, **kwargs):

@@ -1,3 +1,4 @@
+
 {
   "globalColoring": {
     "fillColor": [
@@ -65,6 +66,12 @@
       255
     ],
     "breakpoints": []
+  },
+  "textOverlayStyle": {
+    "fontFamily": "Arial, sans-serif",
+    "fontSize": 14,
+    "bold": false,
+    "offset": [0, 0]
   },
   "legend": {
     "title": "legend_title",
