@@ -65,6 +65,13 @@ export const IconSwatch = styled.img`
   height: 16px;
 `;
 
+// Text overlay swatch - "XYZ" label
+export const TextSwatch = styled.div<{ fill: RGBAColor }>`
+  font-size: 14px;
+  font-weight: 700;
+  color: ${({ fill }) => toRgbaString(fill)};
+`;
+
 // Helper component to render the appropriate swatch based on icon/geometry
 export type SwatchProps = {
   fill: RGBAColor;
@@ -92,6 +99,10 @@ export const Swatch: React.FC<SwatchProps> = ({
 
   // Otherwise, pick swatch based on geometry type
   const geoType = geometryType?.toLowerCase() || 'polygon';
+
+  if (geoType === 'textoverlay') {
+    return <TextSwatch fill={fill}>XYZ</TextSwatch>;
+  }
 
   if (
     geoType === 'line' ||
