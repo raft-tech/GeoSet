@@ -57,11 +57,6 @@ export function buildTextOverlayLayer({
     billboard: true,
     fontFamily,
     fontWeight,
-    updateTriggers: {
-      getText: [textColumn],
-      getColor: [fillColorArray, sortedFeatures.length],
-      getSize: [fontSize],
-    },
     ...baseLayerProps,
   });
 }
