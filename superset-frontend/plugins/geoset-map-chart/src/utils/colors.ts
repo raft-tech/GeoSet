@@ -86,6 +86,51 @@ export type MetricLegend = {
   legendName: string;
 };
 
+/**
+ * Check if a value is a percentage string (e.g. "25%").
+ */
+export function isPercentString(value: unknown): value is string {
+  return typeof value === 'string' && /^\d+(\.\d+)?%$/.test(value.trim());
+}
+
+/**
+ * Compute the p-th percentile of a sorted array using linear interpolation.
+ * @param sorted Array of numbers, must be sorted ascending.
+ * @param p Percentile as a fraction (0 to 1). E.g. 0.25 for 25th percentile.
+ */
+export function percentile(sorted: number[], p: number): number {
+  if (sorted.length === 0) return 0;
+  if (sorted.length === 1) return sorted[0];
+  if (p <= 0) return sorted[0];
+  if (p >= 1) return sorted[sorted.length - 1];
+
+  const index = p * (sorted.length - 1);
+  const lo = Math.floor(index);
+  const hi = Math.ceil(index);
+  const weight = index - lo;
+
+  return sorted[lo] * (1 - weight) + sorted[hi] * weight;
+}
+
+/**
+ * Resolve a bound or breakpoint value. If it's a percentage string like "25%",
+ * compute the percentile from sortedValues. If it's a number, return as-is.
+ * If null/undefined, return the provided fallback.
+ */
+export function resolvePercentOrNumber(
+  value: number | string | null | undefined,
+  sortedValues: number[],
+  fallback: number,
+): number {
+  if (value == null) return fallback;
+  if (typeof value === 'number') return value;
+  if (isPercentString(value)) {
+    const pct = parseFloat(value) / 100;
+    return percentile(sortedValues, pct);
+  }
+  return fallback;
+}
+
 // eslint-disable-next-line import/prefer-default-export
 /**
  * Converts a hex string (e.g. "#ff8800") to an RGBA array.

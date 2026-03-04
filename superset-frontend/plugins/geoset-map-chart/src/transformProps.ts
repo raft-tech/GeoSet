@@ -188,8 +188,19 @@ export default function transformProps(chartProps: ChartProps) {
 
       if (values.length > 0) {
         const sortedValues = [...values].sort((a, b) => a - b);
-        const lower = lowerBound ?? sortedValues[0];
-        const upper = upperBound ?? sortedValues[sortedValues.length - 1];
+        const lower = resolvePercentOrNumber(
+          lowerBound,
+          sortedValues,
+          sortedValues[0],
+        );
+        const upper = resolvePercentOrNumber(
+          upperBound,
+          sortedValues,
+          sortedValues[sortedValues.length - 1],
+        );
+        const resolvedBreakpoints = (breakpoints ?? []).map(
+          (bp: number | string) => resolvePercentOrNumber(bp, sortedValues, 0),
+        );
         metricDomain = [lower, upper];
 
         const start: RGBAColor = hasValidFill(startColor)
@@ -204,7 +215,7 @@ export default function transformProps(chartProps: ChartProps) {
           valueColumn,
           startColor: start,
           endColor: end,
-          breakpoints,
+          breakpoints: resolvedBreakpoints,
           lowerBound: lower,
           upperBound: upper,
         };
