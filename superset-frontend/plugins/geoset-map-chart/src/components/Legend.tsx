@@ -1,3 +1,4 @@
+/* eslint-disable theme-colors/no-literal-colors */
 /* eslint-disable no-console */
 /* eslint-disable react/jsx-sort-default-props */
 /* eslint-disable react/sort-prop-types */
@@ -542,7 +543,6 @@ const Legend = ({
     !combinedMetricSizeContent &&
     (categoryEntries.length === 0 || position === null)
   ) {
-    console.error('Returning null for Legend');
     return null;
   }
 
