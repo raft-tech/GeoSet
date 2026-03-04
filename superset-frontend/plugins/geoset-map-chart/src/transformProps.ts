@@ -40,7 +40,7 @@ import {
   normalizeNullCategory,
   parseRawFeatures,
   getGeometryType,
-} from './utils';
+} from './utils/dataProcessing';
 import { hasValidFill } from './utils/colorsFallback';
 
 const NOOP = () => {};
