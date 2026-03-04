@@ -23,7 +23,7 @@ import { JsonObject, JsonValue, QueryFormData } from '@superset-ui/core';
 import sandboxedEval from '../utils/sandbox';
 import { TooltipProps } from '../components/Tooltip';
 
-export const CURRENT_VERSION = 3;
+export const CURRENT_VERSION = 4;
 
 const d3array: Record<string, any> = d3arrayModule as Record<string, any>;
 
