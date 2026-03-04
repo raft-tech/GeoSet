@@ -235,6 +235,20 @@ class GeoSetLayerV3Schema(BaseGeoSetLayerSchema):
                     "is provided."
                 )
 
+        # When both dynamic pointSize and colorByValue are used, their
+        # valueColumn must be the same column.
+        point_size = data.get("point_size")
+        if has_value and isinstance(point_size, dict):
+            size_col = point_size.get("value_column")
+            value_col = data["color_by_value"].get("value_column")
+            if size_col and value_col and size_col != value_col:
+                raise ValidationError(
+                    "When using both pointSize scaling and colorByValue, "
+                    "they must reference the same valueColumn. "
+                    f'Got pointSize.valueColumn="{size_col}" and '
+                    f'colorByValue.valueColumn="{value_col}".'
+                )
+
     @staticmethod
     def upgrade_from_previous_version(data: dict[str, Any]) -> dict[str, Any]:
         """Upgrade a V2 schema to V3 format.
