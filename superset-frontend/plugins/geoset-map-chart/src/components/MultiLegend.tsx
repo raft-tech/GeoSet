@@ -1,10 +1,11 @@
 /* eslint-disable no-console */
 /* eslint-disable react-hooks/rules-of-hooks */
 import { styled } from '@superset-ui/core';
-import { useState, useEffect, useRef } from 'react';
+import { Fragment, useState, useEffect, useRef } from 'react';
 import MapIcon from '@material-ui/icons/MapTwoTone';
 import { RGBAColor } from '../utils/colors';
 import { Swatch } from '../utils/legendSwatch';
+import { getColoredSvgUrl } from '../utils/svgIcons';
 import { formatLegendNumber } from '../utils/formatNumber';
 
 export type CategoryEntry = {
@@ -26,6 +27,8 @@ export type SizeEntry = {
   upper: number;
   startSize: number;
   endSize: number;
+  valueColumn: string;
+  legendTitle?: string;
 };
 
 export type LegendGroup = {
@@ -39,6 +42,7 @@ export type LegendGroup = {
   categories?: CategoryEntry[];
   metric?: MetricEntry;
   sizeEntry?: SizeEntry;
+  isCombinedMetricSize?: boolean;
   initialCollapsed?: boolean; // Whether this legend entry starts collapsed
 };
 
@@ -239,13 +243,13 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
 }) => {
   const sliceIds = Object.keys(legendsBySlice);
 
-  if (sliceIds.length === 0) return null;
-
   const [isLegendOpen, setIsLegendOpen] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [optimisticVisibility, setOptimisticVisibility] = useState<
     Record<string, boolean>
   >({});
+
+  if (sliceIds.length === 0) return null;
 
   const toggle = (id: string) => {
     const group = legendsBySlice[id];
@@ -340,62 +344,304 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
                 {/* Content */}
                 {isOpen && (
                   <Content>
-                    {/* SIMPLE - show icon and slice name */}
-                    {group.type === 'simple' && group.simpleStyle && (
-                      <CategoryRow>
-                        <Swatch
-                          fill={fill}
-                          stroke={stroke}
-                          icon={group.icon}
-                          geometryType={group.geometryType}
-                        />
-                        <div>{group.legendName}</div>
-                      </CategoryRow>
-                    )}
+                    {/* SIMPLE - show icon and slice name (skip when sizeEntry handles the display) */}
+                    {group.type === 'simple' &&
+                      group.simpleStyle &&
+                      !group.sizeEntry && (
+                        <CategoryRow>
+                          <Swatch
+                            fill={fill}
+                            stroke={stroke}
+                            icon={group.icon}
+                            geometryType={group.geometryType}
+                          />
+                          <div>{group.legendName}</div>
+                        </CategoryRow>
+                      )}
 
-                    {/* CATEGORIES */}
-                    {group.categories && group.categories.length > 0 && (
-                      <>
-                        {group.categories.map((cat, i) => {
-                          const isEnabled = cat.enabled !== false;
-                          const hasToggle = !!onToggleCategory;
+                    {/* CATEGORIES — grid with size circles when sizeEntry present */}
+                    {group.categories &&
+                      group.categories.length > 0 &&
+                      (() => {
+                        const hasSizeGrid =
+                          group.sizeEntry &&
+                          group.sizeEntry.startSize !== group.sizeEntry.endSize;
+                        const hasToggle = !!onToggleCategory;
 
-                          // Apply opacity to color when disabled
-                          const displayFillColor: RGBAColor = isEnabled
-                            ? cat.fillColor
-                            : [
-                                cat.fillColor[0],
-                                cat.fillColor[1],
-                                cat.fillColor[2],
-                                100,
-                              ];
+                        if (hasSizeGrid) {
+                          const { startSize, endSize, lower, upper } =
+                            group.sizeEntry!;
+                          const r1 = Math.min(startSize, 8);
+                          const rMid = Math.min(
+                            Math.round((startSize + endSize) / 2),
+                            13,
+                          );
+                          const r3 = Math.min(endSize, 18);
+                          const radii = [r1, rMid, r3];
+                          const cellSize = r3 * 2 + 4;
+                          const midValue = Math.round((lower + upper) / 2);
 
                           return (
-                            <CategoryRow key={i}>
-                              {hasToggle && (
-                                <VisibilityCheckbox
-                                  type="checkbox"
-                                  checked={isEnabled}
-                                  onChange={() =>
-                                    onToggleCategory(id, cat.label)
-                                  }
-                                />
-                              )}
-                              <Swatch
-                                fill={displayFillColor}
-                                stroke={cat.strokeColor}
-                                icon={group.icon}
-                                geometryType={group.geometryType}
-                              />
-                              <div>{cat.label}</div>
-                            </CategoryRow>
-                          );
-                        })}
-                      </>
-                    )}
+                            <div
+                              style={{
+                                display: 'grid',
+                                gridTemplateColumns: `auto repeat(3, 1fr)`,
+                                gap: '4px 2px',
+                                alignItems: 'center',
+                              }}
+                            >
+                              {group.categories!.map((cat, i) => {
+                                const isEnabled = cat.enabled !== false;
+                                const displayFillColor: RGBAColor = isEnabled
+                                  ? cat.fillColor
+                                  : [
+                                      cat.fillColor[0],
+                                      cat.fillColor[1],
+                                      cat.fillColor[2],
+                                      100,
+                                    ];
+                                const rgba = `rgba(${displayFillColor[0]},${displayFillColor[1]},${displayFillColor[2]},${displayFillColor[3] / 255})`;
 
-                    {/* METRIC GRADIENT */}
-                    {group.metric && (
+                                return (
+                                  <Fragment key={`cat-${i}`}>
+                                    <div
+                                      style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 6,
+                                        opacity: isEnabled ? 1 : 0.5,
+                                        paddingRight: 8,
+                                      }}
+                                    >
+                                      {hasToggle && (
+                                        <VisibilityCheckbox
+                                          type="checkbox"
+                                          checked={isEnabled}
+                                          onChange={() =>
+                                            onToggleCategory(id, cat.label)
+                                          }
+                                        />
+                                      )}
+                                      <span>{cat.label}</span>
+                                    </div>
+                                    {radii.map((r, j) => {
+                                      const iconN =
+                                        group.icon?.replace('-icon', '') ||
+                                        'circle';
+                                      return (
+                                        <div
+                                          key={`circle-${i}-${j}`}
+                                          style={{
+                                            display: 'flex',
+                                            justifyContent: 'center',
+                                            alignItems: 'flex-end',
+                                            height: cellSize,
+                                            paddingBottom: 2,
+                                          }}
+                                        >
+                                          {group.icon ? (
+                                            <img
+                                              src={getColoredSvgUrl(
+                                                iconN,
+                                                displayFillColor,
+                                              )}
+                                              alt=""
+                                              width={r * 2}
+                                              height={r * 2}
+                                            />
+                                          ) : (
+                                            <svg width={r * 2} height={r * 2}>
+                                              <circle
+                                                cx={r}
+                                                cy={r}
+                                                r={r}
+                                                fill={rgba}
+                                              />
+                                            </svg>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </Fragment>
+                                );
+                              })}
+                              {/* Size value labels */}
+                              <span />
+                              {[lower, midValue, upper].map((val, i) => (
+                                <span
+                                  key={`val-${i}`}
+                                  style={{
+                                    textAlign: 'center',
+                                    fontSize: 11,
+                                  }}
+                                >
+                                  {formatLegendNumber(val)}
+                                  {i === 2 && lower !== upper ? '+' : ''}
+                                </span>
+                              ))}
+                            </div>
+                          );
+                        }
+
+                        // Standard category rows (no sizeEntry)
+                        return (
+                          <>
+                            {group.categories!.map((cat, i) => {
+                              const isEnabled = cat.enabled !== false;
+                              const displayFillColor: RGBAColor = isEnabled
+                                ? cat.fillColor
+                                : [
+                                    cat.fillColor[0],
+                                    cat.fillColor[1],
+                                    cat.fillColor[2],
+                                    100,
+                                  ];
+
+                              return (
+                                <CategoryRow key={i}>
+                                  {hasToggle && (
+                                    <VisibilityCheckbox
+                                      type="checkbox"
+                                      checked={isEnabled}
+                                      onChange={() =>
+                                        onToggleCategory(id, cat.label)
+                                      }
+                                    />
+                                  )}
+                                  <Swatch
+                                    fill={displayFillColor}
+                                    stroke={cat.strokeColor}
+                                    icon={group.icon}
+                                    geometryType={group.geometryType}
+                                  />
+                                  <div>{cat.label}</div>
+                                </CategoryRow>
+                              );
+                            })}
+                          </>
+                        );
+                      })()}
+
+                    {/* COMBINED METRIC+SIZE — 4 gradient-colored circles */}
+                    {group.isCombinedMetricSize &&
+                      group.metric &&
+                      group.sizeEntry &&
+                      group.sizeEntry.startSize !== group.sizeEntry.endSize &&
+                      (() => {
+                        const { startSize, endSize, lower, upper } =
+                          group.sizeEntry;
+                        const tValues = [0, 0.33, 0.67, 1];
+                        const radii = tValues.map(t => {
+                          const raw = startSize + t * (endSize - startSize);
+                          return Math.min(Math.max(Math.round(raw), 3), 18);
+                        });
+                        const interpolateColor = (
+                          c1: RGBAColor,
+                          c2: RGBAColor,
+                          t: number,
+                        ) => {
+                          const r = Math.round(c1[0] + t * (c2[0] - c1[0]));
+                          const g = Math.round(c1[1] + t * (c2[1] - c1[1]));
+                          const b = Math.round(c1[2] + t * (c2[2] - c1[2]));
+                          return `rgba(${r},${g},${b},0.8)`;
+                        };
+                        const interpolateRgba = (
+                          c1: RGBAColor,
+                          c2: RGBAColor,
+                          t: number,
+                        ): RGBAColor => [
+                          Math.round(c1[0] + t * (c2[0] - c1[0])),
+                          Math.round(c1[1] + t * (c2[1] - c1[1])),
+                          Math.round(c1[2] + t * (c2[2] - c1[2])),
+                          204,
+                        ];
+                        const colors = tValues.map(t =>
+                          interpolateColor(
+                            group.metric!.startColor,
+                            group.metric!.endColor,
+                            t,
+                          ),
+                        );
+                        const colorArrays = tValues.map(t =>
+                          interpolateRgba(
+                            group.metric!.startColor,
+                            group.metric!.endColor,
+                            t,
+                          ),
+                        );
+                        const maxR = radii[radii.length - 1];
+                        const colW = Math.max(maxR * 2 + 8, 44);
+                        const svgW = colW * 4;
+                        const svgH = maxR * 2 + 2;
+                        const iconN =
+                          group.icon?.replace('-icon', '') || 'circle';
+                        return (
+                          <>
+                            <svg
+                              width={svgW}
+                              height={svgH}
+                              style={{
+                                margin: '6px 0',
+                                overflow: 'visible',
+                                display: 'block',
+                              }}
+                            >
+                              {radii.map((r, i) => {
+                                const cx = colW * (i + 0.5);
+                                const cy = svgH - r;
+                                return group.icon ? (
+                                  <image
+                                    key={i}
+                                    href={getColoredSvgUrl(
+                                      iconN,
+                                      colorArrays[i],
+                                    )}
+                                    x={cx - r}
+                                    y={cy - r}
+                                    width={r * 2}
+                                    height={r * 2}
+                                  />
+                                ) : (
+                                  <circle
+                                    key={i}
+                                    cx={cx}
+                                    cy={cy}
+                                    r={r}
+                                    fill={colors[i]}
+                                  />
+                                );
+                              })}
+                            </svg>
+                            <svg
+                              width={svgW}
+                              height={16}
+                              style={{ display: 'block', overflow: 'visible' }}
+                            >
+                              <text
+                                x={colW * 0.5}
+                                y={12}
+                                textAnchor="middle"
+                                fontSize={11}
+                                fill="currentColor"
+                              >
+                                {formatLegendNumber(lower)}
+                              </text>
+                              <text
+                                x={colW * 3.5}
+                                y={12}
+                                textAnchor="middle"
+                                fontSize={11}
+                                fill="currentColor"
+                              >
+                                {`${formatLegendNumber(upper)}${lower !== upper ? '+' : ''}`}
+                              </text>
+                            </svg>
+                          </>
+                        );
+                      })()}
+
+                    {/* METRIC GRADIENT — only when NOT combined */}
+                    {!group.isCombinedMetricSize && group.metric && (
                       <>
                         <GradientBar
                           gradient={`linear-gradient(to right,
@@ -410,24 +656,70 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
                       </>
                     )}
 
-                    {/* SIZE LEGEND — two circles with dashed range line */}
-                    {group.sizeEntry &&
+                    {/* SIZE LEGEND — only when NOT combined and no category×size grid */}
+                    {!group.isCombinedMetricSize &&
+                      !(group.categories && group.categories.length > 0) &&
+                      group.sizeEntry &&
                       group.sizeEntry.startSize !== group.sizeEntry.endSize &&
                       (() => {
                         const { startSize, endSize, lower, upper } =
                           group.sizeEntry;
-                        // Clamp for display without distorting the legend panel
-                        const r1 = Math.min(startSize, 12);
-                        const r2 = Math.min(endSize, 18);
-                        const svgH = r2 * 2 + 4;
-                        const smallCy = svgH - r1;
-                        const largeCy = svgH - r2;
-                        const gap = 20;
-                        const svgW = r1 * 2 + gap + r2 * 2;
-                        const dashY = svgH - r1;
-                        const dashX1 = r1 * 2 + 2;
-                        const dashX2 = svgW - r2 * 2 - 2;
-                        const fillColor = fill;
+                        const tValues = [0, 0.33, 0.67, 1];
+                        const radii = tValues.map(t => {
+                          const raw = startSize + t * (endSize - startSize);
+                          return Math.min(Math.max(Math.round(raw), 3), 18);
+                        });
+                        const fallback = `rgba(${fill[0]},${fill[1]},${fill[2]},0.8)`;
+                        const fallbackRgba: RGBAColor = [
+                          fill[0],
+                          fill[1],
+                          fill[2],
+                          204,
+                        ];
+                        const blendCss = (
+                          c1: RGBAColor,
+                          c2: RGBAColor,
+                          t: number,
+                        ) => {
+                          const r = Math.round(c1[0] + t * (c2[0] - c1[0]));
+                          const g = Math.round(c1[1] + t * (c2[1] - c1[1]));
+                          const b = Math.round(c1[2] + t * (c2[2] - c1[2]));
+                          return `rgba(${r},${g},${b},0.8)`;
+                        };
+                        const blendRgba = (
+                          c1: RGBAColor,
+                          c2: RGBAColor,
+                          t: number,
+                        ): RGBAColor => [
+                          Math.round(c1[0] + t * (c2[0] - c1[0])),
+                          Math.round(c1[1] + t * (c2[1] - c1[1])),
+                          Math.round(c1[2] + t * (c2[2] - c1[2])),
+                          204,
+                        ];
+                        const colors = group.metric
+                          ? tValues.map(t =>
+                              blendCss(
+                                group.metric!.startColor,
+                                group.metric!.endColor,
+                                t,
+                              ),
+                            )
+                          : tValues.map(() => fallback);
+                        const colorArrays: RGBAColor[] = group.metric
+                          ? tValues.map(t =>
+                              blendRgba(
+                                group.metric!.startColor,
+                                group.metric!.endColor,
+                                t,
+                              ),
+                            )
+                          : tValues.map(() => fallbackRgba);
+                        const maxR = radii[radii.length - 1];
+                        const colW = Math.max(maxR * 2 + 8, 44);
+                        const svgW = colW * 4;
+                        const svgH = maxR * 2 + 2;
+                        const iconN =
+                          group.icon?.replace('-icon', '') || 'circle';
                         return (
                           <>
                             <svg
@@ -439,33 +731,56 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
                                 display: 'block',
                               }}
                             >
-                              <circle
-                                cx={r1}
-                                cy={smallCy}
-                                r={r1}
-                                fill={`rgba(${fillColor[0]},${fillColor[1]},${fillColor[2]},0.8)`}
-                              />
-                              <line
-                                x1={dashX1}
-                                y1={dashY}
-                                x2={dashX2}
-                                y2={dashY}
-                                stroke="currentColor"
-                                strokeWidth={1}
-                                strokeDasharray="3,2"
-                                opacity={0.5}
-                              />
-                              <circle
-                                cx={svgW - r2}
-                                cy={largeCy}
-                                r={r2}
-                                fill={`rgba(${fillColor[0]},${fillColor[1]},${fillColor[2]},0.8)`}
-                              />
+                              {radii.map((r, i) => {
+                                const cx = colW * (i + 0.5);
+                                const cy = svgH - r;
+                                return group.icon ? (
+                                  <image
+                                    key={i}
+                                    href={getColoredSvgUrl(
+                                      iconN,
+                                      colorArrays[i],
+                                    )}
+                                    x={cx - r}
+                                    y={cy - r}
+                                    width={r * 2}
+                                    height={r * 2}
+                                  />
+                                ) : (
+                                  <circle
+                                    key={i}
+                                    cx={cx}
+                                    cy={cy}
+                                    r={r}
+                                    fill={colors[i]}
+                                  />
+                                );
+                              })}
                             </svg>
-                            <Bounds>
-                              <div>{formatLegendNumber(lower)}</div>
-                              <div>{formatLegendNumber(upper)}</div>
-                            </Bounds>
+                            <svg
+                              width={svgW}
+                              height={16}
+                              style={{ display: 'block', overflow: 'visible' }}
+                            >
+                              <text
+                                x={colW * 0.5}
+                                y={12}
+                                textAnchor="middle"
+                                fontSize={11}
+                                fill="currentColor"
+                              >
+                                {formatLegendNumber(lower)}
+                              </text>
+                              <text
+                                x={colW * 3.5}
+                                y={12}
+                                textAnchor="middle"
+                                fontSize={11}
+                                fill="currentColor"
+                              >
+                                {`${formatLegendNumber(upper)}${lower !== upper ? '+' : ''}`}
+                              </text>
+                            </svg>
                           </>
                         );
                       })()}

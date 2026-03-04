@@ -135,7 +135,9 @@ export default function transformProps(chartProps: ChartProps) {
     ? (geojsonConfig?.pointSize ?? globalColoring?.pointSize)
     : undefined;
   const isStaticSize = rawPointSize == null || typeof rawPointSize === 'number';
-  const pointSize = isStaticSize ? (rawPointSize as number | undefined) : undefined;
+  const pointSize = isStaticSize
+    ? (rawPointSize as number | undefined)
+    : undefined;
   const pointSizeConfigDynamic = !isStaticSize
     ? (rawPointSize as PointSizeConfig)
     : undefined;
@@ -226,6 +228,8 @@ export default function transformProps(chartProps: ChartProps) {
     upper: number;
     startSize: number;
     endSize: number;
+    valueColumn: string;
+    legendTitle?: string;
   } | null = null;
 
   if (pointSizeConfigDynamic?.valueColumn && rawData.length > 0) {
@@ -261,9 +265,26 @@ export default function transformProps(chartProps: ChartProps) {
         upper: sizeUpper,
         startSize,
         endSize,
+        valueColumn: sizeValueColumn,
+        legendTitle: legend?.title,
       };
     }
   }
+
+  // --- Combined metric+size validation ---
+  const isCombinedMetricSize: boolean = (() => {
+    if (!metricLegend || !sizeLegend) return false;
+    const metricCol = colorByValue?.valueColumn;
+    const sizeCol = pointSizeConfigDynamic?.valueColumn;
+    if (metricCol !== sizeCol) {
+      console.warn(
+        `[GeoSet Legend] colorByValue.valueColumn ("${metricCol}") != ` +
+          `pointSize.valueColumn ("${sizeCol}"). Rendering legends separately.`,
+      );
+      return false;
+    }
+    return true;
+  })();
 
   // --- Parse raw features with caching ---
   const rawFeatures = parseRawFeatures(rawData, dimension, filterNulls);
@@ -522,6 +543,7 @@ export default function transformProps(chartProps: ChartProps) {
       metricColorScale,
       metricLegend,
       sizeLegend,
+      isCombinedMetricSize,
     },
   };
 }

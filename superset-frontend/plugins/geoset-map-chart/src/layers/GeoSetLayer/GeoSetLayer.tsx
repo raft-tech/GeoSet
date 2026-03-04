@@ -723,7 +723,10 @@ export type DeckGLGeoJsonProps = {
       upper: number;
       startSize: number;
       endSize: number;
+      valueColumn: string;
+      legendTitle?: string;
     } | null;
+    isCombinedMetricSize?: boolean;
   };
 };
 
@@ -1212,6 +1215,8 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
         categories={categories}
         metricLegend={metricLegend}
         sizeLegend={propVisualConfig?.sizeLegend}
+        fillColor={fillColorObj}
+        isCombinedMetricSize={propVisualConfig?.isCombinedMetricSize}
         format={props.formData.legend_format}
         position="tl"
         showSingleCategory={showSingleCategory}
