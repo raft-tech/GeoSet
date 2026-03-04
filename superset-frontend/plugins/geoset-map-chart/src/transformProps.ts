@@ -100,8 +100,13 @@ export default function transformProps(chartProps: ChartProps) {
     }
   }
 
-  const { globalColoring, colorByCategory, colorByValue, legend } =
-    geojsonConfig;
+  const {
+    globalColoring,
+    colorByCategory,
+    colorByValue,
+    legend,
+    textOverlayStyle,
+  } = geojsonConfig;
 
   const fillColor = globalColoring?.fillColor;
   const strokeColor = globalColoring?.strokeColor;
@@ -454,6 +459,7 @@ export default function transformProps(chartProps: ChartProps) {
       metricDomain,
       metricColorScale,
       metricLegend,
+      textOverlayStyle,
     },
   };
 }
