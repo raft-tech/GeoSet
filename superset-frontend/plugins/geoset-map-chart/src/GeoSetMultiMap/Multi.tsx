@@ -45,6 +45,7 @@ import { LayerState } from '../types';
 import buildGeoSetMapLayerQuery from '../buildQuery';
 import transformGeoSetMapLayerProps from '../transformProps';
 import MultiLegend, { LegendGroup } from '../components/MultiLegend';
+import { useConsolidatedLegend } from '../utils/hooks';
 import MapControls from '../components/MapControls';
 import { CategoryState, MetricLegend, RGBAColor } from '../utils/colors';
 import { getGeometryType } from '../utils/dataProcessing';
@@ -555,49 +556,53 @@ const DeckMulti = (props: DeckMultiProps) => {
 
   const { height, width } = props;
 
-  // Toggle layer visibility callback
+  // Toggle layer visibility callback (supports consolidated groups with multiple sliceIds)
   const handleToggleLayerVisibility = useCallback(
-    (sliceId: string) => {
-      const entry = subSlicesLayers.find(e => String(e.sliceId) === sliceId);
-      const isCurrentlyVisible = layerVisibility[sliceId] !== false;
+    (sliceIds: string[]) => {
+      // If ANY are currently visible → turn all OFF; if NONE visible → turn all ON
+      const anyVisible = sliceIds.some(id => layerVisibility[id] !== false);
+      const newVisible = !anyVisible;
 
-      const isCategoricalLayer =
-        entry?.legendGroup.type === 'categorical' &&
-        entry.legendGroup.categories;
+      const catUpdates: Record<string, Record<string, boolean>> = {};
 
-      // If turning OFF the layer, also turn off all category checkboxes
-      if (isCurrentlyVisible && isCategoricalLayer) {
-        const allCategoriesOff: Record<string, boolean> = {};
-        entry.legendGroup.categories!.forEach(cat => {
-          allCategoriesOff[cat.label] = false;
-        });
-        setCategoryVisibility(prev => ({
-          ...prev,
-          [sliceId]: allCategoriesOff,
-        }));
-      } else if (!isCurrentlyVisible && isCategoricalLayer) {
-        // If trying to turn ON, check if any category is enabled
-        // If all categories were explicitly disabled, re-enable them all
-        const sliceCatVisibility = categoryVisibility[sliceId] || {};
-        const anyEnabled = entry.legendGroup.categories!.some(
-          cat => sliceCatVisibility[cat.label] !== false,
-        );
-        // If all categories are off, re-enable them all when turning layer on
-        if (!anyEnabled && Object.keys(sliceCatVisibility).length > 0) {
-          const allCategoriesOn: Record<string, boolean> = {};
-          entry.legendGroup.categories!.forEach(cat => {
-            allCategoriesOn[cat.label] = true;
-          });
-          setCategoryVisibility(prev => ({
-            ...prev,
-            [sliceId]: allCategoriesOn,
-          }));
+      sliceIds.forEach(sliceId => {
+        const entry = subSlicesLayers.find(e => String(e.sliceId) === sliceId);
+        const isCategoricalLayer =
+          entry?.legendGroup.type === 'categorical' &&
+          entry.legendGroup.categories;
+
+        if (isCategoricalLayer) {
+          if (!newVisible) {
+            // Turning OFF — disable all categories
+            const allCategoriesOff: Record<string, boolean> = {};
+            entry.legendGroup.categories!.forEach(cat => {
+              allCategoriesOff[cat.label] = false;
+            });
+            catUpdates[sliceId] = allCategoriesOff;
+          } else {
+            // Turning ON — re-enable categories if all were off
+            const sliceCatVisibility = categoryVisibility[sliceId] || {};
+            const anyEnabled = entry.legendGroup.categories!.some(
+              cat => sliceCatVisibility[cat.label] !== false,
+            );
+            if (!anyEnabled && Object.keys(sliceCatVisibility).length > 0) {
+              const allCategoriesOn: Record<string, boolean> = {};
+              entry.legendGroup.categories!.forEach(cat => {
+                allCategoriesOn[cat.label] = true;
+              });
+              catUpdates[sliceId] = allCategoriesOn;
+            }
+          }
         }
+      });
+
+      if (Object.keys(catUpdates).length > 0) {
+        setCategoryVisibility(prev => ({ ...prev, ...catUpdates }));
       }
 
       setLayerVisibility(prev => ({
         ...prev,
-        [sliceId]: !isCurrentlyVisible,
+        ...Object.fromEntries(sliceIds.map(id => [id, newVisible])),
       }));
     },
     [subSlicesLayers, categoryVisibility, layerVisibility],
@@ -816,6 +821,9 @@ const DeckMulti = (props: DeckMultiProps) => {
     [sortedLayers, categoryVisibility],
   );
 
+  // Consolidate legend entries that share the same display title
+  const consolidatedGroups = useConsolidatedLegend(legendsBySlice);
+
   // Clear cached autozoom when static viewport is enabled so autozoom
   // recalculates fresh if the user toggles static back off
   useEffect(() => {
@@ -1013,7 +1021,7 @@ const DeckMulti = (props: DeckMultiProps) => {
         onEmptyClick={handleClosePopup}
       />
       <MultiLegend
-        legendsBySlice={legendsBySlice}
+        consolidatedGroups={consolidatedGroups}
         layerVisibility={layerVisibility}
         onToggleLayerVisibility={handleToggleLayerVisibility}
         onToggleCategory={handleToggleCategory}

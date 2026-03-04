@@ -6,6 +6,7 @@ import MapIcon from '@material-ui/icons/MapTwoTone';
 import { RGBAColor } from '../utils/colors';
 import { Swatch } from '../utils/legendSwatch';
 import { formatLegendNumber } from '../utils/formatNumber';
+import { useConsolidatedLegend } from '../utils/hooks';
 
 export type CategoryEntry = {
   label: string;
@@ -34,10 +35,21 @@ export type LegendGroup = {
   initialCollapsed?: boolean; // Whether this legend entry starts collapsed
 };
 
+export type ConsolidatedLegendEntry = {
+  sliceId: string;
+  group: LegendGroup;
+};
+
+export type ConsolidatedLegendGroup = {
+  displayTitle: string;
+  entries: ConsolidatedLegendEntry[];
+  initialCollapsed: boolean; // true only if ALL entries have initialCollapsed
+};
+
 export type MultiLegendProps = {
-  legendsBySlice: Record<string, LegendGroup>;
+  consolidatedGroups: ConsolidatedLegendGroup[];
   layerVisibility?: Record<string, boolean>;
-  onToggleLayerVisibility?: (sliceId: string) => void;
+  onToggleLayerVisibility?: (sliceIds: string[]) => void;
   // Toggle a single category within a slice
   onToggleCategory?: (sliceId: string, categoryLabel: string) => void;
 };
@@ -224,14 +236,12 @@ const IndeterminateCheckbox: React.FC<{
 };
 
 export const MultiLegend: React.FC<MultiLegendProps> = ({
-  legendsBySlice,
+  consolidatedGroups,
   layerVisibility = {},
   onToggleLayerVisibility,
   onToggleCategory,
 }) => {
-  const sliceIds = Object.keys(legendsBySlice);
-
-  if (sliceIds.length === 0) return null;
+  if (consolidatedGroups.length === 0) return null;
 
   const [isLegendOpen, setIsLegendOpen] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -239,11 +249,9 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
     Record<string, boolean>
   >({});
 
-  const toggle = (id: string) => {
-    const group = legendsBySlice[id];
-    // When toggling, invert current state (respecting initialCollapsed if not yet toggled)
-    const currentlyOpen = expanded[id] ?? !group?.initialCollapsed;
-    setExpanded(prev => ({ ...prev, [id]: !currentlyOpen }));
+  const toggle = (title: string, initialCollapsed: boolean) => {
+    const currentlyOpen = expanded[title] ?? !initialCollapsed;
+    setExpanded(prev => ({ ...prev, [title]: !currentlyOpen }));
   };
 
   // Get default colors for title swatch based on group type
@@ -268,6 +276,8 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
     return { fill: [0, 122, 135, 255], stroke: [0, 122, 135, 255] };
   };
 
+  const showCheckboxes = consolidatedGroups.length > 1;
+
   return (
     <LegendContainer>
       {!isLegendOpen ? (
@@ -280,127 +290,139 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
           <LegendHeader>
             <CloseButton onClick={() => setIsLegendOpen(false)}>✕</CloseButton>
           </LegendHeader>
-          {sliceIds.map(id => {
-            const group = legendsBySlice[id];
-            // Use expanded state if user has toggled, otherwise respect initialCollapsed setting
-            const isOpen = expanded[id] ?? !group.initialCollapsed;
-            const { fill, stroke } = getDefaultColors(group);
+          {consolidatedGroups.map(consolidated => {
+            const { displayTitle, entries, initialCollapsed } = consolidated;
+            const allSliceIds = entries.map(e => e.sliceId);
+            const isOpen = expanded[displayTitle] ?? !initialCollapsed;
 
-            const isVisible =
-              id in optimisticVisibility
-                ? optimisticVisibility[id]
-                : layerVisibility[id] !== false; // default to visible
+            // Visibility: checked if ANY constituent layer is visible
+            const visibleSliceIds = allSliceIds.filter(id => {
+              if (id in optimisticVisibility) return optimisticVisibility[id];
+              return layerVisibility[id] !== false;
+            });
+            const isVisible = visibleSliceIds.length > 0;
 
-            // Calculate indeterminate state for categorical layers
-            const categories = group.categories || [];
-            const enabledCount = categories.filter(
-              cat => cat.enabled !== false,
-            ).length;
-            const isIndeterminate =
-              categories.length > 0 &&
-              enabledCount > 0 &&
-              enabledCount < categories.length;
+            // Indeterminate: some visible/some not, or any entry has partial categories
+            const someVisibleSomeNot =
+              visibleSliceIds.length > 0 &&
+              visibleSliceIds.length < allSliceIds.length;
+            const hasPartialCategories = entries.some(({ group }) => {
+              const categories = group.categories || [];
+              if (categories.length === 0) return false;
+              const enabledCount = categories.filter(
+                cat => cat.enabled !== false,
+              ).length;
+              return enabledCount > 0 && enabledCount < categories.length;
+            });
+            const isIndeterminate = someVisibleSomeNot || (isVisible && hasPartialCategories);
 
             return (
-              <Group key={id}>
+              <Group key={displayTitle}>
                 {/* Header */}
                 <Header>
-                  {sliceIds.length > 1 && (
+                  {showCheckboxes && (
                     <IndeterminateCheckbox
                       checked={isVisible}
                       indeterminate={isIndeterminate}
                       onChange={e => {
                         e.stopPropagation();
+                        const newVal = !isVisible;
                         setOptimisticVisibility(prev => ({
                           ...prev,
-                          [id]: !isVisible,
+                          ...Object.fromEntries(
+                            allSliceIds.map(id => [id, newVal]),
+                          ),
                         }));
-                        onToggleLayerVisibility?.(id);
+                        onToggleLayerVisibility?.(allSliceIds);
                       }}
                     />
                   )}
-                  <TitleRow onClick={() => toggle(id)}>
-                    <LegendTitle>
-                      {group.type === 'simple'
-                        ? group.legendParentTitle
-                        : group.legendName}
-                    </LegendTitle>
+                  <TitleRow
+                    onClick={() => toggle(displayTitle, initialCollapsed)}
+                  >
+                    <LegendTitle>{displayTitle}</LegendTitle>
                     <ExpandIcon>{isOpen ? '▾' : '▸'}</ExpandIcon>
                   </TitleRow>
                 </Header>
 
-                {/* Content */}
+                {/* Content — render each entry's content sequentially */}
                 {isOpen && (
                   <Content>
-                    {/* SIMPLE - show icon and slice name */}
-                    {group.type === 'simple' && group.simpleStyle && (
-                      <CategoryRow>
-                        <Swatch
-                          fill={fill}
-                          stroke={stroke}
-                          icon={group.icon}
-                          geometryType={group.geometryType}
-                        />
-                        <div>{group.legendName}</div>
-                      </CategoryRow>
-                    )}
-
-                    {/* CATEGORIES */}
-                    {group.categories && group.categories.length > 0 && (
-                      <>
-                        {group.categories.map((cat, i) => {
-                          const isEnabled = cat.enabled !== false;
-                          const hasToggle = !!onToggleCategory;
-
-                          // Apply opacity to color when disabled
-                          const displayFillColor: RGBAColor = isEnabled
-                            ? cat.fillColor
-                            : [
-                                cat.fillColor[0],
-                                cat.fillColor[1],
-                                cat.fillColor[2],
-                                100,
-                              ];
-
-                          return (
-                            <CategoryRow key={i}>
-                              {hasToggle && (
-                                <VisibilityCheckbox
-                                  type="checkbox"
-                                  checked={isEnabled}
-                                  onChange={() =>
-                                    onToggleCategory(id, cat.label)
-                                  }
-                                />
-                              )}
+                    {entries.map(({ sliceId, group }) => {
+                      const { fill, stroke } = getDefaultColors(group);
+                      return (
+                        <div key={sliceId}>
+                          {/* SIMPLE - show icon and slice name */}
+                          {group.type === 'simple' && group.simpleStyle && (
+                            <CategoryRow>
                               <Swatch
-                                fill={displayFillColor}
-                                stroke={cat.strokeColor}
+                                fill={fill}
+                                stroke={stroke}
                                 icon={group.icon}
                                 geometryType={group.geometryType}
                               />
-                              <div>{cat.label}</div>
+                              <div>{group.legendName}</div>
                             </CategoryRow>
-                          );
-                        })}
-                      </>
-                    )}
+                          )}
 
-                    {/* METRIC GRADIENT */}
-                    {group.metric && (
-                      <>
-                        <GradientBar
-                          gradient={`linear-gradient(to right,
-                            rgba(${group.metric.startColor[0]},${group.metric.startColor[1]},${group.metric.startColor[2]},${group.metric.startColor[3]}),
-                            rgba(${group.metric.endColor[0]},${group.metric.endColor[1]},${group.metric.endColor[2]},${group.metric.endColor[3]})
-                          )`}
-                        />
-                        <Bounds>
-                          <div>{formatLegendNumber(group.metric.lower)}</div>
-                          <div>{`${formatLegendNumber(group.metric.upper)}${group.metric.lower !== group.metric.upper ? '+' : ''}`}</div>
-                        </Bounds>
-                      </>
-                    )}
+                          {/* CATEGORIES */}
+                          {group.categories &&
+                            group.categories.length > 0 &&
+                            group.categories.map((cat, i) => {
+                              const isEnabled = cat.enabled !== false;
+                              const hasToggle = !!onToggleCategory;
+
+                              const displayFillColor: RGBAColor = isEnabled
+                                ? cat.fillColor
+                                : [
+                                    cat.fillColor[0],
+                                    cat.fillColor[1],
+                                    cat.fillColor[2],
+                                    100,
+                                  ];
+
+                              return (
+                                <CategoryRow key={`${sliceId}-${i}`}>
+                                  {hasToggle && (
+                                    <VisibilityCheckbox
+                                      type="checkbox"
+                                      checked={isEnabled}
+                                      onChange={() =>
+                                        onToggleCategory(sliceId, cat.label)
+                                      }
+                                    />
+                                  )}
+                                  <Swatch
+                                    fill={displayFillColor}
+                                    stroke={cat.strokeColor}
+                                    icon={group.icon}
+                                    geometryType={group.geometryType}
+                                  />
+                                  <div>{cat.label}</div>
+                                </CategoryRow>
+                              );
+                            })}
+
+                          {/* METRIC GRADIENT */}
+                          {group.metric && (
+                            <>
+                              <GradientBar
+                                gradient={`linear-gradient(to right,
+                                  rgba(${group.metric.startColor[0]},${group.metric.startColor[1]},${group.metric.startColor[2]},${group.metric.startColor[3]}),
+                                  rgba(${group.metric.endColor[0]},${group.metric.endColor[1]},${group.metric.endColor[2]},${group.metric.endColor[3]})
+                                )`}
+                              />
+                              <Bounds>
+                                <div>
+                                  {formatLegendNumber(group.metric.lower)}
+                                </div>
+                                <div>{`${formatLegendNumber(group.metric.upper)}${group.metric.lower !== group.metric.upper ? '+' : ''}`}</div>
+                              </Bounds>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
                   </Content>
                 )}
               </Group>
