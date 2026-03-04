@@ -32,6 +32,7 @@ import {
   DEFAULT_SUPERSET_COLOR,
   RGBAColor,
   toRGBA,
+  resolvePercentOrNumber,
 } from './utils/colors';
 import { GeoJsonFeature } from './types';
 import {
@@ -173,8 +174,20 @@ export default function transformProps(chartProps: ChartProps) {
         .filter((v): v is number => v !== null);
 
       if (values.length > 0) {
-        const lower = lowerBound ?? Math.min(...values);
-        const upper = upperBound ?? Math.max(...values);
+        const sortedValues = [...values].sort((a, b) => a - b);
+        const lower = resolvePercentOrNumber(
+          lowerBound,
+          sortedValues,
+          sortedValues[0],
+        );
+        const upper = resolvePercentOrNumber(
+          upperBound,
+          sortedValues,
+          sortedValues[sortedValues.length - 1],
+        );
+        const resolvedBreakpoints = (breakpoints ?? []).map(
+          (bp: number | string) => resolvePercentOrNumber(bp, sortedValues, 0),
+        );
         metricDomain = [lower, upper];
 
         const start: RGBAColor = hasValidFill(startColor)
@@ -189,7 +202,7 @@ export default function transformProps(chartProps: ChartProps) {
           valueColumn,
           startColor: start,
           endColor: end,
-          breakpoints,
+          breakpoints: resolvedBreakpoints,
           lowerBound: lower,
           upperBound: upper,
         };
