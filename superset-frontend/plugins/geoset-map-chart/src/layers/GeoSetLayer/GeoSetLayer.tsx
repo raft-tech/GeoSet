@@ -62,7 +62,10 @@ import { normalizeRGBA } from '../../utils/colorsFallback';
 import { getColoredSvgUrl } from '../../utils/svgIcons';
 import { PointClusterLayer } from '../PointClusterLayer';
 import { validateLayerType } from '../../utils/validateLayerType';
-import { buildTextOverlayLayer } from '../../utils/layerBuilders/buildTextOverlayLayer';
+import {
+  buildTextOverlayLayer,
+  TextOverlayStyle,
+} from '../../utils/layerBuilders/buildTextOverlayLayer';
 import { expandPolygonFeatures } from '../../utils/layerBuilders/expandPolygonFeatures';
 import {
   buildPolygonLayers,
@@ -236,6 +239,7 @@ export function getLayer(
     lineStyle?: string;
     categoryColorMapping?: {};
     strokeColorMapping?: {};
+    textOverlayStyle?: TextOverlayStyle;
   } = {},
   hoverColumnNames?: string[],
   onFeatureClick?: (info: any) => void,
@@ -252,6 +256,7 @@ export function getLayer(
     lineStyle,
     metric,
     dimension,
+    textOverlayStyle,
   } = visualConfig;
 
   const fd = formData;
@@ -641,6 +646,7 @@ export function getLayer(
         sortedFeatures,
         fillColorArray,
         baseLayerProps,
+        textOverlayStyle,
       });
 
     // if no match, default to GeoJSON layer

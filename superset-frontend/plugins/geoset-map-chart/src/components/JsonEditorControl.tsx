@@ -165,6 +165,12 @@ const templateJson = `{
     "endColor": [255, 0, 0, 255],
     "breakpoints": []
   },
+  "textOverlayStyle": {
+    "fontFamily": "Arial, sans-serif", // Web Safe Fonts: Arial, Verdana, Georgia, Times New Roman, Courier New
+    "fontSize": 14,
+    "bold": false,
+    "offset": [0, 0]           // pixel offset (x, y) from point
+  },
   "legend": {
     "name": "human_readable_legend_chart_title",
     "title": "title_for_legend_section"

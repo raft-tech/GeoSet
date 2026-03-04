@@ -11,6 +11,7 @@ from superset.geoset_map.schemas import (
     GeoSetLayerV1Schema,
     GeoSetLayerV2Schema,
     GeoSetLayerV3Schema,
+    GeoSetLayerV4Schema,
     MapboxApiKeySchema,
 )
 from superset.extensions import event_logger
@@ -37,13 +38,14 @@ class GeoSetMapRestApi(BaseSupersetApi):
         "v1": GeoSetLayerV1Schema(),
         "v2": GeoSetLayerV2Schema(),
         "v3": GeoSetLayerV3Schema(),
+        "v4": GeoSetLayerV4Schema(),
     }
-    # mapping of (from_version, to_version) to upgrade function
-    # when new upgrade paths are added, add them here
-    schema_upgrade_paths = {
+    # single-step upgrade functions: each handles vN → vN+1
+    # multi-version jumps (e.g. v1→v3) are auto-chained by convert_schema
+    schema_upgrade_steps = {
         ("v1", "v2"): GeoSetLayerV2Schema.upgrade_from_previous_version,
         ("v2", "v3"): GeoSetLayerV3Schema.upgrade_from_previous_version,
-        ("v1", "v3"): GeoSetLayerV3Schema.upgrade_from_v1,
+        ("v3", "v4"): GeoSetLayerV4Schema.upgrade_from_previous_version,
     }
 
     method_permission_name = MODEL_API_RW_METHOD_PERMISSION_MAP
@@ -55,6 +57,7 @@ class GeoSetMapRestApi(BaseSupersetApi):
         GeoSetLayerV1Schema,
         GeoSetLayerV2Schema,
         GeoSetLayerV3Schema,
+        GeoSetLayerV4Schema,
         MapboxApiKeySchema,
     )
 
@@ -264,11 +267,15 @@ class GeoSetMapRestApi(BaseSupersetApi):
             logger.error("[Migration] Error: schema not found")
             return self.response_404()
 
-        # Validate upgrade path exists
-        upgrade_func = self.schema_upgrade_paths.get((from_version, to_version))
-        if upgrade_func is None:
-            logger.error("[Migration] Error: upgrade path not found")
-            return self.response_404()
+        # Build upgrade chain: walk from from_num to to_num one step at a time
+        upgrade_chain = []
+        for step in range(from_num, to_num):
+            key = (f"v{step}", f"v{step + 1}")
+            func = self.schema_upgrade_steps.get(key)
+            if func is None:
+                logger.error("[Migration] Error: missing upgrade step %s", key)
+                return self.response_404()
+            upgrade_chain.append(func)
 
         if request.json is None:
             logger.error("[Migration] Error: request body is None")
@@ -283,9 +290,11 @@ class GeoSetMapRestApi(BaseSupersetApi):
             logger.error("[Migration] Source schema validation failed: %s", error.messages)
             return self.response_422(message=error.messages)  # type: ignore[arg-type]
 
-        # Perform conversion
-        logger.info("[Migration] Performing conversion")
-        converted = upgrade_func(request.json)
+        # Perform conversion by chaining each step
+        logger.info("[Migration] Performing conversion through %d step(s)", len(upgrade_chain))
+        converted = request.json
+        for func in upgrade_chain:
+            converted = func(converted)
         logger.info("[Migration] Converted payload: %s", converted)
 
         # Validate and return converted data
