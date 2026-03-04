@@ -16,17 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/* eslint camelcase: 0 */
-
-export function formatSelectOptions(options: (string | number)[]) {
-  return options.map(opt => [opt, opt.toString()]);
-}
-
 export function validateLayerType(
   userLayerType: string,
   geometryType?: string,
 ): string {
   if (!geometryType) return userLayerType;
+
+  // Text Overlay uses point geometry but renders as text — don't override to 'Point'
+  if (userLayerType === 'TextOverlay') return 'TextOverlay';
 
   // If user selected GeoJSON, always allow it
   if (userLayerType === 'GeoJSON') return 'GeoJSON';

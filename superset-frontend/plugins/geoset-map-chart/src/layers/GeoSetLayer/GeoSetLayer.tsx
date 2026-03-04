@@ -61,12 +61,13 @@ import { useDebouncedValue } from '../../utils/hooks';
 import { normalizeRGBA } from '../../utils/colorsFallback';
 import { getColoredSvgUrl } from '../../utils/svgIcons';
 import { PointClusterLayer } from '../PointClusterLayer';
-import { validateLayerType } from '../../utilities/utils';
-import { expandPolygonFeatures } from '../../utils/expandPolygonFeatures';
+import { validateLayerType } from '../../utils/validateLayerType';
+import { buildTextOverlayLayer } from '../../utils/layerBuilders/buildTextOverlayLayer';
+import { expandPolygonFeatures } from '../../utils/layerBuilders/expandPolygonFeatures';
 import {
   buildPolygonLayers,
   polygonDataCache,
-} from '../../utils/buildPolygonLayers';
+} from '../../utils/layerBuilders/buildPolygonLayers';
 import {
   fetchMapboxApiKey,
   getCachedMapboxApiKey,
@@ -618,6 +619,14 @@ export function getLayer(
         },
         ...baseLayerProps,
       });
+    case 'TextOverlay':
+      return buildTextOverlayLayer({
+        fd,
+        sortedFeatures,
+        fillColorArray,
+        baseLayerProps,
+      });
+
     // if no match, default to GeoJSON layer
     default:
       return new GeoJsonLayer({
