@@ -1,4 +1,4 @@
-# Test MR Build Locally
+# Run MR Build Locally
 
 Pull a prebuilt Docker image from a PR or commit and launch a local GeoSet stack.
 
