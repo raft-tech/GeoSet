@@ -1,0 +1,39 @@
+#
+# Compose override for running GeoSet with a prebuilt image.
+# This is an alternative to the --profile prebuilt approach in docker-compose.yml.
+#
+# Layers on top of docker-compose.yml to:
+#   - Replace build-from-source with a prebuilt image on superset-init and superset
+#   - Clear the dev command on superset so gunicorn runs (image default CMD)
+#   - Disable superset-node (no webpack — frontend is pre-compiled in the image)
+#   - Reduce volume mounts to only ./docker (needed for config and init scripts)
+#
+# USAGE:
+#   docker compose -f docker-compose.yml -f docker-compose.prebuilt.yml up
+#   SUPERSET_IMAGE=geoset:v1.2.3 docker compose -f docker-compose.yml -f docker-compose.prebuilt.yml up
+#
+# ENV VARS:
+#   SUPERSET_IMAGE – Image to use (default: geoset:local)
+#
+# ACCESS:
+#   Frontend: http://localhost:8088  (gunicorn serving app + static assets)
+#
+services:
+  superset-init:
+    image: ${SUPERSET_IMAGE:-geoset:local}
+    build: !reset null
+    volumes:
+      - ./docker:/app/docker
+
+  superset:
+    image: ${SUPERSET_IMAGE:-geoset:local}
+    build: !reset null
+    command: !reset []
+    ports:
+      - "127.0.0.1:8088:8088"
+    volumes:
+      - ./docker:/app/docker
+
+  superset-node:
+    deploy:
+      replicas: 0
