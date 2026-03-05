@@ -7,45 +7,6 @@ from marshmallow import fields, Schema, validate, validates_schema, ValidationEr
 from superset.geoset_map.schemas.base import BaseGeoSetLayerSchema
 
 
-_PERCENT_RE = re.compile(r"^(-?\d+(?:\.\d+)?)%$")
-
-
-class NumberOrPercent(fields.Field):
-    """A field that accepts either a number or a percentage string like ``"25%"``.
-
-    Numbers are passed through as-is.  Strings must match ``<number>%`` where
-    the numeric portion is between 0 and 100 inclusive.  The raw string is
-    preserved so the frontend can resolve it against actual data values.
-    """
-
-    def _deserialize(self, value, attr, data, **kwargs):
-        if value is None:
-            return None
-
-        if isinstance(value, (int, float)):
-            return value
-
-        if isinstance(value, str):
-            match = _PERCENT_RE.match(value.strip())
-            if match:
-                pct = float(match.group(1))
-                if not (0 <= pct <= 100):
-                    raise ValidationError(
-                        f"Percentage must be between 0% and 100%, got '{value}'."
-                    )
-                return value.strip()
-            raise ValidationError(
-                f"Invalid value '{value}'. Expected a number or a string like '25%'."
-            )
-
-        raise ValidationError(
-            f"Invalid type for {attr}. Expected number or percentage string."
-        )
-
-    def _serialize(self, value, attr, obj, **kwargs):
-        return value
-
-
 class ColorField(fields.List):
     """RGBA color array with 4 integers between 0 and 255."""
 
@@ -177,8 +138,12 @@ class ColorByValueSchema(Schema):
     """
 
     value_column = fields.String(required=True, data_key="valueColumn")
-    upper_bound = NumberOrPercent(allow_none=True, load_default=None, data_key="upperBound")
-    lower_bound = NumberOrPercent(allow_none=True, load_default=None, data_key="lowerBound")
+    upper_bound = NumberOrPercent(
+        allow_none=True, load_default=None, data_key="upperBound"
+    )
+    lower_bound = NumberOrPercent(
+        allow_none=True, load_default=None, data_key="lowerBound"
+    )
     start_color = ColorField(required=True, data_key="startColor")
     end_color = ColorField(required=True, data_key="endColor")
     breakpoints = fields.List(NumberOrPercent(), required=True)
@@ -203,9 +168,7 @@ class ColorByValueSchema(Schema):
             return float(val.rstrip("%"))
 
         any_pct = (
-            is_pct(upper)
-            or is_pct(lower)
-            or any(is_pct(bp) for bp in breakpoints)
+            is_pct(upper) or is_pct(lower) or any(is_pct(bp) for bp in breakpoints)
         )
 
         if not any_pct:
@@ -214,9 +177,7 @@ class ColorByValueSchema(Schema):
                 raise ValidationError("upperBound must be greater than lowerBound.")
 
             if breakpoints != sorted(breakpoints):
-                raise ValidationError(
-                    "breakpoints must be listed lowest to highest."
-                )
+                raise ValidationError("breakpoints must be listed lowest to highest.")
 
             if upper is not None and lower is not None and breakpoints:
                 for bp in breakpoints:
@@ -235,9 +196,7 @@ class ColorByValueSchema(Schema):
                 u = pct_val(upper) if is_pct(upper) else upper
                 l = pct_val(lower) if is_pct(lower) else lower
                 if u <= l:
-                    raise ValidationError(
-                        "upperBound must be greater than lowerBound."
-                    )
+                    raise ValidationError("upperBound must be greater than lowerBound.")
 
             # Validate breakpoint ordering when all are the same type
             if breakpoints:
