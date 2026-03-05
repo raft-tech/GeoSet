@@ -31,14 +31,19 @@ export function useConsolidatedLegend(
       }
     >();
 
+    console.log('[useConsolidatedLegend] input legendsBySlice:', legendsBySlice);
+
     for (const [sliceId, group] of Object.entries(legendsBySlice)) {
       const displayTitle =
         group.type === 'simple'
           ? group.legendParentTitle || group.sliceName
           : group.legendName;
 
+      console.log(`[useConsolidatedLegend] sliceId=${sliceId}, type=${group.type}, displayTitle="${displayTitle}", legendName="${group.legendName}", legendParentTitle="${group.legendParentTitle}", sliceName="${group.sliceName}"`);
+
       const existing = groupMap.get(displayTitle);
       if (existing) {
+        console.log(`[useConsolidatedLegend] MERGING sliceId=${sliceId} into existing group "${displayTitle}"`);
         existing.entries.push({ sliceId, group });
         // initialCollapsed only if ALL entries have it
         if (!group.initialCollapsed) {
@@ -52,12 +57,14 @@ export function useConsolidatedLegend(
       }
     }
 
-    return Array.from(groupMap.entries()).map(
+    const result = Array.from(groupMap.entries()).map(
       ([displayTitle, { entries, allCollapsed }]) => ({
         displayTitle,
         entries,
         initialCollapsed: allCollapsed,
       }),
     );
+    console.log('[useConsolidatedLegend] output:', result);
+    return result;
   }, [legendsBySlice]);
 }

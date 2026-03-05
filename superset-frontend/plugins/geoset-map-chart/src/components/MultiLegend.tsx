@@ -275,7 +275,11 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
     return { fill: [0, 122, 135, 255], stroke: [0, 122, 135, 255] };
   };
 
-  const showCheckboxes = consolidatedGroups.length > 1;
+  const totalSlices = consolidatedGroups.reduce(
+    (sum, g) => sum + g.entries.length,
+    0,
+  );
+  const showCheckboxes = totalSlices > 1;
 
   return (
     <LegendContainer>
