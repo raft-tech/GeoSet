@@ -279,6 +279,8 @@ RUN rpm -e --nodeps nodejs nodejs-docs nodejs-full-i18n npm 2>/dev/null || true 
 
 RUN python -m compileall /app/superset
 
+COPY docker/pythonpath_dev/ /app/docker/pythonpath_dev/
+
 # Write version info at build time
 RUN printf '{"GIT_SHA":"","version":"%s"}' "$BUILD_VERSION" > /app/superset/static/version_info.json
 

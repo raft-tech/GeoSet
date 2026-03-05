@@ -1,3 +1,7 @@
+---
+allowed-tools: Bash(gh *), Bash(docker *), Bash(lsof *), Bash(for port *)
+---
+
 # Run MR Build Locally
 
 Pull a prebuilt Docker image from a PR or commit and launch a local GeoSet stack.
