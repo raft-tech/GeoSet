@@ -39,8 +39,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ebienstock/geoset:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=debian
+          cache-to: type=gha,mode=max,scope=debian
 
   build-and-push-rhel:
     runs-on: ubuntu-latest
@@ -70,8 +70,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ebienstock/geoset:${{ github.sha }}-rhel
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=rhel
+          cache-to: type=gha,mode=max,scope=rhel
 
   check-sample-data-changes:
     runs-on: ubuntu-latest
@@ -125,5 +125,5 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ebienstock/geoset:data-ingest-latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=data-ingest
+          cache-to: type=gha,mode=max,scope=data-ingest
