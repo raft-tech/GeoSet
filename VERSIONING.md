@@ -9,4 +9,4 @@
 
 - **MAJOR** (X.0.0) — Tied to the upstream Superset major version
 - **MINOR** (0.X.0) — Tied to the upstream Superset minor version
-- **PATCH** (0.0.X) — New GeoSet features, enhancements, bug fixes, or non-breaking upstream rebases
+- **PATCH** (0.0.X) — New GeoSet features, enhancements, bug fixes, or mid-release upstream syncs.
