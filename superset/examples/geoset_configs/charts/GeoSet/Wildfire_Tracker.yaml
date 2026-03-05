@@ -6,7 +6,7 @@ viz_type: deck_geoset_map
 params:
   datasource: 0__table
   viz_type: deck_geoset_map
-  mapbox_style: "mapbox://styles/acf-dart/cm8ov8yl4001401s365rs672z"
+  mapbox_style: "mapbox://styles/mapbox/light-v9"
   adhoc_filters: []
   deck_slice_uuids:
     - uuid: e6e168a5-d38c-428c-ab6c-5ecec9e754dd
