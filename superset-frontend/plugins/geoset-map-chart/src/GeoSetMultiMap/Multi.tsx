@@ -398,6 +398,7 @@ const DeckMulti = (props: DeckMultiProps) => {
                       upper: ml.max,
                       startColor: ml.startColor,
                       endColor: ml.endColor,
+                      usesPercentBounds: ml.usesPercentBounds,
                     },
                     sizeEntry:
                       isCombined && sizeLegend
@@ -442,6 +443,7 @@ const DeckMulti = (props: DeckMultiProps) => {
                           endSize: sizeLegend.endSize,
                           valueColumn: sizeLegend.valueColumn,
                           legendTitle: sizeLegend.legendTitle,
+                          usesPercentBounds: sizeLegend.usesPercentBounds,
                         }
                       : undefined,
                     initialCollapsed: sliceLegendCollapsed,
@@ -472,6 +474,7 @@ const DeckMulti = (props: DeckMultiProps) => {
                           endSize: sizeLegend.endSize,
                           valueColumn: sizeLegend.valueColumn,
                           legendTitle: sizeLegend.legendTitle,
+                          usesPercentBounds: sizeLegend.usesPercentBounds,
                         }
                       : undefined,
                     initialCollapsed: sliceLegendCollapsed,

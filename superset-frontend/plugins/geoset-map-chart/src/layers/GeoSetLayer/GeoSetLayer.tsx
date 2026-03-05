@@ -731,6 +731,7 @@ export type DeckGLGeoJsonProps = {
       endSize: number;
       valueColumn: string;
       legendTitle?: string;
+      usesPercentBounds?: boolean;
     } | null;
     isCombinedMetricSize?: boolean;
   };
@@ -1160,6 +1161,7 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
         propVisualConfig?.metric?.valueColumn ||
         payload.data.metricLabels?.[0] ||
         'Value',
+      usesPercentBounds: metricLegendObject.usesPercentBounds,
     };
   }
 

@@ -21,6 +21,7 @@ export type MetricEntry = {
   upper: number;
   startColor: RGBAColor;
   endColor: RGBAColor;
+  usesPercentBounds?: boolean;
 };
 
 export type SizeEntry = {
@@ -484,8 +485,19 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
                           )`}
                         />
                         <Bounds>
-                          <div>{formatLegendNumber(group.metric.lower)}</div>
-                          <div>{`${formatLegendNumber(group.metric.upper)}${group.metric.lower !== group.metric.upper ? '+' : ''}`}</div>
+                          <div>
+                            {group.metric.usesPercentBounds &&
+                            group.metric.lower !== group.metric.upper
+                              ? `≤\u2009${formatLegendNumber(group.metric.lower)}`
+                              : formatLegendNumber(group.metric.lower)}
+                          </div>
+                          <div>
+                            {group.metric.lower !== group.metric.upper
+                              ? group.metric.usesPercentBounds
+                                ? `>\u2009${formatLegendNumber(group.metric.upper)}`
+                                : `${formatLegendNumber(group.metric.upper)}+`
+                              : formatLegendNumber(group.metric.upper)}
+                          </div>
                         </Bounds>
                       </>
                     )}
