@@ -6,6 +6,8 @@ import MapIcon from '@material-ui/icons/MapTwoTone';
 import { RGBAColor } from '../utils/colors';
 import { Swatch } from '../utils/legendSwatch';
 import { formatLegendNumber } from '../utils/formatNumber';
+import GraduatedIcons from './GraduatedIcons';
+import CategorySizeGrid, { CategorySizeGridItem } from './CategorySizeGrid';
 
 export type CategoryEntry = {
   label: string;
@@ -21,6 +23,16 @@ export type MetricEntry = {
   endColor: RGBAColor;
 };
 
+export type SizeEntry = {
+  lower: number;
+  upper: number;
+  startSize: number;
+  endSize: number;
+  valueColumn: string;
+  legendTitle?: string;
+  usesPercentBounds?: boolean;
+};
+
 export type LegendGroup = {
   legendName: string;
   legendParentTitle?: string;
@@ -31,6 +43,8 @@ export type LegendGroup = {
   simpleStyle?: { fillColor: RGBAColor; strokeColor: RGBAColor };
   categories?: CategoryEntry[];
   metric?: MetricEntry;
+  sizeEntry?: SizeEntry;
+  isCombinedMetricSize?: boolean;
   initialCollapsed?: boolean; // Whether this legend entry starts collapsed
 };
 
@@ -231,13 +245,13 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
 }) => {
   const sliceIds = Object.keys(legendsBySlice);
 
-  if (sliceIds.length === 0) return null;
-
   const [isLegendOpen, setIsLegendOpen] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [optimisticVisibility, setOptimisticVisibility] = useState<
     Record<string, boolean>
   >({});
+
+  if (sliceIds.length === 0) return null;
 
   const toggle = (id: string) => {
     const group = legendsBySlice[id];
@@ -332,62 +346,136 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
                 {/* Content */}
                 {isOpen && (
                   <Content>
-                    {/* SIMPLE - show icon and slice name */}
-                    {group.type === 'simple' && group.simpleStyle && (
-                      <CategoryRow>
-                        <Swatch
-                          fill={fill}
-                          stroke={stroke}
-                          icon={group.icon}
-                          geometryType={group.geometryType}
-                        />
-                        <div>{group.legendName}</div>
-                      </CategoryRow>
-                    )}
+                    {/* SIMPLE - show icon and slice name (skip when sizeEntry handles the display) */}
+                    {group.type === 'simple' &&
+                      group.simpleStyle &&
+                      !group.sizeEntry && (
+                        <CategoryRow>
+                          <Swatch
+                            fill={fill}
+                            stroke={stroke}
+                            icon={group.icon}
+                            geometryType={group.geometryType}
+                          />
+                          <div>{group.legendName}</div>
+                        </CategoryRow>
+                      )}
 
-                    {/* CATEGORIES */}
-                    {group.categories && group.categories.length > 0 && (
-                      <>
-                        {group.categories.map((cat, i) => {
-                          const isEnabled = cat.enabled !== false;
-                          const hasToggle = !!onToggleCategory;
+                    {/* CATEGORIES — grid with size circles when sizeEntry present */}
+                    {group.categories &&
+                      group.categories.length > 0 &&
+                      (() => {
+                        const hasSizeGrid =
+                          group.sizeEntry &&
+                          group.sizeEntry.startSize !== group.sizeEntry.endSize;
+                        const hasToggle = !!onToggleCategory;
 
-                          // Apply opacity to color when disabled
-                          const displayFillColor: RGBAColor = isEnabled
-                            ? cat.fillColor
-                            : [
-                                cat.fillColor[0],
-                                cat.fillColor[1],
-                                cat.fillColor[2],
-                                100,
-                              ];
+                        if (hasSizeGrid) {
+                          const { startSize, endSize, lower, upper } =
+                            group.sizeEntry!;
+                          const gridItems: CategorySizeGridItem[] =
+                            group.categories!.map((cat, i) => ({
+                              key: `cat-${i}`,
+                              label: cat.label,
+                              fillColor: cat.fillColor,
+                              enabled: cat.enabled !== false,
+                            }));
 
                           return (
-                            <CategoryRow key={i}>
-                              {hasToggle && (
-                                <VisibilityCheckbox
-                                  type="checkbox"
-                                  checked={isEnabled}
-                                  onChange={() =>
-                                    onToggleCategory(id, cat.label)
-                                  }
-                                />
+                            <CategorySizeGrid
+                              categories={gridItems}
+                              startSize={startSize}
+                              endSize={endSize}
+                              lower={lower}
+                              upper={upper}
+                              icon={group.icon}
+                              usesPercentBounds={
+                                group.sizeEntry!.usesPercentBounds
+                              }
+                              renderLabel={item => (
+                                <div
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 6,
+                                    opacity: item.enabled ? 1 : 0.5,
+                                    paddingRight: 8,
+                                  }}
+                                >
+                                  {hasToggle && (
+                                    <VisibilityCheckbox
+                                      type="checkbox"
+                                      checked={item.enabled}
+                                      onChange={() =>
+                                        onToggleCategory(id, item.label)
+                                      }
+                                    />
+                                  )}
+                                  <span>{item.label}</span>
+                                </div>
                               )}
-                              <Swatch
-                                fill={displayFillColor}
-                                stroke={cat.strokeColor}
-                                icon={group.icon}
-                                geometryType={group.geometryType}
-                              />
-                              <div>{cat.label}</div>
-                            </CategoryRow>
+                            />
                           );
-                        })}
-                      </>
-                    )}
+                        }
 
-                    {/* METRIC GRADIENT */}
-                    {group.metric && (
+                        // Standard category rows (no sizeEntry)
+                        return (
+                          <>
+                            {group.categories!.map((cat, i) => {
+                              const isEnabled = cat.enabled !== false;
+                              const displayFillColor: RGBAColor = isEnabled
+                                ? cat.fillColor
+                                : [
+                                    cat.fillColor[0],
+                                    cat.fillColor[1],
+                                    cat.fillColor[2],
+                                    100,
+                                  ];
+
+                              return (
+                                <CategoryRow key={i}>
+                                  {hasToggle && (
+                                    <VisibilityCheckbox
+                                      type="checkbox"
+                                      checked={isEnabled}
+                                      onChange={() =>
+                                        onToggleCategory(id, cat.label)
+                                      }
+                                    />
+                                  )}
+                                  <Swatch
+                                    fill={displayFillColor}
+                                    stroke={cat.strokeColor}
+                                    icon={group.icon}
+                                    geometryType={group.geometryType}
+                                  />
+                                  <div>{cat.label}</div>
+                                </CategoryRow>
+                              );
+                            })}
+                          </>
+                        );
+                      })()}
+
+                    {/* COMBINED METRIC+SIZE — 4 gradient-colored circles */}
+                    {group.isCombinedMetricSize &&
+                      group.metric &&
+                      group.sizeEntry &&
+                      group.sizeEntry.startSize !== group.sizeEntry.endSize && (
+                        <GraduatedIcons
+                          startSize={group.sizeEntry.startSize}
+                          endSize={group.sizeEntry.endSize}
+                          lower={group.sizeEntry.lower}
+                          upper={group.sizeEntry.upper}
+                          startColor={group.metric.startColor}
+                          endColor={group.metric.endColor}
+                          icon={group.icon}
+                          usesPercentBounds={group.sizeEntry.usesPercentBounds}
+                        />
+                      )}
+
+                    {/* METRIC GRADIENT — only when NOT combined */}
+                    {!group.isCombinedMetricSize && group.metric && (
                       <>
                         <GradientBar
                           gradient={`linear-gradient(to right,
@@ -401,6 +489,24 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
                         </Bounds>
                       </>
                     )}
+
+                    {/* SIZE LEGEND — only when NOT combined and no category×size grid */}
+                    {!group.isCombinedMetricSize &&
+                      !(group.categories && group.categories.length > 0) &&
+                      group.sizeEntry &&
+                      group.sizeEntry.startSize !== group.sizeEntry.endSize && (
+                        <GraduatedIcons
+                          startSize={group.sizeEntry.startSize}
+                          endSize={group.sizeEntry.endSize}
+                          lower={group.sizeEntry.lower}
+                          upper={group.sizeEntry.upper}
+                          startColor={group.metric?.startColor}
+                          endColor={group.metric?.endColor}
+                          fillColor={fill}
+                          icon={group.icon}
+                          usesPercentBounds={group.sizeEntry.usesPercentBounds}
+                        />
+                      )}
                   </Content>
                 )}
               </Group>

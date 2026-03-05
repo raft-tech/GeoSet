@@ -27,8 +27,10 @@ import {
   normalizeCategoryColorMapping,
   addColor,
   computeMetricColorScaleUnified,
+  computeSizeScale,
   ColorByValueConfig,
   MetricLegend,
+  PointSizeConfigRaw,
   DEFAULT_SUPERSET_COLOR,
   RGBAColor,
   toRGBA,
@@ -133,7 +135,18 @@ export default function transformProps(chartProps: ChartProps) {
     actualGeometryType === 'MultiPoint';
 
   const pointType = isPointGeometry ? globalColoring?.pointType : undefined;
-  const pointSize = isPointGeometry ? globalColoring?.pointSize : undefined;
+  // pointSize is now a top-level geojsonConfig key (number | PointSizeConfigRaw | undefined)
+  // It may also fall back to globalColoring.pointSize for backward compatibility
+  const rawPointSize = isPointGeometry
+    ? (geojsonConfig?.pointSize ?? globalColoring?.pointSize)
+    : undefined;
+  const isStaticSize = rawPointSize == null || typeof rawPointSize === 'number';
+  const pointSize = isStaticSize
+    ? (rawPointSize as number | undefined)
+    : undefined;
+  const pointSizeConfigDynamic = !isStaticSize
+    ? (rawPointSize as PointSizeConfigRaw)
+    : undefined;
 
   const dimension = colorByCategory?.dimension;
   const categoryColorMapping = colorByCategory?.categoricalColors || {};
@@ -225,6 +238,85 @@ export default function transformProps(chartProps: ChartProps) {
       console.warn('Metric entry missing valueName:', colorByValue);
     }
   }
+
+  // --- Size scale & legend (for dynamic pointSize) ---
+  let sizeScale: ((val: number) => number) | null = null;
+  let sizeLegend: {
+    lower: number;
+    upper: number;
+    startSize: number;
+    endSize: number;
+    valueColumn: string;
+    legendTitle?: string;
+    usesPercentBounds?: boolean;
+  } | null = null;
+
+  if (pointSizeConfigDynamic?.valueColumn && rawData.length > 0) {
+    const {
+      valueColumn: sizeValueColumn,
+      startSize = 4,
+      endSize = 30,
+      lowerBound,
+      upperBound,
+    } = pointSizeConfigDynamic;
+
+    const sizeValues = rawData
+      .map(d =>
+        d[sizeValueColumn] != null ? Number(d[sizeValueColumn]) : null,
+      )
+      .filter((v): v is number => v !== null && !Number.isNaN(v));
+
+    if (sizeValues.length > 0) {
+      const sortedSizeValues = [...sizeValues].sort((a, b) => a - b);
+      const sizeLower = resolvePercentOrNumber(
+        lowerBound,
+        sortedSizeValues,
+        Math.min(...sizeValues),
+      );
+      const sizeUpper = resolvePercentOrNumber(
+        upperBound,
+        sortedSizeValues,
+        Math.max(...sizeValues),
+      );
+      sizeScale = computeSizeScale(
+        {
+          valueColumn: sizeValueColumn,
+          startSize,
+          endSize,
+          lowerBound: sizeLower,
+          upperBound: sizeUpper,
+        },
+        [sizeLower, sizeUpper],
+      );
+      const hasPctBound =
+        (typeof lowerBound === 'string' && lowerBound.endsWith('%')) ||
+        (typeof upperBound === 'string' && upperBound.endsWith('%'));
+      sizeLegend = {
+        lower: sizeLower,
+        upper: sizeUpper,
+        startSize,
+        endSize,
+        valueColumn: sizeValueColumn,
+        legendTitle: legend?.title,
+        usesPercentBounds: hasPctBound,
+      };
+    }
+  }
+
+  // --- Combined metric+size validation ---
+  const isCombinedMetricSize: boolean = (() => {
+    if (!metricLegend || !sizeLegend) return false;
+    const metricCol = colorByValue?.valueColumn;
+    const sizeCol = pointSizeConfigDynamic?.valueColumn;
+    if (metricCol !== sizeCol) {
+      console.warn(
+        `[GeoSet Legend] colorByValue.valueColumn ("${metricCol}") != ` +
+          `pointSize.valueColumn ("${sizeCol}"). Rendering legends separately.`,
+      );
+      return false;
+    }
+    return true;
+  })();
 
   // --- Parse raw features with caching ---
   const rawFeatures = parseRawFeatures(rawData, dimension, filterNulls);
@@ -419,6 +511,16 @@ export default function transformProps(chartProps: ChartProps) {
     });
   }
 
+  // --- Stamp sizeValue on each feature for dynamic point sizing ---
+  if (sizeScale && pointSizeConfigDynamic) {
+    const { valueColumn: sizeValueColumn } = pointSizeConfigDynamic;
+    features = features.map(f => {
+      const val = f.properties?.[sizeValueColumn];
+      if (val == null) return f;
+      return { ...f, sizeValue: sizeScale!(Number(val)) };
+    });
+  }
+
   // Mapbox API key placeholder - actual key is fetched in the component via useEffect
   const mapboxApiKey =
     geojsonPayload.data?.mapboxApiKey || process.env.MAPBOX_API_KEY || '';
@@ -472,6 +574,8 @@ export default function transformProps(chartProps: ChartProps) {
       metricDomain,
       metricColorScale,
       metricLegend,
+      sizeLegend,
+      isCombinedMetricSize,
       textOverlayStyle,
     },
   };

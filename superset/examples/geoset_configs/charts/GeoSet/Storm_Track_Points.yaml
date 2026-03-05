@@ -41,7 +41,7 @@ params:
     fillPattern\": \"solid\",\n    \"lineStyle\": \"solid\",\n    \"strokeColor\"\
     : [0, 0, 0, 255],\n    \"strokeWidth\": 2\n  },\n  \"legend\": {\n    \"title\"\
     : \"Wind Speed (mph)\"\n  }\n}"
-  schema_version: 3
+  schema_version: 4
   annotation_layers: []
 cache_timeout: null
 uuid: 6bf3672d-39e3-4170-b647-a46626cc899c

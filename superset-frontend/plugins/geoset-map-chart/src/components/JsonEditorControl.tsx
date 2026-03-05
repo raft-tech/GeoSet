@@ -128,10 +128,17 @@ const templateJson = `{
     "strokeColor": [0, 0, 0, 255],
     "strokeWidth": 2,
     "pointType": "circle",       // optional
-    "pointSize": 6,              // optional
     "lineStyle": "solid",
     "fillPattern": "solid"
   },
+  "pointSize": 6,                // static size (number), OR use the object form below:
+  // "pointSize": {              // dynamic — scales point size by a data column value
+  //   "valueColumn": "your_numeric_column",
+  //   "startSize": 4,           // pixel size at lowerBound
+  //   "endSize": 30,            // pixel size at upperBound
+  //   "lowerBound": null,       // optional — defaults to data min
+  //   "upperBound": null        // optional — defaults to data max
+  // },
   "colorByCategory": {
     "dimension": "category_field",
     "categoricalColors": [
@@ -178,10 +185,10 @@ const cleanTemplateJson = JSON.stringify(
       strokeColor: [0, 0, 0, 255],
       strokeWidth: 2,
       pointType: 'circle',
-      pointSize: 6,
       lineStyle: 'solid',
       fillPattern: 'solid',
     },
+    pointSize: 6,
     colorByCategory: {
       dimension: 'category_field',
       categoricalColors: [
