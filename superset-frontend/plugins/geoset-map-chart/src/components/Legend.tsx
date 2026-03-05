@@ -21,13 +21,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { memo, Fragment } from 'react';
+import { memo } from 'react';
 import { formatNumber, styled } from '@superset-ui/core';
 import { MetricLegend, RGBAColor } from '../utils/colors';
 import { rgbaArrayToCssString } from '../utils/colorsFallback';
 import { Swatch } from '../utils/legendSwatch';
-import { getColoredSvgUrl } from '../utils/svgIcons';
 import { formatLegendNumber } from '../utils/formatNumber';
+import CategorySizeGrid, { CategorySizeGridItem } from './CategorySizeGrid';
 import GraduatedIcons from './GraduatedIcons';
 
 const StyledLegend = styled.div`
@@ -245,108 +245,57 @@ const Legend = ({
   const combinedContent = hasCombinedLegend
     ? (() => {
         const { startSize, endSize, lower, upper } = sizeLegend!;
-        const r1 = Math.min(startSize, 8);
-        const rMid = Math.min(Math.round((startSize + endSize) / 2), 13);
-        const r3 = Math.min(endSize, 18);
-        const cellSize = r3 * 2 + 4;
-        const midValue = Math.round((lower + upper) / 2);
-        const radii = [r1, rMid, r3];
+        const gridItems: CategorySizeGridItem[] = categoryEntries.map(
+          ([k, v]) => {
+            const rawColor = v.color ?? [0, 0, 0, 255];
+            const color = (
+              rawColor.length === 4 ? rawColor : [...rawColor, 255].slice(0, 4)
+            ) as RGBAColor;
+            return {
+              key: k,
+              label: String(v.legend_name || formatCategoryLabel(k)),
+              fillColor: color,
+              enabled: v.enabled !== false,
+            };
+          },
+        );
 
         return (
           <div className="metric-legend">
             <div className="legend-title">
               {sizeLegend!.legendTitle || toTitleCase(sizeLegend!.valueColumn)}
             </div>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: `auto repeat(3, 1fr)`,
-                gap: '4px 2px',
-                alignItems: 'center',
-              }}
-            >
-              {categoryEntries.map(([k, v]) => {
-                const rawColor = v.color ?? [0, 0, 0, 255];
-                const color = (
-                  rawColor.length === 4
-                    ? rawColor
-                    : [...rawColor, 255].slice(0, 4)
-                ) as RGBAColor;
-                const displayColor: RGBAColor = v.enabled
-                  ? color
-                  : [color[0], color[1], color[2], 100];
-                const rgba = `rgba(${displayColor[0]},${displayColor[1]},${displayColor[2]},${displayColor[3] / 255})`;
-                const label = v.legend_name || formatCategoryLabel(k);
-
-                return (
-                  <Fragment key={k}>
-                    <a
-                      href="#"
-                      role="button"
-                      onClick={e => {
-                        e.preventDefault();
-                        toggleCategory(k);
-                      }}
-                      onDoubleClick={e => {
-                        e.preventDefault();
-                        showSingleCategory(k);
-                      }}
-                      style={{
-                        textDecoration: 'none',
-                        color: 'inherit',
-                        opacity: v.enabled ? 1 : 0.5,
-                        paddingRight: 8,
-                      }}
-                    >
-                      {label}
-                    </a>
-                    {radii.map((r, i) => {
-                      const iconN = icon?.replace('-icon', '') || 'circle';
-                      return (
-                        <div
-                          key={i}
-                          style={{
-                            display: 'flex',
-                            justifyContent: 'center',
-                            alignItems: 'flex-end',
-                            height: cellSize,
-                            paddingBottom: 2,
-                          }}
-                        >
-                          {icon ? (
-                            <img
-                              src={getColoredSvgUrl(iconN, displayColor)}
-                              alt=""
-                              width={r * 2}
-                              height={r * 2}
-                            />
-                          ) : (
-                            <svg width={r * 2} height={r * 2}>
-                              <circle cx={r} cy={r} r={r} fill={rgba} />
-                            </svg>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </Fragment>
-                );
-              })}
-              {/* Size value labels */}
-              <span />
-              {[lower, midValue, upper].map((val, i) => (
-                <span
-                  key={i}
+            <CategorySizeGrid
+              categories={gridItems}
+              startSize={startSize}
+              endSize={endSize}
+              lower={lower}
+              upper={upper}
+              icon={icon}
+              usesPercentBounds={sizeLegend!.usesPercentBounds}
+              renderLabel={item => (
+                <a
+                  href="#"
+                  role="button"
+                  onClick={e => {
+                    e.preventDefault();
+                    toggleCategory(item.key);
+                  }}
+                  onDoubleClick={e => {
+                    e.preventDefault();
+                    showSingleCategory(item.key);
+                  }}
                   style={{
-                    textAlign: 'center',
-                    fontSize: 11,
-                    color: 'var(--ant-color-text-secondary, #888)',
+                    textDecoration: 'none',
+                    color: 'inherit',
+                    opacity: item.enabled ? 1 : 0.5,
+                    paddingRight: 8,
                   }}
                 >
-                  {formatLegendNumber(val)}
-                  {i === 2 && lower !== upper ? '+' : ''}
-                </span>
-              ))}
-            </div>
+                  {item.label}
+                </a>
+              )}
+            />
           </div>
         );
       })()

@@ -1,13 +1,13 @@
 /* eslint-disable no-console */
 /* eslint-disable react-hooks/rules-of-hooks */
 import { styled } from '@superset-ui/core';
-import { Fragment, useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import MapIcon from '@material-ui/icons/MapTwoTone';
 import { RGBAColor } from '../utils/colors';
 import { Swatch } from '../utils/legendSwatch';
-import { getColoredSvgUrl } from '../utils/svgIcons';
 import { formatLegendNumber } from '../utils/formatNumber';
 import GraduatedIcons from './GraduatedIcons';
+import CategorySizeGrid, { CategorySizeGridItem } from './CategorySizeGrid';
 
 export type CategoryEntry = {
   label: string;
@@ -373,115 +373,48 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
                         if (hasSizeGrid) {
                           const { startSize, endSize, lower, upper } =
                             group.sizeEntry!;
-                          const r1 = Math.min(startSize, 8);
-                          const rMid = Math.min(
-                            Math.round((startSize + endSize) / 2),
-                            13,
-                          );
-                          const r3 = Math.min(endSize, 18);
-                          const radii = [r1, rMid, r3];
-                          const cellSize = r3 * 2 + 4;
-                          const midValue = Math.round((lower + upper) / 2);
+                          const gridItems: CategorySizeGridItem[] =
+                            group.categories!.map((cat, i) => ({
+                              key: `cat-${i}`,
+                              label: cat.label,
+                              fillColor: cat.fillColor,
+                              enabled: cat.enabled !== false,
+                            }));
 
                           return (
-                            <div
-                              style={{
-                                display: 'grid',
-                                gridTemplateColumns: `auto repeat(3, 1fr)`,
-                                gap: '4px 2px',
-                                alignItems: 'center',
-                              }}
-                            >
-                              {group.categories!.map((cat, i) => {
-                                const isEnabled = cat.enabled !== false;
-                                const displayFillColor: RGBAColor = isEnabled
-                                  ? cat.fillColor
-                                  : [
-                                      cat.fillColor[0],
-                                      cat.fillColor[1],
-                                      cat.fillColor[2],
-                                      100,
-                                    ];
-                                const rgba = `rgba(${displayFillColor[0]},${displayFillColor[1]},${displayFillColor[2]},${displayFillColor[3] / 255})`;
-
-                                return (
-                                  <Fragment key={`cat-${i}`}>
-                                    <div
-                                      style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 6,
-                                        opacity: isEnabled ? 1 : 0.5,
-                                        paddingRight: 8,
-                                      }}
-                                    >
-                                      {hasToggle && (
-                                        <VisibilityCheckbox
-                                          type="checkbox"
-                                          checked={isEnabled}
-                                          onChange={() =>
-                                            onToggleCategory(id, cat.label)
-                                          }
-                                        />
-                                      )}
-                                      <span>{cat.label}</span>
-                                    </div>
-                                    {radii.map((r, j) => {
-                                      const iconN =
-                                        group.icon?.replace('-icon', '') ||
-                                        'circle';
-                                      return (
-                                        <div
-                                          key={`circle-${i}-${j}`}
-                                          style={{
-                                            display: 'flex',
-                                            justifyContent: 'center',
-                                            alignItems: 'flex-end',
-                                            height: cellSize,
-                                            paddingBottom: 2,
-                                          }}
-                                        >
-                                          {group.icon ? (
-                                            <img
-                                              src={getColoredSvgUrl(
-                                                iconN,
-                                                displayFillColor,
-                                              )}
-                                              alt=""
-                                              width={r * 2}
-                                              height={r * 2}
-                                            />
-                                          ) : (
-                                            <svg width={r * 2} height={r * 2}>
-                                              <circle
-                                                cx={r}
-                                                cy={r}
-                                                r={r}
-                                                fill={rgba}
-                                              />
-                                            </svg>
-                                          )}
-                                        </div>
-                                      );
-                                    })}
-                                  </Fragment>
-                                );
-                              })}
-                              {/* Size value labels */}
-                              <span />
-                              {[lower, midValue, upper].map((val, i) => (
-                                <span
-                                  key={`val-${i}`}
+                            <CategorySizeGrid
+                              categories={gridItems}
+                              startSize={startSize}
+                              endSize={endSize}
+                              lower={lower}
+                              upper={upper}
+                              icon={group.icon}
+                              usesPercentBounds={
+                                group.sizeEntry!.usesPercentBounds
+                              }
+                              renderLabel={item => (
+                                <div
                                   style={{
-                                    textAlign: 'center',
-                                    fontSize: 11,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 6,
+                                    opacity: item.enabled ? 1 : 0.5,
+                                    paddingRight: 8,
                                   }}
                                 >
-                                  {formatLegendNumber(val)}
-                                  {i === 2 && lower !== upper ? '+' : ''}
-                                </span>
-                              ))}
-                            </div>
+                                  {hasToggle && (
+                                    <VisibilityCheckbox
+                                      type="checkbox"
+                                      checked={item.enabled}
+                                      onChange={() =>
+                                        onToggleCategory(id, item.label)
+                                      }
+                                    />
+                                  )}
+                                  <span>{item.label}</span>
+                                </div>
+                              )}
+                            />
                           );
                         }
 
