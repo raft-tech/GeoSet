@@ -76,23 +76,31 @@ jobs:
   check-sample-data-changes:
     runs-on: ubuntu-latest
     outputs:
-      changed: ${{ steps.filter.outputs.sample-data }}
+      changed: ${{ steps.check.outputs.changed }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Check for sample-data changes
-        uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            sample-data:
-              - 'sample-data/**'
+        id: check
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- sample-data/)
+            if [ -n "$CHANGED" ]; then
+              echo "changed=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "changed=false" >> "$GITHUB_OUTPUT"
+            fi
+          fi
 
   build-and-push-data-ingest:
     runs-on: ubuntu-latest
     needs: check-sample-data-changes
-    if: needs.check-sample-data-changes.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+    if: needs.check-sample-data-changes.outputs.changed == 'true'
 
     steps:
       - name: Checkout Code
