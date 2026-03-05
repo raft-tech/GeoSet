@@ -471,6 +471,15 @@ export const reverseLongLat = {
   },
 };
 
+export const DEFAULT_DECKGL_TILES = [
+  ['mapbox://styles/mapbox/streets-v9', 'Streets'],
+  ['mapbox://styles/mapbox/dark-v9', 'Dark'],
+  ['mapbox://styles/mapbox/light-v9', 'Light'],
+  ['mapbox://styles/mapbox/satellite-streets-v9', 'Satellite Streets'],
+  ['mapbox://styles/mapbox/satellite-v9', 'Satellite'],
+  ['mapbox://styles/mapbox/outdoors-v9', 'Outdoors'],
+];
+
 export const mapboxStyle = {
   name: 'mapbox_style',
   config: {
@@ -480,18 +489,8 @@ export const mapboxStyle = {
     renderTrigger: true,
     freeForm: true,
     validators: [validateMapboxStylesUrl],
-    choices: [
-      ['mapbox://styles/acf-dart/cm8ovf5xt000v01s9fvk52nsa', t('Streets')],
-      ['mapbox://styles/acf-dart/cm8ov7bgj002h01qt7nz76r15', t('Dark')],
-      ['mapbox://styles/acf-dart/cm8ov8yl4001401s365rs672z', t('Light')],
-      [
-        'mapbox://styles/acf-dart/cm8ovcjzx001501s316b38a01',
-        t('Satellite Streets'),
-      ],
-      ['mapbox://styles/mapbox/satellite-v9', t('Satellite')],
-      ['mapbox://styles/acf-dart/cm8ova8jj007u01sd963n7ors', t('Outdoors')],
-    ],
-    default: 'mapbox://styles/acf-dart/cm8ov8yl4001401s365rs672z',
+    choices: DEFAULT_DECKGL_TILES,
+    default: DEFAULT_DECKGL_TILES[0][0],
     description: t(
       'Base layer map style. See Mapbox documentation: %s',
       'https://docs.mapbox.com/help/glossary/style-url/',
@@ -511,4 +510,3 @@ export const geojsonColumn = {
     }),
   },
 };
-
