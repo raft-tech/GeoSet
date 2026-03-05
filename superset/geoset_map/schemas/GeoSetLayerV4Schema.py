@@ -13,7 +13,7 @@ from typing import Any
 
 from marshmallow import fields, Schema, validate, validates_schema, ValidationError
 
-from superset.geoset_map.schemas.GeoSetLayerV1Schema import ColorField
+from superset.geoset_map.schemas.GeoSetLayerV1Schema import ColorField, NumberOrPercent
 from superset.geoset_map.schemas.GeoSetLayerV3Schema import GeoSetLayerV3Schema
 
 
@@ -85,20 +85,35 @@ class PointSizeDynamicSchema(Schema):
         data_key="endSize",
         validate=validate.Range(min=1, max=200),
     )
-    lower_bound = fields.Number(
+    lower_bound = NumberOrPercent(
         allow_none=True, load_default=None, data_key="lowerBound"
     )
-    upper_bound = fields.Number(
+    upper_bound = NumberOrPercent(
         allow_none=True, load_default=None, data_key="upperBound"
     )
 
     @validates_schema
     def validate_bounds(self, data, **kwargs):
-        """Validate that upperBound > lowerBound when both are provided."""
+        """Validate that upperBound > lowerBound when both are provided.
+
+        When both bounds are the same type (both numeric or both percentage),
+        validates ordering. Mixed types are skipped since percentages are
+        resolved on the frontend against actual data.
+        """
         lower = data.get("lower_bound")
         upper = data.get("upper_bound")
-        if lower is not None and upper is not None and lower >= upper:
-            raise ValidationError("upperBound must be greater than lowerBound.")
+        if lower is None or upper is None:
+            return
+
+        lower_is_pct = isinstance(lower, str) and lower.endswith("%")
+        upper_is_pct = isinstance(upper, str) and upper.endswith("%")
+
+        # Only compare when both are the same type
+        if lower_is_pct == upper_is_pct:
+            lower_val = float(lower.rstrip("%")) if lower_is_pct else float(lower)
+            upper_val = float(upper.rstrip("%")) if upper_is_pct else float(upper)
+            if lower_val >= upper_val:
+                raise ValidationError("upperBound must be greater than lowerBound.")
 
 
 class PointSizeField(fields.Field):

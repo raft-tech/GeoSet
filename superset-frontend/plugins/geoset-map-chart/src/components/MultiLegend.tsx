@@ -7,6 +7,7 @@ import { RGBAColor } from '../utils/colors';
 import { Swatch } from '../utils/legendSwatch';
 import { getColoredSvgUrl } from '../utils/svgIcons';
 import { formatLegendNumber } from '../utils/formatNumber';
+import GraduatedIcons from './GraduatedIcons';
 
 export type CategoryEntry = {
   label: string;
@@ -29,6 +30,7 @@ export type SizeEntry = {
   endSize: number;
   valueColumn: string;
   legendTitle?: string;
+  usesPercentBounds?: boolean;
 };
 
 export type LegendGroup = {
@@ -526,119 +528,18 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
                     {group.isCombinedMetricSize &&
                       group.metric &&
                       group.sizeEntry &&
-                      group.sizeEntry.startSize !== group.sizeEntry.endSize &&
-                      (() => {
-                        const { startSize, endSize, lower, upper } =
-                          group.sizeEntry;
-                        const tValues = [0, 0.33, 0.67, 1];
-                        const radii = tValues.map(t => {
-                          const raw = startSize + t * (endSize - startSize);
-                          return Math.min(Math.max(Math.round(raw), 3), 18);
-                        });
-                        const interpolateColor = (
-                          c1: RGBAColor,
-                          c2: RGBAColor,
-                          t: number,
-                        ) => {
-                          const r = Math.round(c1[0] + t * (c2[0] - c1[0]));
-                          const g = Math.round(c1[1] + t * (c2[1] - c1[1]));
-                          const b = Math.round(c1[2] + t * (c2[2] - c1[2]));
-                          return `rgba(${r},${g},${b},0.8)`;
-                        };
-                        const interpolateRgba = (
-                          c1: RGBAColor,
-                          c2: RGBAColor,
-                          t: number,
-                        ): RGBAColor => [
-                          Math.round(c1[0] + t * (c2[0] - c1[0])),
-                          Math.round(c1[1] + t * (c2[1] - c1[1])),
-                          Math.round(c1[2] + t * (c2[2] - c1[2])),
-                          204,
-                        ];
-                        const colors = tValues.map(t =>
-                          interpolateColor(
-                            group.metric!.startColor,
-                            group.metric!.endColor,
-                            t,
-                          ),
-                        );
-                        const colorArrays = tValues.map(t =>
-                          interpolateRgba(
-                            group.metric!.startColor,
-                            group.metric!.endColor,
-                            t,
-                          ),
-                        );
-                        const maxR = radii[radii.length - 1];
-                        const colW = Math.max(maxR * 2 + 8, 44);
-                        const svgW = colW * 4;
-                        const svgH = maxR * 2 + 2;
-                        const iconN =
-                          group.icon?.replace('-icon', '') || 'circle';
-                        return (
-                          <>
-                            <svg
-                              width={svgW}
-                              height={svgH}
-                              style={{
-                                margin: '6px 0',
-                                overflow: 'visible',
-                                display: 'block',
-                              }}
-                            >
-                              {radii.map((r, i) => {
-                                const cx = colW * (i + 0.5);
-                                const cy = svgH - r;
-                                return group.icon ? (
-                                  <image
-                                    key={i}
-                                    href={getColoredSvgUrl(
-                                      iconN,
-                                      colorArrays[i],
-                                    )}
-                                    x={cx - r}
-                                    y={cy - r}
-                                    width={r * 2}
-                                    height={r * 2}
-                                  />
-                                ) : (
-                                  <circle
-                                    key={i}
-                                    cx={cx}
-                                    cy={cy}
-                                    r={r}
-                                    fill={colors[i]}
-                                  />
-                                );
-                              })}
-                            </svg>
-                            <svg
-                              width={svgW}
-                              height={16}
-                              style={{ display: 'block', overflow: 'visible' }}
-                            >
-                              <text
-                                x={colW * 0.5}
-                                y={12}
-                                textAnchor="middle"
-                                fontSize={11}
-                                fill="currentColor"
-                              >
-                                {formatLegendNumber(lower)}
-                              </text>
-                              <text
-                                x={colW * 3.5}
-                                y={12}
-                                textAnchor="middle"
-                                fontSize={11}
-                                fill="currentColor"
-                              >
-                                {`${formatLegendNumber(upper)}${lower !== upper ? '+' : ''}`}
-                              </text>
-                            </svg>
-                          </>
-                        );
-                      })()}
+                      group.sizeEntry.startSize !== group.sizeEntry.endSize && (
+                        <GraduatedIcons
+                          startSize={group.sizeEntry.startSize}
+                          endSize={group.sizeEntry.endSize}
+                          lower={group.sizeEntry.lower}
+                          upper={group.sizeEntry.upper}
+                          startColor={group.metric.startColor}
+                          endColor={group.metric.endColor}
+                          icon={group.icon}
+                          usesPercentBounds={group.sizeEntry.usesPercentBounds}
+                        />
+                      )}
 
                     {/* METRIC GRADIENT — only when NOT combined */}
                     {!group.isCombinedMetricSize && group.metric && (
@@ -660,130 +561,19 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
                     {!group.isCombinedMetricSize &&
                       !(group.categories && group.categories.length > 0) &&
                       group.sizeEntry &&
-                      group.sizeEntry.startSize !== group.sizeEntry.endSize &&
-                      (() => {
-                        const { startSize, endSize, lower, upper } =
-                          group.sizeEntry;
-                        const tValues = [0, 0.33, 0.67, 1];
-                        const radii = tValues.map(t => {
-                          const raw = startSize + t * (endSize - startSize);
-                          return Math.min(Math.max(Math.round(raw), 3), 18);
-                        });
-                        const fallback = `rgba(${fill[0]},${fill[1]},${fill[2]},0.8)`;
-                        const fallbackRgba: RGBAColor = [
-                          fill[0],
-                          fill[1],
-                          fill[2],
-                          204,
-                        ];
-                        const blendCss = (
-                          c1: RGBAColor,
-                          c2: RGBAColor,
-                          t: number,
-                        ) => {
-                          const r = Math.round(c1[0] + t * (c2[0] - c1[0]));
-                          const g = Math.round(c1[1] + t * (c2[1] - c1[1]));
-                          const b = Math.round(c1[2] + t * (c2[2] - c1[2]));
-                          return `rgba(${r},${g},${b},0.8)`;
-                        };
-                        const blendRgba = (
-                          c1: RGBAColor,
-                          c2: RGBAColor,
-                          t: number,
-                        ): RGBAColor => [
-                          Math.round(c1[0] + t * (c2[0] - c1[0])),
-                          Math.round(c1[1] + t * (c2[1] - c1[1])),
-                          Math.round(c1[2] + t * (c2[2] - c1[2])),
-                          204,
-                        ];
-                        const colors = group.metric
-                          ? tValues.map(t =>
-                              blendCss(
-                                group.metric!.startColor,
-                                group.metric!.endColor,
-                                t,
-                              ),
-                            )
-                          : tValues.map(() => fallback);
-                        const colorArrays: RGBAColor[] = group.metric
-                          ? tValues.map(t =>
-                              blendRgba(
-                                group.metric!.startColor,
-                                group.metric!.endColor,
-                                t,
-                              ),
-                            )
-                          : tValues.map(() => fallbackRgba);
-                        const maxR = radii[radii.length - 1];
-                        const colW = Math.max(maxR * 2 + 8, 44);
-                        const svgW = colW * 4;
-                        const svgH = maxR * 2 + 2;
-                        const iconN =
-                          group.icon?.replace('-icon', '') || 'circle';
-                        return (
-                          <>
-                            <svg
-                              width={svgW}
-                              height={svgH}
-                              style={{
-                                margin: '6px 0',
-                                overflow: 'visible',
-                                display: 'block',
-                              }}
-                            >
-                              {radii.map((r, i) => {
-                                const cx = colW * (i + 0.5);
-                                const cy = svgH - r;
-                                return group.icon ? (
-                                  <image
-                                    key={i}
-                                    href={getColoredSvgUrl(
-                                      iconN,
-                                      colorArrays[i],
-                                    )}
-                                    x={cx - r}
-                                    y={cy - r}
-                                    width={r * 2}
-                                    height={r * 2}
-                                  />
-                                ) : (
-                                  <circle
-                                    key={i}
-                                    cx={cx}
-                                    cy={cy}
-                                    r={r}
-                                    fill={colors[i]}
-                                  />
-                                );
-                              })}
-                            </svg>
-                            <svg
-                              width={svgW}
-                              height={16}
-                              style={{ display: 'block', overflow: 'visible' }}
-                            >
-                              <text
-                                x={colW * 0.5}
-                                y={12}
-                                textAnchor="middle"
-                                fontSize={11}
-                                fill="currentColor"
-                              >
-                                {formatLegendNumber(lower)}
-                              </text>
-                              <text
-                                x={colW * 3.5}
-                                y={12}
-                                textAnchor="middle"
-                                fontSize={11}
-                                fill="currentColor"
-                              >
-                                {`${formatLegendNumber(upper)}${lower !== upper ? '+' : ''}`}
-                              </text>
-                            </svg>
-                          </>
-                        );
-                      })()}
+                      group.sizeEntry.startSize !== group.sizeEntry.endSize && (
+                        <GraduatedIcons
+                          startSize={group.sizeEntry.startSize}
+                          endSize={group.sizeEntry.endSize}
+                          lower={group.sizeEntry.lower}
+                          upper={group.sizeEntry.upper}
+                          startColor={group.metric?.startColor}
+                          endColor={group.metric?.endColor}
+                          fillColor={fill}
+                          icon={group.icon}
+                          usesPercentBounds={group.sizeEntry.usesPercentBounds}
+                        />
+                      )}
                   </Content>
                 )}
               </Group>

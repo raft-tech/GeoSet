@@ -52,6 +52,15 @@ export type PointSizeConfig = {
   upperBound?: number | null;
 };
 
+/** Raw config from JSON — bounds may be percentage strings like "25%". */
+export type PointSizeConfigRaw = Omit<
+  PointSizeConfig,
+  'lowerBound' | 'upperBound'
+> & {
+  lowerBound?: number | string | null;
+  upperBound?: number | string | null;
+};
+
 export function computeSizeScale(
   config: PointSizeConfig,
   dataDomain: [number, number],
@@ -63,7 +72,9 @@ export function computeSizeScale(
   return (val: number) => {
     if (val == null || range === 0) return config.startSize;
     const t = Math.max(0, Math.min(1, (val - lower) / range));
-    return Math.round(config.startSize + t * (config.endSize - config.startSize));
+    return Math.round(
+      config.startSize + t * (config.endSize - config.startSize),
+    );
   };
 }
 
@@ -541,4 +552,54 @@ export function getFeatureColor(
   const arr = (fillColorArray ?? DEFAULT_SUPERSET_COLOR).slice(0, 4);
   while (arr.length < 4) arr.push(defaultAlpha); // Default alpha if missing
   return arr as RGBAColor;
+}
+
+export function isPercentString(value: unknown): value is string {
+  return typeof value === 'string' && /^\d+(\.\d+)?%$/.test(value.trim());
+}
+
+export function percentile(sorted: number[], p: number): number {
+  if (sorted.length === 0) return 0;
+  if (sorted.length === 1) return sorted[0];
+  if (p <= 0) return sorted[0];
+  if (p >= 1) return sorted[sorted.length - 1];
+  const index = p * (sorted.length - 1);
+  const lo = Math.floor(index);
+  const hi = Math.ceil(index);
+  const weight = index - lo;
+  return sorted[lo] * (1 - weight) + sorted[hi] * weight;
+}
+
+export function resolvePercentOrNumber(
+  value: number | string | null | undefined,
+  sortedValues: number[],
+  fallback: number,
+): number {
+  if (value == null) return fallback;
+  if (typeof value === 'number') return value;
+  if (isPercentString(value)) {
+    const pct = parseFloat(value) / 100;
+    return percentile(sortedValues, pct);
+  }
+  return fallback;
+}
+
+export function lerpColorCss(c1: RGBAColor, c2: RGBAColor, t: number): string {
+  const r = Math.round(c1[0] + t * (c2[0] - c1[0]));
+  const g = Math.round(c1[1] + t * (c2[1] - c1[1]));
+  const b = Math.round(c1[2] + t * (c2[2] - c1[2]));
+  return `rgba(${r},${g},${b},0.8)`;
+}
+
+export function lerpColorRgba(
+  c1: RGBAColor,
+  c2: RGBAColor,
+  t: number,
+): RGBAColor {
+  return [
+    Math.round(c1[0] + t * (c2[0] - c1[0])),
+    Math.round(c1[1] + t * (c2[1] - c1[1])),
+    Math.round(c1[2] + t * (c2[2] - c1[2])),
+    204,
+  ];
 }

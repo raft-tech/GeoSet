@@ -408,6 +408,7 @@ const DeckMulti = (props: DeckMultiProps) => {
                             endSize: sizeLegend.endSize,
                             valueColumn: sizeLegend.valueColumn,
                             legendTitle: sizeLegend.legendTitle,
+                            usesPercentBounds: sizeLegend.usesPercentBounds,
                           }
                         : undefined,
                     isCombinedMetricSize: isCombined,

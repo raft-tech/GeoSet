@@ -28,6 +28,7 @@ import { rgbaArrayToCssString } from '../utils/colorsFallback';
 import { Swatch } from '../utils/legendSwatch';
 import { getColoredSvgUrl } from '../utils/svgIcons';
 import { formatLegendNumber } from '../utils/formatNumber';
+import GraduatedIcons from './GraduatedIcons';
 
 const StyledLegend = styled.div`
   ${({ theme }) => `
@@ -102,6 +103,7 @@ export type SizeLegend = {
   endSize: number;
   valueColumn: string;
   legendTitle?: string;
+  usesPercentBounds?: boolean;
 };
 
 export type LegendProps = {
@@ -176,198 +178,49 @@ const Legend = ({
   ) : null;
 
   // --- Render size legend if present ---
-  // When colorByValue is active, interpolate circle colors from the gradient
-  const lerpColor = (c1: RGBAColor, c2: RGBAColor, t: number): string => {
-    const r = Math.round(c1[0] + t * (c2[0] - c1[0]));
-    const g = Math.round(c1[1] + t * (c2[1] - c1[1]));
-    const b = Math.round(c1[2] + t * (c2[2] - c1[2]));
-    return `rgba(${r},${g},${b},0.8)`;
-  };
-
-  const lerpColorRgba = (
-    c1: RGBAColor,
-    c2: RGBAColor,
-    t: number,
-  ): RGBAColor => [
-    Math.round(c1[0] + t * (c2[0] - c1[0])),
-    Math.round(c1[1] + t * (c2[1] - c1[1])),
-    Math.round(c1[2] + t * (c2[2] - c1[2])),
-    204,
-  ];
-
   const sizeLegendContent =
     sizeLegend && sizeLegend.startSize !== sizeLegend.endSize ? (
       <div className="metric-legend">
         <div className="legend-title">
           {sizeLegend.legendTitle || toTitleCase(sizeLegend.valueColumn)}
         </div>
-        {(() => {
-          const { startSize, endSize, lower, upper } = sizeLegend;
-          const tValues = [0, 0.33, 0.67, 1];
-          const radii = tValues.map(t => {
-            const raw = startSize + t * (endSize - startSize);
-            return Math.min(Math.max(Math.round(raw), 3), 18);
-          });
-          const vw = 180;
-          const maxR = radii[radii.length - 1];
-          const vh = maxR * 2 + 2;
-
-          // Use gradient colors when colorByValue is active, otherwise fillColor
-          const fallback = `rgba(${fillColor[0]},${fillColor[1]},${fillColor[2]},0.8)`;
-          const fallbackRgba: RGBAColor = [
-            fillColor[0],
-            fillColor[1],
-            fillColor[2],
-            204,
-          ];
-          const colors = metricLegend
-            ? tValues.map(t =>
-                lerpColor(metricLegend.startColor, metricLegend.endColor, t),
-              )
-            : tValues.map(() => fallback);
-          const colorArrays: RGBAColor[] = metricLegend
-            ? tValues.map(t =>
-                lerpColorRgba(
-                  metricLegend.startColor,
-                  metricLegend.endColor,
-                  t,
-                ),
-              )
-            : tValues.map(() => fallbackRgba);
-          const iconName = icon?.replace('-icon', '') || 'circle';
-
-          return (
-            <>
-              <svg
-                width="100%"
-                viewBox={`0 0 ${vw} ${vh}`}
-                preserveAspectRatio="xMinYMax meet"
-                style={{
-                  margin: '6px 0',
-                  overflow: 'visible',
-                  display: 'block',
-                  maxWidth: 180,
-                }}
-              >
-                {radii.map((r, i) => {
-                  const cx = (vw / 4) * i + vw / 8;
-                  const cy = vh - r;
-                  return icon ? (
-                    <image
-                      key={i}
-                      href={getColoredSvgUrl(iconName, colorArrays[i])}
-                      x={cx - r}
-                      y={cy - r}
-                      width={r * 2}
-                      height={r * 2}
-                    />
-                  ) : (
-                    <circle key={i} cx={cx} cy={cy} r={r} fill={colors[i]} />
-                  );
-                })}
-              </svg>
-              <svg
-                width="100%"
-                viewBox={`0 0 ${vw} 14`}
-                preserveAspectRatio="xMinYMin meet"
-                style={{
-                  display: 'block',
-                  maxWidth: 180,
-                  fontSize: 11,
-                  fill: 'var(--ant-color-text-secondary, #888)',
-                }}
-              >
-                <text x={vw / 8} y="11" textAnchor="middle">
-                  {formatLegendNumber(lower)}
-                </text>
-                <text x={(vw * 7) / 8} y="11" textAnchor="middle">
-                  {`${formatLegendNumber(upper)}${lower !== upper ? '+' : ''}`}
-                </text>
-              </svg>
-            </>
-          );
-        })()}
+        <GraduatedIcons
+          responsive
+          startSize={sizeLegend.startSize}
+          endSize={sizeLegend.endSize}
+          lower={sizeLegend.lower}
+          upper={sizeLegend.upper}
+          startColor={metricLegend?.startColor}
+          endColor={metricLegend?.endColor}
+          fillColor={fillColor}
+          icon={icon}
+          usesPercentBounds={sizeLegend.usesPercentBounds}
+        />
       </div>
     ) : null;
 
   // --- Combined metric+size: 4 gradient-colored circles replacing gradient bar + size circles ---
   const combinedMetricSizeContent =
-    isCombinedMetricSize && metricLegend && sizeLegend
-      ? (() => {
-          const { startSize, endSize, lower, upper } = sizeLegend;
-          const tValues = [0, 0.33, 0.67, 1];
-          const radii = tValues.map(t => {
-            const raw = startSize + t * (endSize - startSize);
-            return Math.min(Math.max(Math.round(raw), 3), 18);
-          });
-          const colors = tValues.map(t =>
-            lerpColor(metricLegend.startColor, metricLegend.endColor, t),
-          );
-          const colorArrays = tValues.map(t =>
-            lerpColorRgba(metricLegend.startColor, metricLegend.endColor, t),
-          );
-          const maxR = radii[radii.length - 1];
-          const vw = 180;
-          const vh = maxR * 2 + 2;
-          const title =
-            sizeLegend.legendTitle ||
+    isCombinedMetricSize && metricLegend && sizeLegend ? (
+      <div className="metric-legend">
+        <div className="legend-title">
+          {sizeLegend.legendTitle ||
             metricLegend.legendName ||
-            toTitleCase(sizeLegend.valueColumn);
-          const iconName = icon?.replace('-icon', '') || 'circle';
-
-          return (
-            <div className="metric-legend">
-              <div className="legend-title">{title}</div>
-              <svg
-                width="100%"
-                viewBox={`0 0 ${vw} ${vh}`}
-                preserveAspectRatio="xMinYMax meet"
-                style={{
-                  margin: '6px 0',
-                  overflow: 'visible',
-                  display: 'block',
-                  maxWidth: 180,
-                }}
-              >
-                {radii.map((r, i) => {
-                  const cx = (vw / 4) * i + vw / 8;
-                  const cy = vh - r;
-                  return icon ? (
-                    <image
-                      key={i}
-                      href={getColoredSvgUrl(iconName, colorArrays[i])}
-                      x={cx - r}
-                      y={cy - r}
-                      width={r * 2}
-                      height={r * 2}
-                    />
-                  ) : (
-                    <circle key={i} cx={cx} cy={cy} r={r} fill={colors[i]} />
-                  );
-                })}
-              </svg>
-              <svg
-                width="100%"
-                viewBox={`0 0 ${vw} 14`}
-                preserveAspectRatio="xMinYMin meet"
-                style={{
-                  display: 'block',
-                  maxWidth: 180,
-                  fontSize: 11,
-                  fill: 'var(--ant-color-text-secondary, #888)',
-                }}
-              >
-                <text x={vw / 8} y="11" textAnchor="middle">
-                  {formatLegendNumber(lower)}
-                </text>
-                <text x={(vw * 7) / 8} y="11" textAnchor="middle">
-                  {`${formatLegendNumber(upper)}${lower !== upper ? '+' : ''}`}
-                </text>
-              </svg>
-            </div>
-          );
-        })()
-      : null;
+            toTitleCase(sizeLegend.valueColumn)}
+        </div>
+        <GraduatedIcons
+          responsive
+          startSize={sizeLegend.startSize}
+          endSize={sizeLegend.endSize}
+          lower={sizeLegend.lower}
+          upper={sizeLegend.upper}
+          startColor={metricLegend.startColor}
+          endColor={metricLegend.endColor}
+          icon={icon}
+          usesPercentBounds={sizeLegend.usesPercentBounds}
+        />
+      </div>
+    ) : null;
 
   const formatCategoryLabel = (k: string) => {
     if (!d3Format) {

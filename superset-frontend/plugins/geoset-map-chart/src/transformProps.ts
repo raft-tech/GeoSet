@@ -30,10 +30,11 @@ import {
   computeSizeScale,
   ColorByValueConfig,
   MetricLegend,
-  PointSizeConfig,
+  PointSizeConfigRaw,
   DEFAULT_SUPERSET_COLOR,
   RGBAColor,
   toRGBA,
+  resolvePercentOrNumber,
 } from './utils/colors';
 import { GeoJsonFeature } from './types';
 import {
@@ -134,7 +135,7 @@ export default function transformProps(chartProps: ChartProps) {
     actualGeometryType === 'MultiPoint';
 
   const pointType = isPointGeometry ? globalColoring?.pointType : undefined;
-  // pointSize is now a top-level geojsonConfig key (number | PointSizeConfig | undefined)
+  // pointSize is now a top-level geojsonConfig key (number | PointSizeConfigRaw | undefined)
   // It may also fall back to globalColoring.pointSize for backward compatibility
   const rawPointSize = isPointGeometry
     ? (geojsonConfig?.pointSize ?? globalColoring?.pointSize)
@@ -144,7 +145,7 @@ export default function transformProps(chartProps: ChartProps) {
     ? (rawPointSize as number | undefined)
     : undefined;
   const pointSizeConfigDynamic = !isStaticSize
-    ? (rawPointSize as PointSizeConfig)
+    ? (rawPointSize as PointSizeConfigRaw)
     : undefined;
 
   const dimension = colorByCategory?.dimension;
@@ -235,6 +236,7 @@ export default function transformProps(chartProps: ChartProps) {
     endSize: number;
     valueColumn: string;
     legendTitle?: string;
+    usesPercentBounds?: boolean;
   } | null = null;
 
   if (pointSizeConfigDynamic?.valueColumn && rawData.length > 0) {
@@ -253,8 +255,17 @@ export default function transformProps(chartProps: ChartProps) {
       .filter((v): v is number => v !== null && !Number.isNaN(v));
 
     if (sizeValues.length > 0) {
-      const sizeLower = lowerBound ?? Math.min(...sizeValues);
-      const sizeUpper = upperBound ?? Math.max(...sizeValues);
+      const sortedSizeValues = [...sizeValues].sort((a, b) => a - b);
+      const sizeLower = resolvePercentOrNumber(
+        lowerBound,
+        sortedSizeValues,
+        Math.min(...sizeValues),
+      );
+      const sizeUpper = resolvePercentOrNumber(
+        upperBound,
+        sortedSizeValues,
+        Math.max(...sizeValues),
+      );
       sizeScale = computeSizeScale(
         {
           valueColumn: sizeValueColumn,
@@ -265,6 +276,9 @@ export default function transformProps(chartProps: ChartProps) {
         },
         [sizeLower, sizeUpper],
       );
+      const hasPctBound =
+        (typeof lowerBound === 'string' && lowerBound.endsWith('%')) ||
+        (typeof upperBound === 'string' && upperBound.endsWith('%'));
       sizeLegend = {
         lower: sizeLower,
         upper: sizeUpper,
@@ -272,6 +286,7 @@ export default function transformProps(chartProps: ChartProps) {
         endSize,
         valueColumn: sizeValueColumn,
         legendTitle: legend?.title,
+        usesPercentBounds: hasPctBound,
       };
     }
   }
