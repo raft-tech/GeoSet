@@ -166,11 +166,20 @@ const Legend = ({
       />
       <div className="legend-labels">
         <span>
-          {metricLegend.min != null ? formatLegendNumber(metricLegend.min) : ''}
+          {metricLegend.min != null
+            ? metricLegend.usesPercentBounds &&
+              metricLegend.min !== metricLegend.max
+              ? `≤\u2009${formatLegendNumber(metricLegend.min)}`
+              : formatLegendNumber(metricLegend.min)
+            : ''}
         </span>
         <span>
           {metricLegend.max != null
-            ? `${formatLegendNumber(metricLegend.max)}${metricLegend.min !== metricLegend.max ? '+' : ''}`
+            ? metricLegend.min !== metricLegend.max
+              ? metricLegend.usesPercentBounds
+                ? `>\u2009${formatLegendNumber(metricLegend.max)}`
+                : `${formatLegendNumber(metricLegend.max)}+`
+              : formatLegendNumber(metricLegend.max)
             : ''}
         </span>
       </div>

@@ -29,6 +29,7 @@ import {
   computeMetricColorScaleUnified,
   computeSizeScale,
   ColorByValueConfig,
+  ColorByValueConfigRaw,
   MetricLegend,
   PointSizeConfigRaw,
   DEFAULT_SUPERSET_COLOR,
@@ -106,10 +107,11 @@ export default function transformProps(chartProps: ChartProps) {
   const {
     globalColoring,
     colorByCategory,
-    colorByValue,
+    colorByValue: colorByValueRaw,
     legend,
     textOverlayStyle,
   } = geojsonConfig;
+  const colorByValue = colorByValueRaw as ColorByValueConfigRaw | undefined;
 
   const fillColor = globalColoring?.fillColor;
   const strokeColor = globalColoring?.strokeColor;
@@ -226,12 +228,17 @@ export default function transformProps(chartProps: ChartProps) {
         // to display — use the same color for both ends of the legend.
         const noGradient = lower === upper;
 
+        const hasMetricPctBound =
+          (typeof lowerBound === 'string' && lowerBound.endsWith('%')) ||
+          (typeof upperBound === 'string' && upperBound.endsWith('%'));
+
         metricLegend = {
           min: lower,
           max: upper,
           startColor: start,
           endColor: noGradient ? start : end,
           legendName: legend?.title || valueColumn,
+          usesPercentBounds: hasMetricPctBound,
         };
       }
     } else {
@@ -445,7 +452,7 @@ export default function transformProps(chartProps: ChartProps) {
 
   // METRIC COLORING MODE (overrides category)
   if (useMetricColoring && features.length > 0) {
-    const { valueColumn } = colorByValue;
+    const { valueColumn } = colorByValue!;
 
     features = features.map(feature => {
       const featureProperties = { ...feature.properties };
@@ -559,7 +566,7 @@ export default function transformProps(chartProps: ChartProps) {
     limitReached,
     visualConfig: {
       dimension,
-      metric: colorByValue,
+      metric: colorByValue as ColorByValueConfig | undefined,
       filled,
       stroked,
       extruded,

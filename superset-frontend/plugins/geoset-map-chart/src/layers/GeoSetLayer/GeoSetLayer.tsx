@@ -1153,6 +1153,7 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
         propVisualConfig?.metric?.valueColumn ||
         payload.data.metricLabels?.[0] ||
         'Value',
+      usesPercentBounds: metricLegendObject.usesPercentBounds,
     };
   }
 
