@@ -124,8 +124,6 @@ jobs:
           context: ./sample-data
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: |
-            ebienstock/geoset:data-ingest-${{ github.sha }}
-            ebienstock/geoset:data-ingest-latest
+          tags: ebienstock/geoset:data-ingest-latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
