@@ -1,39 +1,106 @@
 #
-# Compose override for running GeoSet with a prebuilt image.
-# This is an alternative to the --profile prebuilt approach in docker-compose.yml.
+# Standalone GeoSet environment using a prebuilt image.
+# No build tools, Node, or webpack — gunicorn serves the app with pre-compiled
+# frontend assets. Includes PostGIS, sample data ingest, and Superset
+# (light mode — no Redis/Celery).
 #
-# Layers on top of docker-compose.yml to:
-#   - Replace build-from-source with a prebuilt image on superset-init and superset
-#   - Clear the dev command on superset so gunicorn runs (image default CMD)
-#   - Disable superset-node (no webpack — frontend is pre-compiled in the image)
-#   - Reduce volume mounts to only ./docker (needed for config and init scripts)
+# Multiple instances can run simultaneously by varying STACK_NAME and SUPERSET_PORT.
+# All data is ephemeral — no persistent volumes.
 #
 # USAGE:
-#   docker compose -f docker-compose.yml -f docker-compose.prebuilt.yml up
-#   SUPERSET_IMAGE=geoset:v1.2.3 docker compose -f docker-compose.yml -f docker-compose.prebuilt.yml up
+#   docker compose -f docker-compose.prebuilt.yml up
+#   STACK_NAME=geoset-204 SUPERSET_IMAGE=geoset:mr-204 SUPERSET_PORT=9204 docker compose -f docker-compose.prebuilt.yml up
 #
 # ENV VARS:
+#   STACK_NAME     – Compose project name (default: geoset-prebuilt)
 #   SUPERSET_IMAGE – Image to use (default: geoset:local)
+#   SUPERSET_PORT  – Host port for the Superset UI (default: 8088)
 #
 # ACCESS:
-#   Frontend: http://localhost:8088  (gunicorn serving app + static assets)
+#   Frontend: http://localhost:${SUPERSET_PORT:-8088}
 #
+name: ${STACK_NAME:-geoset-prebuilt}
+
 services:
+  # ---------- GeoSet data layer ----------
+  postgis:
+    image: postgis/postgis:16-3.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: geoset
+      POSTGRES_USER: geoset
+      POSTGRES_PASSWORD: geoset
+    volumes:
+      - ./sample-data/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U geoset -d geoset"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  sample-data-ingest:
+    build:
+      context: ./sample-data
+    depends_on:
+      postgis:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgis
+      DB_PORT: "5432"
+      DB_NAME: geoset
+      DB_USER: geoset
+      DB_PASSWORD: geoset
+
+  # ---------- Superset metadata database ----------
+  db:
+    env_file:
+      - path: docker/.env
+        required: true
+      - path: docker/.env-local
+        required: false
+    image: postgres:16
+    restart: unless-stopped
+    volumes:
+      - ./docker/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+
+  # ---------- Superset (prebuilt image) ----------
   superset-init:
     image: ${SUPERSET_IMAGE:-geoset:local}
-    build: !reset null
+    command: ["/app/docker/docker-init-geoset.sh"]
+    env_file:
+      - path: docker/.env
+        required: true
+      - path: docker/.env-local
+        required: false
+    depends_on:
+      db:
+        condition: service_started
+      postgis:
+        condition: service_healthy
+    user: root
     volumes:
       - ./docker:/app/docker
+    environment:
+      SUPERSET_CONFIG_PATH: /app/docker/pythonpath_dev/superset_config_docker_light.py
+    healthcheck:
+      disable: true
 
   superset:
     image: ${SUPERSET_IMAGE:-geoset:local}
-    build: !reset null
-    command: !reset []
+    env_file:
+      - path: docker/.env
+        required: true
+      - path: docker/.env-local
+        required: false
+    restart: unless-stopped
     ports:
-      - "127.0.0.1:8088:8088"
+      - "127.0.0.1:${SUPERSET_PORT:-8088}:8088"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      superset-init:
+        condition: service_completed_successfully
     volumes:
       - ./docker:/app/docker
-
-  superset-node:
-    deploy:
-      replicas: 0
+    environment:
+      SUPERSET_CONFIG_PATH: /app/docker/pythonpath_dev/superset_config_docker_light.py
