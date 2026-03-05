@@ -12,8 +12,6 @@ export type CategorySizeGridItem = {
 
 export type CategorySizeGridProps = {
   categories: CategorySizeGridItem[];
-  startSize: number;
-  endSize: number;
   lower: number;
   upper: number;
   icon?: string;

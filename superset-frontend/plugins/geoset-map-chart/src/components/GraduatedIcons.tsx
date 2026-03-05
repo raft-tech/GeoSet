@@ -4,8 +4,6 @@ import { getColoredSvgUrl } from '../utils/svgIcons';
 import { formatLegendNumber } from '../utils/formatNumber';
 
 export interface GraduatedIconsProps {
-  startSize: number;
-  endSize: number;
   lower: number;
   upper: number;
   startColor?: RGBAColor;
@@ -19,8 +17,6 @@ export interface GraduatedIconsProps {
 const T_VALUES = [0, 0.33, 0.67, 1];
 
 const GraduatedIcons: React.FC<GraduatedIconsProps> = ({
-  startSize,
-  endSize,
   lower,
   upper,
   startColor,

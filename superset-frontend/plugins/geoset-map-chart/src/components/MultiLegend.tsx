@@ -371,8 +371,7 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
                         const hasToggle = !!onToggleCategory;
 
                         if (hasSizeGrid) {
-                          const { startSize, endSize, lower, upper } =
-                            group.sizeEntry!;
+                          const { lower, upper } = group.sizeEntry!;
                           const gridItems: CategorySizeGridItem[] =
                             group.categories!.map((cat, i) => ({
                               key: `cat-${i}`,
@@ -384,8 +383,6 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
                           return (
                             <CategorySizeGrid
                               categories={gridItems}
-                              startSize={startSize}
-                              endSize={endSize}
                               lower={lower}
                               upper={upper}
                               icon={group.icon}
@@ -463,8 +460,6 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
                       group.sizeEntry &&
                       group.sizeEntry.startSize !== group.sizeEntry.endSize && (
                         <GraduatedIcons
-                          startSize={group.sizeEntry.startSize}
-                          endSize={group.sizeEntry.endSize}
                           lower={group.sizeEntry.lower}
                           upper={group.sizeEntry.upper}
                           startColor={group.metric.startColor}
@@ -496,8 +491,6 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
                       group.sizeEntry &&
                       group.sizeEntry.startSize !== group.sizeEntry.endSize && (
                         <GraduatedIcons
-                          startSize={group.sizeEntry.startSize}
-                          endSize={group.sizeEntry.endSize}
                           lower={group.sizeEntry.lower}
                           upper={group.sizeEntry.upper}
                           startColor={group.metric?.startColor}

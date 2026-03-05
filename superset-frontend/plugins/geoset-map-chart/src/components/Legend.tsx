@@ -186,8 +186,6 @@ const Legend = ({
         </div>
         <GraduatedIcons
           responsive
-          startSize={sizeLegend.startSize}
-          endSize={sizeLegend.endSize}
           lower={sizeLegend.lower}
           upper={sizeLegend.upper}
           startColor={metricLegend?.startColor}
@@ -210,8 +208,6 @@ const Legend = ({
         </div>
         <GraduatedIcons
           responsive
-          startSize={sizeLegend.startSize}
-          endSize={sizeLegend.endSize}
           lower={sizeLegend.lower}
           upper={sizeLegend.upper}
           startColor={metricLegend.startColor}
@@ -244,7 +240,7 @@ const Legend = ({
 
   const combinedContent = hasCombinedLegend
     ? (() => {
-        const { startSize, endSize, lower, upper } = sizeLegend!;
+        const { lower, upper } = sizeLegend!;
         const gridItems: CategorySizeGridItem[] = categoryEntries.map(
           ([k, v]) => {
             const rawColor = v.color ?? [0, 0, 0, 255];
@@ -267,8 +263,6 @@ const Legend = ({
             </div>
             <CategorySizeGrid
               categories={gridItems}
-              startSize={startSize}
-              endSize={endSize}
               lower={lower}
               upper={upper}
               icon={icon}
