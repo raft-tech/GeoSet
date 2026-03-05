@@ -10,7 +10,7 @@ params:
   geoJsonLayer: Point
   autozoom: true
   row_limit: 10000
-  mapbox_style: mapbox://styles/acf-dart/cm8ov8yl4001401s365rs672z
+  mapbox_style: mapbox://styles/mapbox/light-v9
   adhoc_filters: []
   hoverDataColumns:
   - label: Incident Name
@@ -48,7 +48,7 @@ params:
   minMaxZoomSlider:
   - 0
   - 22
-  schema_version: 2
+  schema_version: 3
   geojsonConfig: "{\n  \"globalColoring\": {\n    \"fillColor\": [255, 69, 0, 200],\n\
     \    \"strokeColor\": [0, 0, 0, 255],\n    \"strokeWidth\": 1,\n    \"fillPattern\"\
     : \"solid\"\n  },\n  \"colorByCategory\": {\n    \"dimension\": \"fire_cause\"\

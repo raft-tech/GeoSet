@@ -331,7 +331,11 @@ const DeckMulti = (props: DeckMultiProps) => {
                 let transformPropsGeojsonLayer =
                   transformedProps.formData.geoJsonLayer;
 
-                if (transformPropsGeojsonLayer !== geometryType) {
+                // Preserve TextOverlay as the legend geometry type
+                if (
+                  transformPropsGeojsonLayer !== 'TextOverlay' &&
+                  transformPropsGeojsonLayer !== geometryType
+                ) {
                   transformPropsGeojsonLayer = geometryType;
                 }
                 const transformedPropsConfig =
