@@ -6,7 +6,6 @@ import MapIcon from '@material-ui/icons/MapTwoTone';
 import { RGBAColor } from '../utils/colors';
 import { Swatch } from '../utils/legendSwatch';
 import { formatLegendNumber } from '../utils/formatNumber';
-import { useConsolidatedLegend } from '../utils/hooks';
 
 export type CategoryEntry = {
   label: string;
