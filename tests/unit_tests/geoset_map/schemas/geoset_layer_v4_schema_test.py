@@ -157,10 +157,8 @@ class TestGlobalColoringSchemaV4:
             "fillPattern": "solid",
             "pointSize": 10,
         }
-        # Marshmallow strict mode rejects unknown fields by default in Meta,
-        # but V4 schema doesn't set strict — pointSize just gets ignored.
-        result = schema.load(data)
-        assert "point_size" not in result
+        with pytest.raises(ValidationError, match="Unknown field"):
+            schema.load(data)
 
     def test_optional_fields_default_to_none(self):
         schema = GlobalColoringSchemaV4()
