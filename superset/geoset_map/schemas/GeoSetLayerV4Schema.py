@@ -18,8 +18,6 @@ from marshmallow import fields, Schema, validate, validates_schema, ValidationEr
 from superset.geoset_map.schemas.GeoSetLayerV1Schema import GlobalColoringSchema
 from superset.geoset_map.schemas.GeoSetLayerV3Schema import GeoSetLayerV3Schema
 
-_PERCENT_RE = re.compile(r"^(\d+(?:\.\d+)?)%$")
-
 
 class NumberOrPercent(fields.Field):
     """Accepts a number or a percentage string like ``"25%"``.
@@ -38,7 +36,9 @@ class NumberOrPercent(fields.Field):
         if isinstance(value, (int, float)):
             return value
         if isinstance(value, str):
-            match = _PERCENT_RE.match(value.strip())
+            # example: 25 or 25%
+            expression = re.compile(r"^(\d+(?:\.\d+)?)%$")
+            match = expression.match(value.strip())
             if match:
                 pct = float(match.group(1))
                 if not (0 <= pct <= 100):
@@ -128,9 +128,7 @@ class DynamicPointSizeSchema(Schema):
         start = data.get("start_size")
         end = data.get("end_size")
         if start is not None and end is not None and end <= start:
-            raise ValidationError(
-                "endSize must be greater than startSize."
-            )
+            raise ValidationError("endSize must be greater than startSize.")
 
         lower = data.get("lower_bound")
         upper = data.get("upper_bound")
@@ -255,15 +253,13 @@ class GeoSetLayerV4Schema(GeoSetLayerV3Schema):
         has_value = data.get("color_by_value") is not None
         if has_value and isinstance(point_size, dict):
             size_col = point_size.get("value_column")
-            value_col = data["color_by_value"].get(
-                "value_column"
-            )
+            value_col = data["color_by_value"].get("value_column")
             if size_col and value_col and size_col != value_col:
                 raise ValidationError(
                     "pointSize and colorByValue must reference"
                     " the same valueColumn. Got"
                     f' pointSize.valueColumn="{size_col}"'
-                    f' and colorByValue.valueColumn='
+                    f" and colorByValue.valueColumn="
                     f'"{value_col}".'
                 )
 
