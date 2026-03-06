@@ -4,6 +4,7 @@ V3 adds optional text overlay styling configuration for text annotations
 rendered on the map.
 """
 
+import copy
 from typing import Any
 
 from marshmallow import fields, Schema, validate
@@ -70,4 +71,5 @@ class GeoSetLayerV3Schema(GeoSetLayerV2Schema):
         Returns:
             The schema in V3 format (unchanged copy)
         """
-        return data.copy()
+        # deepcopy so nested dicts aren't shared with the caller
+        return copy.deepcopy(data)

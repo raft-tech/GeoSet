@@ -6,9 +6,10 @@ that maps a data column to a size range (dynamic, data-driven size).
 
 Changes from V3:
 - ``pointSize`` is removed from ``globalColoring`` and added as a top-level key.
-- ``pointSize`` now accepts either a number or a ``PointSizeDynamicSchema`` object.
+- ``pointSize`` now accepts either a number or a ``DynamicPointSizeSchema`` object.
 """
 
+import copy
 import re
 from typing import Any
 
@@ -74,7 +75,7 @@ class GlobalColoringSchemaV4(GlobalColoringSchema):
         exclude = ("point_size",)
 
 
-class PointSizeDynamicSchema(Schema):
+class DynamicPointSizeSchema(Schema):
     """Schema for data-driven point size configuration.
 
     Maps a numeric data column to a point size range. Points are scaled
@@ -134,11 +135,11 @@ class PointSizeDynamicSchema(Schema):
                 raise ValidationError("upperBound must be greater than lowerBound.")
 
 
-class PointSizeField(fields.Field):
+class StaticOrDynamicPointSizeField(fields.Field):
     """Polymorphic field accepting a static number or a dynamic size config object.
 
     - Number (int or float): static pixel size applied to all points (e.g. ``6``).
-    - Dict: dynamic size config matching ``PointSizeDynamicSchema``.
+    - Dict: dynamic size config matching ``DynamicPointSizeSchema``.
     """
 
     def _deserialize(self, value, attr, data, **kwargs):
@@ -149,7 +150,7 @@ class PointSizeField(fields.Field):
                 raise ValidationError("pointSize must be at most 200.")
             return value
         if isinstance(value, dict):
-            schema = PointSizeDynamicSchema()
+            schema = DynamicPointSizeSchema()
             try:
                 return schema.load(value)
             except ValidationError as err:
@@ -165,7 +166,7 @@ class PointSizeField(fields.Field):
         if isinstance(value, (int, float)):
             return value
         if isinstance(value, dict):
-            return PointSizeDynamicSchema().dump(value)
+            return DynamicPointSizeSchema().dump(value)
         return value
 
 
@@ -174,7 +175,7 @@ class GeoSetLayerV4Schema(GeoSetLayerV3Schema):
 
     Extends V3 by promoting ``pointSize`` from ``globalColoring`` to a top-level
     polymorphic field. Accepts either a plain positive number (static) or a
-    ``PointSizeDynamicSchema`` object that scales point size by a data column.
+    ``DynamicPointSizeSchema`` object that scales point size by a data column.
 
     Example with static pointSize::
 
@@ -226,45 +227,29 @@ class GeoSetLayerV4Schema(GeoSetLayerV3Schema):
     global_coloring = fields.Nested(
         GlobalColoringSchemaV4, required=True, data_key="globalColoring"
     )
-    point_size = PointSizeField(load_default=None, data_key="pointSize")
+    point_size = StaticOrDynamicPointSizeField(load_default=None, data_key="pointSize")
 
     @validates_schema
-    def validate_coloring_options(self, data, **kwargs):
-        """Validate coloring options, legend configuration, and pointSize consistency.
+    def validate_point_size_value_column(self, data, **kwargs):
+        """Validate that dynamic pointSize and colorByValue share a valueColumn.
 
-        Ensures that:
-        - Only one of color_by_category or color_by_value is provided, not both.
-        - When color_by_category or color_by_value is provided, legend.name must be null.
-        - When both dynamic pointSize and colorByValue are used, their valueColumn must match.
+        Parent validation (coloring mutual exclusivity, legend.name nullability)
+        is delegated to the inherited validate_coloring_options.
         """
-        has_category = data.get("color_by_category") is not None
-        has_value = data.get("color_by_value") is not None
-
-        if has_category and has_value:
-            raise ValidationError(
-                "Only one of colorByCategory or colorByValue can be provided, not both."
-            )
-
-        if has_category or has_value:
-            legend = data.get("legend", {})
-            if legend.get("name") is not None:
-                raise ValidationError(
-                    "legend.name must be null when colorByCategory or colorByValue "
-                    "is provided."
-                )
-
-        # When both dynamic pointSize and colorByValue are used, their
-        # valueColumn must be the same column.
         point_size = data.get("point_size")
+        has_value = data.get("color_by_value") is not None
         if has_value and isinstance(point_size, dict):
             size_col = point_size.get("value_column")
-            value_col = data["color_by_value"].get("value_column")
+            value_col = data["color_by_value"].get(
+                "value_column"
+            )
             if size_col and value_col and size_col != value_col:
                 raise ValidationError(
-                    "When using both pointSize scaling and colorByValue, "
-                    "they must reference the same valueColumn. "
-                    f'Got pointSize.valueColumn="{size_col}" and '
-                    f'colorByValue.valueColumn="{value_col}".'
+                    "pointSize and colorByValue must reference"
+                    " the same valueColumn. Got"
+                    f' pointSize.valueColumn="{size_col}"'
+                    f' and colorByValue.valueColumn='
+                    f'"{value_col}".'
                 )
 
     @staticmethod
@@ -281,7 +266,8 @@ class GeoSetLayerV4Schema(GeoSetLayerV3Schema):
         Returns:
             The schema converted to V4 format.
         """
-        upgraded = data.copy()
+        # deepcopy so nested dicts aren't shared with the caller
+        upgraded = copy.deepcopy(data)
 
         global_coloring = upgraded.get("globalColoring", {})
         if "pointSize" in global_coloring:

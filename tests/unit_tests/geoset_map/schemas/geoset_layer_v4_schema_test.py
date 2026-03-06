@@ -11,8 +11,8 @@ from superset.geoset_map.schemas.GeoSetLayerV4Schema import (
     GeoSetLayerV4Schema,
     GlobalColoringSchemaV4,
     NumberOrPercent,
-    PointSizeDynamicSchema,
-    PointSizeField,
+    DynamicPointSizeSchema,
+    StaticOrDynamicPointSizeField,
 )
 
 
@@ -176,15 +176,15 @@ class TestGlobalColoringSchemaV4:
 
 
 # =============================================================================
-# PointSizeDynamicSchema Tests
+# DynamicPointSizeSchema Tests
 # =============================================================================
 
 
-class TestPointSizeDynamicSchema:
+class TestDynamicPointSizeSchema:
     """Tests for dynamic point size configuration."""
 
     def test_valid_config_no_bounds(self):
-        schema = PointSizeDynamicSchema()
+        schema = DynamicPointSizeSchema()
         data = {
             "valueColumn": "population",
             "startSize": 2,
@@ -198,7 +198,7 @@ class TestPointSizeDynamicSchema:
         assert result["upper_bound"] is None
 
     def test_valid_config_with_numeric_bounds(self):
-        schema = PointSizeDynamicSchema()
+        schema = DynamicPointSizeSchema()
         data = {
             "valueColumn": "population",
             "startSize": 4,
@@ -211,7 +211,7 @@ class TestPointSizeDynamicSchema:
         assert result["upper_bound"] == 5000
 
     def test_valid_config_with_percentage_bounds(self):
-        schema = PointSizeDynamicSchema()
+        schema = DynamicPointSizeSchema()
         data = {
             "valueColumn": "population",
             "startSize": 4,
@@ -225,7 +225,7 @@ class TestPointSizeDynamicSchema:
 
     def test_valid_config_with_mixed_bounds(self):
         """Mixed types (number + percentage) should be allowed."""
-        schema = PointSizeDynamicSchema()
+        schema = DynamicPointSizeSchema()
         data = {
             "valueColumn": "population",
             "startSize": 4,
@@ -238,7 +238,7 @@ class TestPointSizeDynamicSchema:
         assert result["upper_bound"] == "90%"
 
     def test_rejects_start_size_below_1(self):
-        schema = PointSizeDynamicSchema()
+        schema = DynamicPointSizeSchema()
         with pytest.raises(ValidationError) as exc_info:
             schema.load({
                 "valueColumn": "x",
@@ -248,7 +248,7 @@ class TestPointSizeDynamicSchema:
         assert "startSize" in exc_info.value.messages
 
     def test_rejects_end_size_above_200(self):
-        schema = PointSizeDynamicSchema()
+        schema = DynamicPointSizeSchema()
         with pytest.raises(ValidationError) as exc_info:
             schema.load({
                 "valueColumn": "x",
@@ -258,7 +258,7 @@ class TestPointSizeDynamicSchema:
         assert "endSize" in exc_info.value.messages
 
     def test_rejects_lower_bound_gte_upper_bound_numeric(self):
-        schema = PointSizeDynamicSchema()
+        schema = DynamicPointSizeSchema()
         with pytest.raises(ValidationError, match="upperBound must be greater"):
             schema.load({
                 "valueColumn": "x",
@@ -269,7 +269,7 @@ class TestPointSizeDynamicSchema:
             })
 
     def test_rejects_equal_bounds_numeric(self):
-        schema = PointSizeDynamicSchema()
+        schema = DynamicPointSizeSchema()
         with pytest.raises(ValidationError, match="upperBound must be greater"):
             schema.load({
                 "valueColumn": "x",
@@ -280,7 +280,7 @@ class TestPointSizeDynamicSchema:
             })
 
     def test_rejects_lower_bound_gte_upper_bound_percentage(self):
-        schema = PointSizeDynamicSchema()
+        schema = DynamicPointSizeSchema()
         with pytest.raises(ValidationError, match="upperBound must be greater"):
             schema.load({
                 "valueColumn": "x",
@@ -292,7 +292,7 @@ class TestPointSizeDynamicSchema:
 
     def test_skips_bound_validation_for_mixed_types(self):
         """Mixed bound types (number + percentage) skip ordering check."""
-        schema = PointSizeDynamicSchema()
+        schema = DynamicPointSizeSchema()
         result = schema.load({
             "valueColumn": "x",
             "startSize": 4,
@@ -304,22 +304,22 @@ class TestPointSizeDynamicSchema:
         assert result["upper_bound"] == "1%"
 
     def test_missing_value_column_fails(self):
-        schema = PointSizeDynamicSchema()
+        schema = DynamicPointSizeSchema()
         with pytest.raises(ValidationError) as exc_info:
             schema.load({"startSize": 4, "endSize": 30})
         assert "valueColumn" in exc_info.value.messages
 
 
 # =============================================================================
-# PointSizeField Tests
+# StaticOrDynamicPointSizeField Tests
 # =============================================================================
 
 
-class TestPointSizeField:
-    """Tests for the polymorphic PointSizeField."""
+class TestStaticOrDynamicPointSizeField:
+    """Tests for the polymorphic StaticOrDynamicPointSizeField."""
 
     def setup_method(self):
-        self.field = PointSizeField()
+        self.field = StaticOrDynamicPointSizeField()
 
     def test_accepts_static_number(self):
         assert self.field._deserialize(6, "pointSize", {}) == 6

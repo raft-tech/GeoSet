@@ -4,6 +4,7 @@ V2 adds a title field to the legend schema and requires legend.name to be null
 when colorByCategory or colorByValue is used.
 """
 
+import copy
 from typing import Any
 
 from marshmallow import fields, Schema, validates_schema, ValidationError
@@ -133,7 +134,8 @@ class GeoSetLayerV2Schema(GeoSetLayerV1Schema):
         Returns:
             The schema converted to V2 format
         """
-        upgraded = data.copy()
+        # deepcopy so nested dicts aren't shared with the caller
+        upgraded = copy.deepcopy(data)
 
         if "legend" in upgraded:
             v1_name = upgraded["legend"].get("name", "")
