@@ -289,6 +289,22 @@ const LegendEntryContent: React.FC<{
       {/* METRIC GRADIENT */}
       {legendEntry.metric && (
         <>
+          {showEntryCheckbox && (
+            <CategoryRow>
+              <VisibilityCheckbox
+                type="checkbox"
+                checked={isVisible}
+                onChange={onToggleVisibility}
+              />
+              <Swatch
+                fill={fill}
+                stroke={stroke}
+                icon={legendEntry.icon}
+                geometryType={legendEntry.geometryType}
+              />
+              <div>{legendEntry.legendName}</div>
+            </CategoryRow>
+          )}
           <GradientBar
             gradient={`linear-gradient(to right,
               rgba(${legendEntry.metric.startColor[0]},${legendEntry.metric.startColor[1]},${legendEntry.metric.startColor[2]},${legendEntry.metric.startColor[3]}),
@@ -316,6 +332,11 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
   const [optimisticVisibility, setOptimisticVisibility] = useState<
     Record<string, boolean>
   >({});
+
+  // in short term just using this cause dealing with indertimate checkbox issues
+  useEffect(() => {
+    setOptimisticVisibility({});
+  }, [layerVisibility]);
 
   if (legendGroups.length === 0) return null;
 
@@ -354,14 +375,21 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
             const someVisibleSomeNot =
               visibleSliceIds.length > 0 &&
               visibleSliceIds.length < allSliceIds.length;
-            const hasPartialCategories = entries.some(({ legendEntry }) => {
-              const categories = legendEntry.categories || [];
-              if (categories.length === 0) return false;
-              const enabledCount = categories.filter(
-                cat => cat.enabled !== false,
-              ).length;
-              return enabledCount > 0 && enabledCount < categories.length;
-            });
+            const hasPartialCategories = entries.some(
+              ({ sliceId, legendEntry }) => {
+                const categories = legendEntry.categories || [];
+                if (categories.length === 0) return false;
+                const entryVisible =
+                  sliceId in optimisticVisibility
+                    ? optimisticVisibility[sliceId]
+                    : layerVisibility[sliceId] !== false;
+                if (!entryVisible) return false;
+                const enabledCount = categories.filter(
+                  cat => cat.enabled !== false,
+                ).length;
+                return enabledCount < categories.length;
+              },
+            );
             const isIndeterminate =
               someVisibleSomeNot || (isVisible && hasPartialCategories);
 
