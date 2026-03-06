@@ -87,7 +87,7 @@ export type MetricEntry = {
   endColor: RGBAColor;
 };
 
-export type LegendEntry = {
+export type LayerInfo = {
   legendName: string;
   legendParentTitle?: string;
   sliceName: string;
@@ -102,7 +102,7 @@ export type LegendEntry = {
 
 export type LegendGroupEntry = {
   sliceId: string;
-  group: LegendEntry;
+  group: LayerInfo;
 };
 
 export type LegendGroup = {

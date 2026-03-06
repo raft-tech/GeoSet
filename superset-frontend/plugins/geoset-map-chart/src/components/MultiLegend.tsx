@@ -4,7 +4,7 @@ import { styled } from '@superset-ui/core';
 import { useState, useEffect, useRef } from 'react';
 import MapIcon from '@material-ui/icons/MapTwoTone';
 import { RGBAColor } from '../utils/colors';
-import type { LegendEntry, LegendGroup } from '../types';
+import type { LayerInfo, LegendGroup } from '../types';
 import { Swatch } from '../utils/legendSwatch';
 import { formatLegendNumber } from '../utils/formatNumber';
 
@@ -218,7 +218,7 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
 
   // Get default colors for title swatch based on group type
   const getDefaultColors = (
-    group: LegendEntry,
+    group: LayerInfo,
   ): { fill: RGBAColor; stroke: RGBAColor } => {
     if (group.simpleStyle) {
       return {
