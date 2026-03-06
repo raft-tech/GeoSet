@@ -561,7 +561,7 @@ const DeckMulti = (props: DeckMultiProps) => {
 
   const { height, width } = props;
 
-  // Toggle layer visibility callback (supports consolidated groups with multiple sliceIds)
+  // Toggle layer visibility callback (supports legend groups with multiple sliceIds)
   const handleToggleLayerVisibility = useCallback(
     (sliceIds: string[]) => {
       // If ANY are currently visible → turn all OFF; if NONE visible → turn all ON
@@ -826,7 +826,7 @@ const DeckMulti = (props: DeckMultiProps) => {
     [sortedLayers, categoryVisibility],
   );
 
-  // Consolidate legend entries that share the same display title
+  // Group legend entries that share the same display title
   const legendGroups = useGroupedLegend(legendsBySlice);
 
   // Clear cached autozoom when static viewport is enabled so autozoom

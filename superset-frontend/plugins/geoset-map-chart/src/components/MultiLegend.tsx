@@ -278,8 +278,8 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
           <LegendHeader>
             <CloseButton onClick={() => setIsLegendOpen(false)}>✕</CloseButton>
           </LegendHeader>
-          {legendGroups.map(consolidated => {
-            const { displayTitle, entries, initialCollapsed } = consolidated;
+          {legendGroups.map(legendGroup => {
+            const { displayTitle, entries, initialCollapsed } = legendGroup;
             const allSliceIds = entries.map(e => e.sliceId);
             const isOpen = expanded[displayTitle] ?? !initialCollapsed;
 
