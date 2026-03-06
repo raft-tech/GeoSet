@@ -6,6 +6,7 @@ import MapIcon from '@material-ui/icons/MapTwoTone';
 import { RGBAColor } from '../utils/colors';
 import { Swatch } from '../utils/legendSwatch';
 import { formatLegendNumber } from '../utils/formatNumber';
+import type { SizeLegend } from './Legend';
 import GraduatedIcons from './GraduatedIcons';
 import CategorySizeGrid, { CategorySizeGridItem } from './CategorySizeGrid';
 
@@ -23,15 +24,7 @@ export type MetricEntry = {
   endColor: RGBAColor;
 };
 
-export type SizeEntry = {
-  lower: number;
-  upper: number;
-  startSize: number;
-  endSize: number;
-  valueColumn: string;
-  legendTitle?: string;
-  usesPercentBounds?: boolean;
-};
+export type SizeEntry = SizeLegend;
 
 export type LegendGroup = {
   legendName: string;

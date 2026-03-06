@@ -32,14 +32,6 @@
     ],
     "defaultLegendName": ["Other"]
   },
-  "colorByValue": {
-    "valueColumn": "fire_intensity",
-    "upperBound": null,
-    "lowerBound": null,
-    "startColor": [0, 255, 0, 255],
-    "endColor": [255, 0, 0, 255],
-    "breakpoints": []
-  },
   "textOverlayStyle": {
     "fontFamily": "Arial, sans-serif",
     "fontSize": 14,
@@ -48,6 +40,6 @@
   },
   "legend": {
     "title": "legend_title",
-    "name": "human_readable_legend_name"
+    "name": null
   }
 }

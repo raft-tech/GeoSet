@@ -31,6 +31,10 @@ class NumberOrPercent(fields.Field):
     def _deserialize(self, value, attr, data, **kwargs):
         if value is None:
             return None
+        if isinstance(value, bool):
+            raise ValidationError(
+                f"Invalid type for {attr}. Expected number or percentage string, got boolean."
+            )
         if isinstance(value, (int, float)):
             return value
         if isinstance(value, str):
@@ -152,6 +156,8 @@ class StaticOrDynamicPointSizeField(fields.Field):
     """
 
     def _deserialize(self, value, attr, data, **kwargs):
+        if isinstance(value, bool):
+            raise ValidationError("pointSize must be a number, not a boolean.")
         if isinstance(value, (int, float)):
             if value < 1:
                 raise ValidationError("pointSize must be at least 1.")

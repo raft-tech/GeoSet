@@ -23,7 +23,7 @@
  */
 import { memo } from 'react';
 import { formatNumber, styled } from '@superset-ui/core';
-import { MetricLegend, RGBAColor } from '../utils/colors';
+import { MetricLegend, RGBAColor, toRGBA } from '../utils/colors';
 import { rgbaArrayToCssString } from '../utils/colorsFallback';
 import { Swatch } from '../utils/legendSwatch';
 import { formatLegendNumber } from '../utils/formatNumber';
@@ -243,14 +243,10 @@ const Legend = ({
         const { lower, upper } = sizeLegend!;
         const gridItems: CategorySizeGridItem[] = categoryEntries.map(
           ([k, v]) => {
-            const rawColor = v.color ?? [0, 0, 0, 255];
-            const color = (
-              rawColor.length === 4 ? rawColor : [...rawColor, 255].slice(0, 4)
-            ) as RGBAColor;
             return {
               key: k,
               label: String(v.legend_name || formatCategoryLabel(k)),
-              fillColor: color,
+              fillColor: toRGBA(v.color ?? undefined, [0, 0, 0, 255]),
               enabled: v.enabled !== false,
             };
           },
@@ -297,11 +293,7 @@ const Legend = ({
 
   // --- Standard category list (when not in combined mode) ---
   const categories = categoryEntries.map(([k, v]) => {
-    const rawColor = v.color ?? [0, 0, 0, 255];
-    const normalizedColor = (
-      rawColor.length === 4 ? rawColor : [...rawColor, 255].slice(0, 4)
-    ) as RGBAColor;
-
+    const normalizedColor = toRGBA(v.color ?? undefined, [0, 0, 0, 255]);
     const displayColor: RGBAColor = v.enabled
       ? normalizedColor
       : [normalizedColor[0], normalizedColor[1], normalizedColor[2], 100];

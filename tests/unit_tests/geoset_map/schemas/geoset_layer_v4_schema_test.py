@@ -115,6 +115,14 @@ class TestNumberOrPercent:
         with pytest.raises(ValidationError, match="Expected a number or a string"):
             self.field._deserialize("%", "test", {})
 
+    def test_rejects_boolean_true(self):
+        with pytest.raises(ValidationError, match="boolean"):
+            self.field._deserialize(True, "test", {})
+
+    def test_rejects_boolean_false(self):
+        with pytest.raises(ValidationError, match="boolean"):
+            self.field._deserialize(False, "test", {})
+
     def test_rejects_invalid_type(self):
         with pytest.raises(ValidationError, match="Invalid type"):
             self.field._deserialize([1, 2], "test", {})
@@ -409,10 +417,15 @@ class TestStaticOrDynamicPointSizeField:
         with pytest.raises(ValidationError, match="at least 1"):
             self.field._deserialize(-5, "pointSize", {})
 
-    def test_rejects_boolean(self):
-        """Python booleans are int subclasses; True == 1, False == 0."""
-        with pytest.raises(ValidationError, match="at least 1"):
+    def test_rejects_boolean_false(self):
+        """Python booleans are int subclasses but should be explicitly rejected."""
+        with pytest.raises(ValidationError, match="boolean"):
             self.field._deserialize(False, "pointSize", {})
+
+    def test_rejects_boolean_true(self):
+        """True is also a boolean and should be rejected."""
+        with pytest.raises(ValidationError, match="boolean"):
+            self.field._deserialize(True, "pointSize", {})
 
     def test_rejects_empty_dict(self):
         with pytest.raises(ValidationError):
@@ -776,11 +789,22 @@ class TestV3ToV4Upgrade:
 class TestV3ValidationsInV4:
     """Tests that V3 validation rules still apply in V4."""
 
+    def test_base_fixture_is_valid(self, base_schema_data):
+        """The base V4 fixture should be valid on its own."""
+        schema = GeoSetLayerV4Schema()
+        result = schema.load(base_schema_data)
+        assert isinstance(result, dict)
+
     def test_invalid_with_both_coloring_options(self, base_schema_data):
         """Schema with both colorByCategory and colorByValue should fail."""
         schema = GeoSetLayerV4Schema()
         data = copy.deepcopy(base_schema_data)
-        data["legend"]["name"] = None
+        data["colorByValue"] = {
+            "valueColumn": "fire_intensity",
+            "startColor": [0, 255, 0, 255],
+            "endColor": [255, 0, 0, 255],
+            "breakpoints": [],
+        }
         with pytest.raises(ValidationError) as exc_info:
             schema.load(data)
         assert "Only one of colorByCategory or colorByValue" in str(exc_info.value)
@@ -789,7 +813,6 @@ class TestV3ValidationsInV4:
         """legend.name set with colorByCategory should fail validation."""
         schema = GeoSetLayerV4Schema()
         data = copy.deepcopy(base_schema_data)
-        del data["colorByValue"]
         data["legend"]["name"] = "should_be_null"
         with pytest.raises(ValidationError) as exc_info:
             schema.load(data)
@@ -799,8 +822,6 @@ class TestV3ValidationsInV4:
         """legend.name null with colorByCategory should pass validation."""
         schema = GeoSetLayerV4Schema()
         data = copy.deepcopy(base_schema_data)
-        del data["colorByValue"]
-        data["legend"]["name"] = None
         result = schema.load(data)
         assert isinstance(result, dict)
         assert result["legend"]["name"] is None

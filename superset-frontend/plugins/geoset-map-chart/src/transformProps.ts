@@ -218,7 +218,7 @@ export default function transformProps(chartProps: ChartProps) {
         metricLegend = {
           min: lower,
           max: upper,
-          startColor: noGradient ? start : start,
+          startColor: start,
           endColor: noGradient ? start : end,
           legendName: legend?.title || valueColumn,
         };

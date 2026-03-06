@@ -381,17 +381,7 @@ const DeckMulti = (props: DeckMultiProps) => {
                   : null;
 
                 const buildSizeEntry = () =>
-                  sizeLegend
-                    ? {
-                        lower: sizeLegend.lower,
-                        upper: sizeLegend.upper,
-                        startSize: sizeLegend.startSize,
-                        endSize: sizeLegend.endSize,
-                        valueColumn: sizeLegend.valueColumn,
-                        legendTitle: sizeLegend.legendTitle,
-                        usesPercentBounds: sizeLegend.usesPercentBounds,
-                      }
-                    : undefined;
+                  sizeLegend ? { ...sizeLegend } : undefined;
 
                 let legendGroup: LegendGroup;
 

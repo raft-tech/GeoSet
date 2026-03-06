@@ -54,7 +54,7 @@ import { commonLayerProps } from '../common';
 import TooltipRow from '../../TooltipRow';
 import { calculateAutozoomViewport, Viewport } from '../../utils/fitViewport';
 import { TooltipProps } from '../../components/Tooltip';
-import Legend from '../../components/Legend';
+import Legend, { SizeLegend } from '../../components/Legend';
 import MapControls from '../../components/MapControls';
 import { GeoJsonFeature, LayerState } from '../../types';
 import { useDebouncedValue } from '../../utils/hooks';
@@ -724,15 +724,7 @@ export type DeckGLGeoJsonProps = {
     categoryColorMapping?: {};
     strokeColorMapping?: {};
     metricLegend?: MetricLegend | null;
-    sizeLegend?: {
-      lower: number;
-      upper: number;
-      startSize: number;
-      endSize: number;
-      valueColumn: string;
-      legendTitle?: string;
-      usesPercentBounds?: boolean;
-    } | null;
+    sizeLegend?: SizeLegend | null;
     isCombinedMetricSize?: boolean;
   };
 };
