@@ -240,32 +240,6 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
 
   const showGroupCheckboxes = legendGroups.length > 1;
 
-  // Per-entry visibility checkbox for simple (non-categorical) layers inside
-  // a legend group. Categorical layers already have per-category checkboxes.
-  const GroupEntryCheckbox: React.FC<{
-    sliceId: string;
-    hasMultipleEntries: boolean;
-  }> = ({ sliceId, hasMultipleEntries }) => {
-    if (!hasMultipleEntries) return null;
-    const entryVisible =
-      sliceId in optimisticVisibility
-        ? optimisticVisibility[sliceId]
-        : layerVisibility[sliceId] !== false;
-    return (
-      <VisibilityCheckbox
-        type="checkbox"
-        checked={entryVisible}
-        onChange={() => {
-          setOptimisticVisibility(prev => ({
-            ...prev,
-            [sliceId]: !entryVisible,
-          }));
-          onToggleLayerVisibility?.([sliceId]);
-        }}
-      />
-    );
-  };
-
   return (
     <LegendContainer>
       {!isLegendOpen ? (
@@ -338,16 +312,29 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
                   <Content>
                     {entries.map(({ sliceId, legendEntry }) => {
                       const { fill, stroke } = getDefaultColors(legendEntry);
+                      const entryVisible =
+                        sliceId in optimisticVisibility
+                          ? optimisticVisibility[sliceId]
+                          : layerVisibility[sliceId] !== false;
                       return (
                         <div key={sliceId}>
                           {/* SIMPLE - show icon and slice name */}
                           {legendEntry.type === 'simple' &&
                             legendEntry.simpleStyle && (
                               <CategoryRow>
-                                <GroupEntryCheckbox
-                                  sliceId={sliceId}
-                                  hasMultipleEntries={entries.length > 1}
-                                />
+                                {entries.length > 1 && (
+                                  <VisibilityCheckbox
+                                    type="checkbox"
+                                    checked={entryVisible}
+                                    onChange={() => {
+                                      setOptimisticVisibility(prev => ({
+                                        ...prev,
+                                        [sliceId]: !entryVisible,
+                                      }));
+                                      onToggleLayerVisibility?.([sliceId]);
+                                    }}
+                                  />
+                                )}
                                 <Swatch
                                   fill={fill}
                                   stroke={stroke}

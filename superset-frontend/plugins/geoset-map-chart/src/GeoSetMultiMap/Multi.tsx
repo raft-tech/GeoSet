@@ -799,16 +799,16 @@ const DeckMulti = (props: DeckMultiProps) => {
       Object.fromEntries(
         sortedLayers.map(entry => {
           const sliceId = String(entry.sliceId);
-          const group = entry.legendEntry;
+          const { legendEntry } = entry;
 
           // If no categories, return as-is
-          if (!group.categories) {
-            return [sliceId, group];
+          if (!legendEntry.categories) {
+            return [sliceId, legendEntry];
           }
 
           // Apply category visibility state
           const sliceCatVisibility = categoryVisibility[sliceId] || {};
-          const updatedCategories = group.categories.map(cat => ({
+          const updatedCategories = legendEntry.categories.map(cat => ({
             ...cat,
             enabled: sliceCatVisibility[cat.label] !== false,
           }));
@@ -816,7 +816,7 @@ const DeckMulti = (props: DeckMultiProps) => {
           return [
             sliceId,
             {
-              ...group,
+              ...legendEntry,
               categories: updatedCategories,
             },
           ];
