@@ -380,6 +380,19 @@ const DeckMulti = (props: DeckMultiProps) => {
                   ? toTitleCase(params.legend.name)
                   : null;
 
+                const buildSizeEntry = () =>
+                  sizeLegend
+                    ? {
+                        lower: sizeLegend.lower,
+                        upper: sizeLegend.upper,
+                        startSize: sizeLegend.startSize,
+                        endSize: sizeLegend.endSize,
+                        valueColumn: sizeLegend.valueColumn,
+                        legendTitle: sizeLegend.legendTitle,
+                        usesPercentBounds: sizeLegend.usesPercentBounds,
+                      }
+                    : undefined;
+
                 let legendGroup: LegendGroup;
 
                 if (hasMetric) {
@@ -399,18 +412,7 @@ const DeckMulti = (props: DeckMultiProps) => {
                       startColor: ml.startColor,
                       endColor: ml.endColor,
                     },
-                    sizeEntry:
-                      isCombined && sizeLegend
-                        ? {
-                            lower: sizeLegend.lower,
-                            upper: sizeLegend.upper,
-                            startSize: sizeLegend.startSize,
-                            endSize: sizeLegend.endSize,
-                            valueColumn: sizeLegend.valueColumn,
-                            legendTitle: sizeLegend.legendTitle,
-                            usesPercentBounds: sizeLegend.usesPercentBounds,
-                          }
-                        : undefined,
+                    sizeEntry: isCombined ? buildSizeEntry() : undefined,
                     isCombinedMetricSize: isCombined,
                     initialCollapsed: sliceLegendCollapsed,
                   };
@@ -434,16 +436,7 @@ const DeckMulti = (props: DeckMultiProps) => {
                     geometryType: transformPropsGeojsonLayer,
                     type: 'categorical',
                     categories: categoryEntries,
-                    sizeEntry: sizeLegend
-                      ? {
-                          lower: sizeLegend.lower,
-                          upper: sizeLegend.upper,
-                          startSize: sizeLegend.startSize,
-                          endSize: sizeLegend.endSize,
-                          valueColumn: sizeLegend.valueColumn,
-                          legendTitle: sizeLegend.legendTitle,
-                        }
-                      : undefined,
+                    sizeEntry: buildSizeEntry(),
                     initialCollapsed: sliceLegendCollapsed,
                   };
                 } else {
@@ -464,16 +457,7 @@ const DeckMulti = (props: DeckMultiProps) => {
                       fillColor,
                       strokeColor,
                     },
-                    sizeEntry: sizeLegend
-                      ? {
-                          lower: sizeLegend.lower,
-                          upper: sizeLegend.upper,
-                          startSize: sizeLegend.startSize,
-                          endSize: sizeLegend.endSize,
-                          valueColumn: sizeLegend.valueColumn,
-                          legendTitle: sizeLegend.legendTitle,
-                        }
-                      : undefined,
+                    sizeEntry: buildSizeEntry(),
                     initialCollapsed: sliceLegendCollapsed,
                   };
                 }

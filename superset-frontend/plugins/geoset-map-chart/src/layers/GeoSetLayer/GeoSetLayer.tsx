@@ -731,6 +731,7 @@ export type DeckGLGeoJsonProps = {
       endSize: number;
       valueColumn: string;
       legendTitle?: string;
+      usesPercentBounds?: boolean;
     } | null;
     isCombinedMetricSize?: boolean;
   };

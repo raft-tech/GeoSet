@@ -187,8 +187,9 @@ export default function transformProps(chartProps: ChartProps) {
         .filter((v): v is number => v !== null);
 
       if (values.length > 0) {
-        const lower = lowerBound ?? Math.min(...values);
-        const upper = upperBound ?? Math.max(...values);
+        const sortedValues = [...values].sort((a, b) => a - b);
+        const lower = lowerBound ?? sortedValues[0];
+        const upper = upperBound ?? sortedValues[sortedValues.length - 1];
         metricDomain = [lower, upper];
 
         const start: RGBAColor = hasValidFill(startColor)
@@ -259,12 +260,12 @@ export default function transformProps(chartProps: ChartProps) {
       const sizeLower = resolvePercentOrNumber(
         lowerBound,
         sortedSizeValues,
-        Math.min(...sizeValues),
+        sortedSizeValues[0],
       );
       const sizeUpper = resolvePercentOrNumber(
         upperBound,
         sortedSizeValues,
-        Math.max(...sizeValues),
+        sortedSizeValues[sortedSizeValues.length - 1],
       );
       sizeScale = computeSizeScale(
         {
