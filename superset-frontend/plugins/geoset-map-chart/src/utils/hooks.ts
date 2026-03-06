@@ -1,8 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import {
-  ConsolidatedLegendGroup,
-  LegendGroup,
-} from '../components/MultiLegend';
+import type { ConsolidatedLegendGroup, LegendGroup } from '../types';
 
 export function useDebouncedValue<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState(value);

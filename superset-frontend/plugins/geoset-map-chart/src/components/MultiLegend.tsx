@@ -4,46 +4,9 @@ import { styled } from '@superset-ui/core';
 import { useState, useEffect, useRef } from 'react';
 import MapIcon from '@material-ui/icons/MapTwoTone';
 import { RGBAColor } from '../utils/colors';
+import type { ConsolidatedLegendGroup, LegendGroup } from '../types';
 import { Swatch } from '../utils/legendSwatch';
 import { formatLegendNumber } from '../utils/formatNumber';
-
-export type CategoryEntry = {
-  label: string;
-  fillColor: RGBAColor;
-  strokeColor: RGBAColor;
-  enabled?: boolean; // Whether category is visible (default true)
-};
-
-export type MetricEntry = {
-  lower: number;
-  upper: number;
-  startColor: RGBAColor;
-  endColor: RGBAColor;
-};
-
-export type LegendGroup = {
-  legendName: string;
-  legendParentTitle?: string;
-  sliceName: string;
-  icon?: string;
-  geometryType?: string;
-  type: 'simple' | 'categorical' | 'metric';
-  simpleStyle?: { fillColor: RGBAColor; strokeColor: RGBAColor };
-  categories?: CategoryEntry[];
-  metric?: MetricEntry;
-  initialCollapsed?: boolean; // Whether this legend entry starts collapsed
-};
-
-export type ConsolidatedLegendEntry = {
-  sliceId: string;
-  group: LegendGroup;
-};
-
-export type ConsolidatedLegendGroup = {
-  displayTitle: string;
-  entries: ConsolidatedLegendEntry[];
-  initialCollapsed: boolean; // true only if ALL entries have initialCollapsed
-};
 
 export type MultiLegendProps = {
   consolidatedGroups: ConsolidatedLegendGroup[];
@@ -317,7 +280,8 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
               ).length;
               return enabledCount > 0 && enabledCount < categories.length;
             });
-            const isIndeterminate = someVisibleSomeNot || (isVisible && hasPartialCategories);
+            const isIndeterminate =
+              someVisibleSomeNot || (isVisible && hasPartialCategories);
 
             return (
               <Group key={displayTitle}>

@@ -20,6 +20,7 @@
 // and also are different concept-wise
 
 import { Layer } from '@deck.gl/core';
+import type { RGBAColor } from './utils/colors';
 
 export type Range = [number, number];
 export type Point = [number, number];
@@ -70,4 +71,42 @@ export type LegendItem = {
   };
   type: string;
   description: string;
+};
+
+export type CategoryEntry = {
+  label: string;
+  fillColor: RGBAColor;
+  strokeColor: RGBAColor;
+  enabled?: boolean; // Whether category is visible (default true)
+};
+
+export type MetricEntry = {
+  lower: number;
+  upper: number;
+  startColor: RGBAColor;
+  endColor: RGBAColor;
+};
+
+export type LegendGroup = {
+  legendName: string;
+  legendParentTitle?: string;
+  sliceName: string;
+  icon?: string;
+  geometryType?: string;
+  type: 'simple' | 'categorical' | 'metric';
+  simpleStyle?: { fillColor: RGBAColor; strokeColor: RGBAColor };
+  categories?: CategoryEntry[];
+  metric?: MetricEntry;
+  initialCollapsed?: boolean; // Whether this legend entry starts collapsed
+};
+
+export type ConsolidatedLegendEntry = {
+  sliceId: string;
+  group: LegendGroup;
+};
+
+export type ConsolidatedLegendGroup = {
+  displayTitle: string;
+  entries: ConsolidatedLegendEntry[];
+  initialCollapsed: boolean; // true only if ALL entries have initialCollapsed
 };
