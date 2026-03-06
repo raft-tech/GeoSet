@@ -281,80 +281,6 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
   );
   const showCheckboxes = totalSlices > 1;
 
-  const renderEntryContent = (sliceId: string, group: LegendGroup) => {
-    const { fill, stroke } = getDefaultColors(group);
-    return (
-      <>
-        {/* SIMPLE - show icon and slice name */}
-        {group.type === 'simple' && group.simpleStyle && (
-          <CategoryRow>
-            <Swatch
-              fill={fill}
-              stroke={stroke}
-              icon={group.icon}
-              geometryType={group.geometryType}
-            />
-            <div>{group.legendName}</div>
-          </CategoryRow>
-        )}
-
-        {/* CATEGORIES */}
-        {group.categories &&
-          group.categories.length > 0 &&
-          group.categories.map((cat, i) => {
-            const isEnabled = cat.enabled !== false;
-            const hasToggle = !!onToggleCategory;
-
-            const displayFillColor: RGBAColor = isEnabled
-              ? cat.fillColor
-              : [
-                  cat.fillColor[0],
-                  cat.fillColor[1],
-                  cat.fillColor[2],
-                  100,
-                ];
-
-            return (
-              <CategoryRow key={`${sliceId}-${i}`}>
-                {hasToggle && (
-                  <VisibilityCheckbox
-                    type="checkbox"
-                    checked={isEnabled}
-                    onChange={() =>
-                      onToggleCategory(sliceId, cat.label)
-                    }
-                  />
-                )}
-                <Swatch
-                  fill={displayFillColor}
-                  stroke={cat.strokeColor}
-                  icon={group.icon}
-                  geometryType={group.geometryType}
-                />
-                <div>{cat.label}</div>
-              </CategoryRow>
-            );
-          })}
-
-        {/* METRIC GRADIENT */}
-        {group.metric && (
-          <>
-            <GradientBar
-              gradient={`linear-gradient(to right,
-                rgba(${group.metric.startColor[0]},${group.metric.startColor[1]},${group.metric.startColor[2]},${group.metric.startColor[3]}),
-                rgba(${group.metric.endColor[0]},${group.metric.endColor[1]},${group.metric.endColor[2]},${group.metric.endColor[3]})
-              )`}
-            />
-            <Bounds>
-              <div>{formatLegendNumber(group.metric.lower)}</div>
-              <div>{`${formatLegendNumber(group.metric.upper)}${group.metric.lower !== group.metric.upper ? '+' : ''}`}</div>
-            </Bounds>
-          </>
-        )}
-      </>
-    );
-  };
-
   return (
     <LegendContainer>
       {!isLegendOpen ? (
@@ -425,11 +351,81 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
                 {/* Content — render each entry's content sequentially */}
                 {isOpen && (
                   <Content>
-                    {entries.map(({ sliceId, group }) => (
-                      <div key={sliceId}>
-                        {renderEntryContent(sliceId, group)}
-                      </div>
-                    ))}
+                    {entries.map(({ sliceId, group }) => {
+                      const { fill, stroke } = getDefaultColors(group);
+                      return (
+                        <div key={sliceId}>
+                          {/* SIMPLE - show icon and slice name */}
+                          {group.type === 'simple' && group.simpleStyle && (
+                            <CategoryRow>
+                              <Swatch
+                                fill={fill}
+                                stroke={stroke}
+                                icon={group.icon}
+                                geometryType={group.geometryType}
+                              />
+                              <div>{group.legendName}</div>
+                            </CategoryRow>
+                          )}
+
+                          {/* CATEGORIES */}
+                          {group.categories &&
+                            group.categories.length > 0 &&
+                            group.categories.map((cat, i) => {
+                              const isEnabled = cat.enabled !== false;
+                              const hasToggle = !!onToggleCategory;
+
+                              const displayFillColor: RGBAColor = isEnabled
+                                ? cat.fillColor
+                                : [
+                                    cat.fillColor[0],
+                                    cat.fillColor[1],
+                                    cat.fillColor[2],
+                                    100,
+                                  ];
+
+                              return (
+                                <CategoryRow key={`${sliceId}-${i}`}>
+                                  {hasToggle && (
+                                    <VisibilityCheckbox
+                                      type="checkbox"
+                                      checked={isEnabled}
+                                      onChange={() =>
+                                        onToggleCategory(sliceId, cat.label)
+                                      }
+                                    />
+                                  )}
+                                  <Swatch
+                                    fill={displayFillColor}
+                                    stroke={cat.strokeColor}
+                                    icon={group.icon}
+                                    geometryType={group.geometryType}
+                                  />
+                                  <div>{cat.label}</div>
+                                </CategoryRow>
+                              );
+                            })}
+
+                          {/* METRIC GRADIENT */}
+                          {group.metric && (
+                            <>
+                              <GradientBar
+                                gradient={`linear-gradient(to right,
+                                  rgba(${group.metric.startColor[0]},${group.metric.startColor[1]},${group.metric.startColor[2]},${group.metric.startColor[3]}),
+                                  rgba(${group.metric.endColor[0]},${group.metric.endColor[1]},${group.metric.endColor[2]},${group.metric.endColor[3]})
+                                )`}
+                              />
+                              <Bounds>
+                                <div>
+                                  {formatLegendNumber(group.metric.lower)}
+                                </div>
+                                <div>{`${formatLegendNumber(group.metric.upper)}${group.metric.lower !== group.metric.upper ? '+' : ''}`}</div>
+                              </Bounds>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
                   </Content>
                 )}
               </Group>
