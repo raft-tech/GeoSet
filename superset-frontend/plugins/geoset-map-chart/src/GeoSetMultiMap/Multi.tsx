@@ -106,7 +106,7 @@ export type DeckMultiProps = {
 type SubsliceLayerEntry = {
   sliceId: number;
   layerStates: LayerState[];
-  legendGroup: LegendEntry;
+  legendEntry: LegendEntry;
   features: JsonObject[];
   autozoom: boolean;
   // Store data needed to rebuild layer when category visibility changes
@@ -377,13 +377,13 @@ const DeckMulti = (props: DeckMultiProps) => {
                   ? toTitleCase(params.legend.name)
                   : null;
 
-                let legendGroup: LegendEntry;
+                let legendEntry: LegendEntry;
 
                 if (hasMetric) {
                   // Metric-based coloring (gradient)
                   // Use legend.title from JSON for legend header
                   const ml = metricLegend as MetricLegend;
-                  legendGroup = {
+                  legendEntry = {
                     legendName: legendTitle || legendName,
                     sliceName: subslice.slice_name,
                     icon,
@@ -410,7 +410,7 @@ const DeckMulti = (props: DeckMultiProps) => {
                       strokeColor: visualConfig.strokeColor as RGBAColor,
                     }));
 
-                  legendGroup = {
+                  legendEntry = {
                     legendName: legendTitle || legendName,
                     sliceName: subslice.slice_name,
                     icon,
@@ -426,7 +426,7 @@ const DeckMulti = (props: DeckMultiProps) => {
                   const fillColor = visualConfig.fillColor as RGBAColor;
                   const strokeColor = visualConfig.strokeColor as RGBAColor;
 
-                  legendGroup = {
+                  legendEntry = {
                     legendName: legendNameFromJson || legendName,
                     legendParentTitle: legendTitle || subslice.slice_name,
                     sliceName: subslice.slice_name,
@@ -465,7 +465,7 @@ const DeckMulti = (props: DeckMultiProps) => {
                 return {
                   sliceId: subsliceCopy.slice_id,
                   layerStates: newLayerStates,
-                  legendGroup,
+                  legendEntry,
                   features: layerFeatures,
                   autozoom: sliceAutozoom,
                   // Store data needed to rebuild layer when category visibility changes
@@ -546,11 +546,11 @@ const DeckMulti = (props: DeckMultiProps) => {
         setCategoryVisibility(
           Object.fromEntries(
             hiddenLayers
-              .filter(e => e.legendGroup.categories?.length)
+              .filter(e => e.legendEntry.categories?.length)
               .map(e => [
                 String(e.sliceId),
                 Object.fromEntries(
-                  e.legendGroup.categories!.map(c => [c.label, false]),
+                  e.legendEntry.categories!.map(c => [c.label, false]),
                 ),
               ]),
           ),
@@ -573,26 +573,26 @@ const DeckMulti = (props: DeckMultiProps) => {
       sliceIds.forEach(sliceId => {
         const entry = subSlicesLayers.find(e => String(e.sliceId) === sliceId);
         const isCategoricalLayer =
-          entry?.legendGroup.type === 'categorical' &&
-          entry.legendGroup.categories;
+          entry?.legendEntry.type === 'categorical' &&
+          entry.legendEntry.categories;
 
         if (isCategoricalLayer) {
           if (!newVisible) {
             // Turning OFF — disable all categories
             const allCategoriesOff: Record<string, boolean> = {};
-            entry.legendGroup.categories!.forEach(cat => {
+            entry.legendEntry.categories!.forEach(cat => {
               allCategoriesOff[cat.label] = false;
             });
             catUpdates[sliceId] = allCategoriesOff;
           } else {
             // Turning ON — re-enable categories if all were off
             const sliceCatVisibility = categoryVisibility[sliceId] || {};
-            const anyEnabled = entry.legendGroup.categories!.some(
+            const anyEnabled = entry.legendEntry.categories!.some(
               cat => sliceCatVisibility[cat.label] !== false,
             );
             if (!anyEnabled && Object.keys(sliceCatVisibility).length > 0) {
               const allCategoriesOn: Record<string, boolean> = {};
-              entry.legendGroup.categories!.forEach(cat => {
+              entry.legendEntry.categories!.forEach(cat => {
                 allCategoriesOn[cat.label] = true;
               });
               catUpdates[sliceId] = allCategoriesOn;
@@ -652,7 +652,7 @@ const DeckMulti = (props: DeckMultiProps) => {
         }
 
         // Skip if not a categorical layer
-        if (entry.legendGroup.type !== 'categorical') {
+        if (entry.legendEntry.type !== 'categorical') {
           return entry;
         }
 
@@ -699,8 +699,8 @@ const DeckMulti = (props: DeckMultiProps) => {
 
         anyChanged = true;
 
-        // Update legendGroup categories with enabled state
-        const updatedLegendCategories = entry.legendGroup.categories?.map(
+        // Update legendEntry categories with enabled state
+        const updatedLegendCategories = entry.legendEntry.categories?.map(
           cat => ({
             ...cat,
             enabled: sliceCatVisibility[cat.label] !== false,
@@ -714,8 +714,8 @@ const DeckMulti = (props: DeckMultiProps) => {
             ...entry.transformedProps,
             categories: updatedCategories,
           },
-          legendGroup: {
-            ...entry.legendGroup,
+          legendEntry: {
+            ...entry.legendEntry,
             categories: updatedLegendCategories,
           },
         };
@@ -734,7 +734,7 @@ const DeckMulti = (props: DeckMultiProps) => {
       const updates: Record<string, boolean> = {};
 
       subSlicesLayers.forEach(entry => {
-        const { type, categories } = entry.legendGroup;
+        const { type, categories } = entry.legendEntry;
 
         // Only apply to categorical layers
         if (type !== 'categorical' || !categories) {
@@ -800,7 +800,7 @@ const DeckMulti = (props: DeckMultiProps) => {
       Object.fromEntries(
         sortedLayers.map(entry => {
           const sliceId = String(entry.sliceId);
-          const group = entry.legendGroup;
+          const group = entry.legendEntry;
 
           // If no categories, return as-is
           if (!group.categories) {
