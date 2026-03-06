@@ -112,13 +112,22 @@ class DynamicPointSizeSchema(Schema):
     )
 
     @validates_schema
-    def validate_bounds(self, data, **kwargs):
-        """Validate that upperBound > lowerBound when both are provided.
+    def validate_sizes_and_bounds(self, data, **kwargs):
+        """Validate size ordering and bound ordering.
 
-        When both bounds are the same type (both numeric or both percentage),
-        validates ordering. Mixed types are skipped since percentages are
-        resolved on the frontend against actual data.
+        Ensures:
+        - endSize > startSize
+        - upperBound > lowerBound when both are provided and the
+          same type. Mixed types are skipped since percentages are
+          resolved on the frontend against actual data.
         """
+        start = data.get("start_size")
+        end = data.get("end_size")
+        if start is not None and end is not None and end <= start:
+            raise ValidationError(
+                "endSize must be greater than startSize."
+            )
+
         lower = data.get("lower_bound")
         upper = data.get("upper_bound")
         if lower is None or upper is None:

@@ -119,6 +119,10 @@ class TestNumberOrPercent:
         with pytest.raises(ValidationError, match="Invalid type"):
             self.field._deserialize([1, 2], "test", {})
 
+    def test_rejects_percentage_just_over_100(self):
+        with pytest.raises(ValidationError, match="between 0% and 100%"):
+            self.field._deserialize("100.1%", "test", {})
+
     def test_serialize_passthrough(self):
         assert self.field._serialize("25%", "test", {}) == "25%"
         assert self.field._serialize(42, "test", {}) == 42
@@ -301,6 +305,50 @@ class TestDynamicPointSizeSchema:
         assert result["lower_bound"] == 9999
         assert result["upper_bound"] == "1%"
 
+    def test_valid_sizes_at_boundaries(self):
+        """startSize=1 and endSize=200 should be accepted."""
+        schema = DynamicPointSizeSchema()
+        result = schema.load({
+            "valueColumn": "x",
+            "startSize": 1,
+            "endSize": 200,
+        })
+        assert result["start_size"] == 1
+        assert result["end_size"] == 200
+
+    def test_valid_float_sizes(self):
+        """Float values for startSize and endSize should be accepted."""
+        schema = DynamicPointSizeSchema()
+        result = schema.load({
+            "valueColumn": "x",
+            "startSize": 2.5,
+            "endSize": 30.7,
+        })
+        assert result["start_size"] == 2.5
+        assert result["end_size"] == 30.7
+
+    def test_rejects_end_size_less_than_start_size(self):
+        schema = DynamicPointSizeSchema()
+        with pytest.raises(
+            ValidationError, match="endSize must be greater than startSize"
+        ):
+            schema.load({
+                "valueColumn": "x",
+                "startSize": 30,
+                "endSize": 4,
+            })
+
+    def test_rejects_end_size_equal_to_start_size(self):
+        schema = DynamicPointSizeSchema()
+        with pytest.raises(
+            ValidationError, match="endSize must be greater than startSize"
+        ):
+            schema.load({
+                "valueColumn": "x",
+                "startSize": 10,
+                "endSize": 10,
+            })
+
     def test_missing_value_column_fails(self):
         schema = DynamicPointSizeSchema()
         with pytest.raises(ValidationError) as exc_info:
@@ -347,12 +395,41 @@ class TestStaticOrDynamicPointSizeField:
         with pytest.raises(ValidationError):
             self.field._deserialize({"startSize": 4}, "pointSize", {})
 
+    def test_accepts_static_at_min_boundary(self):
+        assert self.field._deserialize(1, "pointSize", {}) == 1
+
+    def test_accepts_static_at_max_boundary(self):
+        assert self.field._deserialize(200, "pointSize", {}) == 200
+
+    def test_rejects_static_zero(self):
+        with pytest.raises(ValidationError, match="at least 1"):
+            self.field._deserialize(0, "pointSize", {})
+
+    def test_rejects_static_negative(self):
+        with pytest.raises(ValidationError, match="at least 1"):
+            self.field._deserialize(-5, "pointSize", {})
+
+    def test_rejects_boolean(self):
+        """Python booleans are int subclasses; True == 1, False == 0."""
+        with pytest.raises(ValidationError, match="at least 1"):
+            self.field._deserialize(False, "pointSize", {})
+
+    def test_rejects_empty_dict(self):
+        with pytest.raises(ValidationError):
+            self.field._deserialize({}, "pointSize", {})
+
     def test_rejects_string(self):
-        with pytest.raises(ValidationError, match="positive number or a configuration"):
+        with pytest.raises(
+            ValidationError,
+            match="positive number or a configuration",
+        ):
             self.field._deserialize("big", "pointSize", {})
 
     def test_rejects_list(self):
-        with pytest.raises(ValidationError, match="positive number or a configuration"):
+        with pytest.raises(
+            ValidationError,
+            match="positive number or a configuration",
+        ):
             self.field._deserialize([1, 2], "pointSize", {})
 
     def test_serialize_static(self):
@@ -500,6 +577,90 @@ class TestGeoSetLayerV4Schema:
         result = schema.load(data)
         assert result["point_size"]["lower_bound"] == "10%"
         assert result["point_size"]["upper_bound"] == "90%"
+
+    def test_dynamic_point_size_with_color_by_category(
+        self, minimal_valid_schema
+    ):
+        """Dynamic pointSize with colorByCategory should not trigger
+        valueColumn matching (only colorByValue does)."""
+        schema = GeoSetLayerV4Schema()
+        data = copy.deepcopy(minimal_valid_schema)
+        data["legend"]["name"] = None
+        data["pointSize"] = {
+            "valueColumn": "population",
+            "startSize": 4,
+            "endSize": 30,
+        }
+        data["colorByCategory"] = {
+            "dimension": "region",
+            "categoricalColors": [],
+        }
+        result = schema.load(data)
+        assert isinstance(result["point_size"], dict)
+        assert result["color_by_category"] is not None
+
+    def test_dynamic_point_size_without_coloring(
+        self, minimal_valid_schema
+    ):
+        """Dynamic pointSize with no coloring option should pass."""
+        schema = GeoSetLayerV4Schema()
+        data = copy.deepcopy(minimal_valid_schema)
+        data["pointSize"] = {
+            "valueColumn": "population",
+            "startSize": 4,
+            "endSize": 30,
+        }
+        result = schema.load(data)
+        assert isinstance(result["point_size"], dict)
+        assert result["color_by_value"] is None
+        assert result["color_by_category"] is None
+
+    def test_static_point_size_with_color_by_category(
+        self, minimal_valid_schema
+    ):
+        """Static pointSize with colorByCategory should pass."""
+        schema = GeoSetLayerV4Schema()
+        data = copy.deepcopy(minimal_valid_schema)
+        data["legend"]["name"] = None
+        data["pointSize"] = 10
+        data["colorByCategory"] = {
+            "dimension": "region",
+            "categoricalColors": [],
+        }
+        result = schema.load(data)
+        assert result["point_size"] == 10
+
+    def test_dynamic_point_size_with_text_overlay_style(
+        self, minimal_valid_schema
+    ):
+        """Dynamic pointSize combined with textOverlayStyle should pass."""
+        schema = GeoSetLayerV4Schema()
+        data = copy.deepcopy(minimal_valid_schema)
+        data["pointSize"] = {
+            "valueColumn": "magnitude",
+            "startSize": 4,
+            "endSize": 30,
+        }
+        data["textOverlayStyle"] = {
+            "fontSize": 16,
+            "bold": True,
+        }
+        result = schema.load(data)
+        assert isinstance(result["point_size"], dict)
+        assert result["text_overlay_style"]["font_size"] == 16
+
+    def test_invalid_dynamic_point_size_error_propagates(
+        self, minimal_valid_schema
+    ):
+        """Invalid dynamic config nested in full schema should fail."""
+        schema = GeoSetLayerV4Schema()
+        data = copy.deepcopy(minimal_valid_schema)
+        data["pointSize"] = {
+            "startSize": 4,
+            # missing valueColumn and endSize
+        }
+        with pytest.raises(ValidationError):
+            schema.load(data)
 
 
 # =============================================================================
