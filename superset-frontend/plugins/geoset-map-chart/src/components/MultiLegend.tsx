@@ -243,6 +243,31 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
     0,
   );
   const showCheckboxes = totalSlices > 1;
+  console.log('totalSlices', totalSlices, 'showCheckboxes', showCheckboxes, 'consolidatedGroups', consolidatedGroups);
+
+  const ConsolidatedEntryCheckbox: React.FC<{
+    sliceId: string;
+    isConsolidated: boolean;
+  }> = ({ sliceId, isConsolidated }) => {
+    if (!isConsolidated) return null;
+    const entryVisible =
+      sliceId in optimisticVisibility
+        ? optimisticVisibility[sliceId]
+        : layerVisibility[sliceId] !== false;
+    return (
+      <VisibilityCheckbox
+        type="checkbox"
+        checked={entryVisible}
+        onChange={() => {
+          setOptimisticVisibility(prev => ({
+            ...prev,
+            [sliceId]: !entryVisible,
+          }));
+          onToggleLayerVisibility?.([sliceId]);
+        }}
+      />
+    );
+  };
 
   return (
     <LegendContainer>
@@ -322,6 +347,10 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
                           {/* SIMPLE - show icon and slice name */}
                           {group.type === 'simple' && group.simpleStyle && (
                             <CategoryRow>
+                              <ConsolidatedEntryCheckbox
+                                sliceId={sliceId}
+                                isConsolidated={entries.length > 1}
+                              />
                               <Swatch
                                 fill={fill}
                                 stroke={stroke}
