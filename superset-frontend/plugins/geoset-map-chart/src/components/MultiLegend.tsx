@@ -4,12 +4,12 @@ import { styled } from '@superset-ui/core';
 import { useState, useEffect, useRef } from 'react';
 import MapIcon from '@material-ui/icons/MapTwoTone';
 import { RGBAColor } from '../utils/colors';
-import type { ConsolidatedLegendGroup, LegendGroup } from '../types';
+import type { LegendEntry, LegendGroup } from '../types';
 import { Swatch } from '../utils/legendSwatch';
 import { formatLegendNumber } from '../utils/formatNumber';
 
 export type MultiLegendProps = {
-  consolidatedGroups: ConsolidatedLegendGroup[];
+  legendGroups: LegendGroup[];
   layerVisibility?: Record<string, boolean>;
   onToggleLayerVisibility?: (sliceIds: string[]) => void;
   // Toggle a single category within a slice
@@ -198,7 +198,7 @@ const IndeterminateCheckbox: React.FC<{
 };
 
 export const MultiLegend: React.FC<MultiLegendProps> = ({
-  consolidatedGroups,
+  legendGroups,
   layerVisibility = {},
   onToggleLayerVisibility,
   onToggleCategory,
@@ -209,7 +209,7 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
     Record<string, boolean>
   >({});
 
-  if (consolidatedGroups.length === 0) return null;
+  if (legendGroups.length === 0) return null;
 
   const toggle = (title: string, initialCollapsed: boolean) => {
     const currentlyOpen = expanded[title] ?? !initialCollapsed;
@@ -218,7 +218,7 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
 
   // Get default colors for title swatch based on group type
   const getDefaultColors = (
-    group: LegendGroup,
+    group: LegendEntry,
   ): { fill: RGBAColor; stroke: RGBAColor } => {
     if (group.simpleStyle) {
       return {
@@ -238,20 +238,15 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
     return { fill: [0, 122, 135, 255], stroke: [0, 122, 135, 255] };
   };
 
-  const totalSlices = consolidatedGroups.reduce(
-    (sum, g) => sum + g.entries.length,
-    0,
-  );
-  const showCheckboxes = totalSlices > 1;
-  console.log('totalSlices', totalSlices, 'showCheckboxes', showCheckboxes, 'consolidatedGroups', consolidatedGroups);
+  const showGroupCheckboxes = legendGroups.length > 1;
 
   // Per-entry visibility checkbox for simple (non-categorical) layers inside
-  // a consolidated group. Categorical layers already have per-category checkboxes.
-  const ConsolidatedEntryCheckbox: React.FC<{
+  // a legend group. Categorical layers already have per-category checkboxes.
+  const GroupEntryCheckbox: React.FC<{
     sliceId: string;
-    isConsolidated: boolean;
-  }> = ({ sliceId, isConsolidated }) => {
-    if (!isConsolidated) return null;
+    hasMultipleEntries: boolean;
+  }> = ({ sliceId, hasMultipleEntries }) => {
+    if (!hasMultipleEntries) return null;
     const entryVisible =
       sliceId in optimisticVisibility
         ? optimisticVisibility[sliceId]
@@ -283,7 +278,7 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
           <LegendHeader>
             <CloseButton onClick={() => setIsLegendOpen(false)}>✕</CloseButton>
           </LegendHeader>
-          {consolidatedGroups.map(consolidated => {
+          {legendGroups.map(consolidated => {
             const { displayTitle, entries, initialCollapsed } = consolidated;
             const allSliceIds = entries.map(e => e.sliceId);
             const isOpen = expanded[displayTitle] ?? !initialCollapsed;
@@ -314,7 +309,7 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
               <Group key={displayTitle}>
                 {/* Header */}
                 <Header>
-                  {showCheckboxes && (
+                  {showGroupCheckboxes && (
                     <IndeterminateCheckbox
                       checked={isVisible}
                       indeterminate={isIndeterminate}
@@ -349,9 +344,9 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
                           {/* SIMPLE - show icon and slice name */}
                           {group.type === 'simple' && group.simpleStyle && (
                             <CategoryRow>
-                              <ConsolidatedEntryCheckbox
+                              <GroupEntryCheckbox
                                 sliceId={sliceId}
-                                isConsolidated={entries.length > 1}
+                                hasMultipleEntries={entries.length > 1}
                               />
                               <Swatch
                                 fill={fill}

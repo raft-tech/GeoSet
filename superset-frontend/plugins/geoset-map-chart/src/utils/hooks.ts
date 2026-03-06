@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { ConsolidatedLegendGroup, LegendGroup } from '../types';
+import type { LegendEntry, LegendGroup } from '../types';
 
 export function useDebouncedValue<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -14,16 +14,16 @@ export function useDebouncedValue<T>(value: T, delay: number): T {
 
 /**
  * Groups legend entries by display title so layers with the same name
- * consolidate under a single collapsible header.
+ * appear under a single collapsible header.
  */
-export function useConsolidatedLegend(
-  legendsBySlice: Record<string, LegendGroup>,
-): ConsolidatedLegendGroup[] {
+export function useGroupedLegend(
+  legendsBySlice: Record<string, LegendEntry>,
+): LegendGroup[] {
   return useMemo(() => {
     const groupMap = new Map<
       string,
       {
-        entries: { sliceId: string; group: LegendGroup }[];
+        entries: { sliceId: string; group: LegendEntry }[];
         allCollapsed: boolean;
       }
     >();

@@ -45,8 +45,8 @@ import { LayerState } from '../types';
 import buildGeoSetMapLayerQuery from '../buildQuery';
 import transformGeoSetMapLayerProps from '../transformProps';
 import MultiLegend from '../components/MultiLegend';
-import type { LegendGroup } from '../types';
-import { useConsolidatedLegend } from '../utils/hooks';
+import type { LegendEntry } from '../types';
+import { useGroupedLegend } from '../utils/hooks';
 import MapControls from '../components/MapControls';
 import { CategoryState, MetricLegend, RGBAColor } from '../utils/colors';
 import { getGeometryType } from '../utils/dataProcessing';
@@ -106,7 +106,7 @@ export type DeckMultiProps = {
 type SubsliceLayerEntry = {
   sliceId: number;
   layerStates: LayerState[];
-  legendGroup: LegendGroup;
+  legendGroup: LegendEntry;
   features: JsonObject[];
   autozoom: boolean;
   // Store data needed to rebuild layer when category visibility changes
@@ -359,7 +359,7 @@ const DeckMulti = (props: DeckMultiProps) => {
                   }
                 })();
 
-                // Build the LegendGroup based on what coloring mode is active
+                // Build the LegendEntry based on what coloring mode is active
                 const { categories, visualConfig } = transformedProps;
                 const { dimension, metricLegend } = visualConfig;
                 const hasCategories =
@@ -377,7 +377,7 @@ const DeckMulti = (props: DeckMultiProps) => {
                   ? toTitleCase(params.legend.name)
                   : null;
 
-                let legendGroup: LegendGroup;
+                let legendGroup: LegendEntry;
 
                 if (hasMetric) {
                   // Metric-based coloring (gradient)
@@ -795,7 +795,7 @@ const DeckMulti = (props: DeckMultiProps) => {
   });
 
   // Build legendsBySlice for MultiLegend component, with category enabled state applied
-  const legendsBySlice: Record<string, LegendGroup> = useMemo(
+  const legendsBySlice: Record<string, LegendEntry> = useMemo(
     () =>
       Object.fromEntries(
         sortedLayers.map(entry => {
@@ -827,7 +827,7 @@ const DeckMulti = (props: DeckMultiProps) => {
   );
 
   // Consolidate legend entries that share the same display title
-  const consolidatedGroups = useConsolidatedLegend(legendsBySlice);
+  const legendGroups = useGroupedLegend(legendsBySlice);
 
   // Clear cached autozoom when static viewport is enabled so autozoom
   // recalculates fresh if the user toggles static back off
@@ -1026,7 +1026,7 @@ const DeckMulti = (props: DeckMultiProps) => {
         onEmptyClick={handleClosePopup}
       />
       <MultiLegend
-        consolidatedGroups={consolidatedGroups}
+        legendGroups={legendGroups}
         layerVisibility={layerVisibility}
         onToggleLayerVisibility={handleToggleLayerVisibility}
         onToggleCategory={handleToggleCategory}
