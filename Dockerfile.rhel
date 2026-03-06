@@ -2,7 +2,7 @@
 # Dockerfile.rhel — RHEL UBI8 hardened GeoSet image
 #
 # A hardened alternative to the default Debian-based Dockerfile
-# targeting zero fixable high/critical CVEs in the final image.
+# targeting zero critical and zero fixable high CVEs in the final image.
 #
 # BUILD STAGES:
 #   1. postgres-ecpg     — Rocky Linux 8 stage that grabs the ecpg
