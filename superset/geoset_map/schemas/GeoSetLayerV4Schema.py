@@ -14,7 +14,7 @@ from typing import Any
 
 from marshmallow import fields, Schema, validate, validates_schema, ValidationError
 
-from superset.geoset_map.schemas.GeoSetLayerV1Schema import ColorField
+from superset.geoset_map.schemas.GeoSetLayerV1Schema import GlobalColoringSchema
 from superset.geoset_map.schemas.GeoSetLayerV3Schema import GeoSetLayerV3Schema
 
 _PERCENT_RE = re.compile(r"^(\d+(?:\.\d+)?)%$")
@@ -52,12 +52,11 @@ class NumberOrPercent(fields.Field):
         return value
 
 
-class GlobalColoringSchemaV4(Schema):
+class GlobalColoringSchemaV4(GlobalColoringSchema):
     """Schema for global/default layer styling (V4).
 
-    Identical to the V1/V2/V3 ``GlobalColoringSchema`` except that ``pointSize``
-    has been promoted to a top-level field on the layer config and is no longer
-    accepted inside ``globalColoring``.
+    Inherits from ``GlobalColoringSchema`` but excludes ``pointSize``, which has
+    been promoted to a top-level field on the layer config in V4.
 
     Example::
 
@@ -71,24 +70,8 @@ class GlobalColoringSchemaV4(Schema):
         }
     """
 
-    fill_color = ColorField(required=True, data_key="fillColor")
-    stroke_color = ColorField(required=True, data_key="strokeColor")
-    stroke_width = fields.Number(
-        required=True, data_key="strokeWidth", validate=validate.Range(min=0)
-    )
-    line_style = fields.String(
-        load_default=None,
-        data_key="lineStyle",
-        validate=validate.OneOf(["solid", "dashed", "dotted"]),
-    )
-    fill_pattern = fields.String(
-        required=True, data_key="fillPattern", validate=validate.Equal("solid")
-    )
-    point_type = fields.String(
-        load_default=None,
-        data_key="pointType",
-        # Accept any icon name — frontend falls back to "circle" for unknowns
-    )
+    class Meta:
+        exclude = ("point_size",)
 
 
 class PointSizeDynamicSchema(Schema):
