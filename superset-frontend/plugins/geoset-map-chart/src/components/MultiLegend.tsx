@@ -1,5 +1,3 @@
-/* eslint-disable no-console */
-/* eslint-disable react-hooks/rules-of-hooks */
 import { styled } from '@superset-ui/core';
 import { useState, useEffect, useRef } from 'react';
 import MapIcon from '@material-ui/icons/MapTwoTone';
@@ -197,6 +195,116 @@ const IndeterminateCheckbox: React.FC<{
   );
 };
 
+const getDefaultColors = (
+  layer: LegendEntry,
+): { fill: RGBAColor; stroke: RGBAColor } => {
+  if (layer.simpleStyle) {
+    return {
+      fill: layer.simpleStyle.fillColor,
+      stroke: layer.simpleStyle.strokeColor,
+    };
+  }
+  if (layer.metric) {
+    return { fill: layer.metric.startColor, stroke: layer.metric.startColor };
+  }
+  if (layer.categories && layer.categories.length > 0) {
+    return {
+      fill: layer.categories[0].fillColor,
+      stroke: layer.categories[0].strokeColor,
+    };
+  }
+  return { fill: [0, 122, 135, 255], stroke: [0, 122, 135, 255] };
+};
+
+const LegendEntryContent: React.FC<{
+  sliceId: string;
+  legendEntry: LegendEntry;
+  isVisible: boolean;
+  showEntryCheckbox: boolean;
+  onToggleVisibility: () => void;
+  onToggleCategory?: (sliceId: string, categoryLabel: string) => void;
+}> = ({
+  sliceId,
+  legendEntry,
+  isVisible,
+  showEntryCheckbox,
+  onToggleVisibility,
+  onToggleCategory,
+}) => {
+  const { fill, stroke } = getDefaultColors(legendEntry);
+
+  return (
+    <div>
+      {/* SIMPLE - show icon and slice name */}
+      {legendEntry.type === 'simple' && legendEntry.simpleStyle && (
+        <CategoryRow>
+          {showEntryCheckbox && (
+            <VisibilityCheckbox
+              type="checkbox"
+              checked={isVisible}
+              onChange={onToggleVisibility}
+            />
+          )}
+          <Swatch
+            fill={fill}
+            stroke={stroke}
+            icon={legendEntry.icon}
+            geometryType={legendEntry.geometryType}
+          />
+          <div>{legendEntry.legendName}</div>
+        </CategoryRow>
+      )}
+
+      {/* CATEGORIES */}
+      {legendEntry.categories &&
+        legendEntry.categories.length > 0 &&
+        legendEntry.categories.map((cat, i) => {
+          const isEnabled = cat.enabled !== false;
+          const hasToggle = !!onToggleCategory;
+
+          const displayFillColor: RGBAColor = isEnabled
+            ? cat.fillColor
+            : [cat.fillColor[0], cat.fillColor[1], cat.fillColor[2], 100];
+
+          return (
+            <CategoryRow key={`${sliceId}-${i}`}>
+              {hasToggle && (
+                <VisibilityCheckbox
+                  type="checkbox"
+                  checked={isEnabled}
+                  onChange={() => onToggleCategory(sliceId, cat.label)}
+                />
+              )}
+              <Swatch
+                fill={displayFillColor}
+                stroke={cat.strokeColor}
+                icon={legendEntry.icon}
+                geometryType={legendEntry.geometryType}
+              />
+              <div>{cat.label}</div>
+            </CategoryRow>
+          );
+        })}
+
+      {/* METRIC GRADIENT */}
+      {legendEntry.metric && (
+        <>
+          <GradientBar
+            gradient={`linear-gradient(to right,
+              rgba(${legendEntry.metric.startColor[0]},${legendEntry.metric.startColor[1]},${legendEntry.metric.startColor[2]},${legendEntry.metric.startColor[3]}),
+              rgba(${legendEntry.metric.endColor[0]},${legendEntry.metric.endColor[1]},${legendEntry.metric.endColor[2]},${legendEntry.metric.endColor[3]})
+            )`}
+          />
+          <Bounds>
+            <div>{formatLegendNumber(legendEntry.metric.lower)}</div>
+            <div>{`${formatLegendNumber(legendEntry.metric.upper)}${legendEntry.metric.lower !== legendEntry.metric.upper ? '+' : ''}`}</div>
+          </Bounds>
+        </>
+      )}
+    </div>
+  );
+};
+
 export const MultiLegend: React.FC<MultiLegendProps> = ({
   legendGroups,
   layerVisibility = {},
@@ -214,28 +322,6 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
   const toggle = (title: string, initialCollapsed: boolean) => {
     const currentlyOpen = expanded[title] ?? !initialCollapsed;
     setExpanded(prev => ({ ...prev, [title]: !currentlyOpen }));
-  };
-
-  // Get default colors for title swatch based on layer type
-  const getDefaultColors = (
-    layer: LegendEntry,
-  ): { fill: RGBAColor; stroke: RGBAColor } => {
-    if (layer.simpleStyle) {
-      return {
-        fill: layer.simpleStyle.fillColor,
-        stroke: layer.simpleStyle.strokeColor,
-      };
-    }
-    if (layer.metric) {
-      return { fill: layer.metric.startColor, stroke: layer.metric.startColor };
-    }
-    if (layer.categories && layer.categories.length > 0) {
-      return {
-        fill: layer.categories[0].fillColor,
-        stroke: layer.categories[0].strokeColor,
-      };
-    }
-    return { fill: [0, 122, 135, 255], stroke: [0, 122, 135, 255] };
   };
 
   const showGroupCheckboxes = legendGroups.length > 1;
@@ -307,100 +393,30 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
                   </TitleRow>
                 </Header>
 
-                {/* Content — render each entry's content sequentially */}
+                {/* Content — render each entry's content */}
                 {isOpen && (
                   <Content>
                     {entries.map(({ sliceId, legendEntry }) => {
-                      const { fill, stroke } = getDefaultColors(legendEntry);
                       const entryVisible =
                         sliceId in optimisticVisibility
                           ? optimisticVisibility[sliceId]
                           : layerVisibility[sliceId] !== false;
                       return (
-                        <div key={sliceId}>
-                          {/* SIMPLE - show icon and slice name */}
-                          {legendEntry.type === 'simple' &&
-                            legendEntry.simpleStyle && (
-                              <CategoryRow>
-                                {entries.length > 1 && (
-                                  <VisibilityCheckbox
-                                    type="checkbox"
-                                    checked={entryVisible}
-                                    onChange={() => {
-                                      setOptimisticVisibility(prev => ({
-                                        ...prev,
-                                        [sliceId]: !entryVisible,
-                                      }));
-                                      onToggleLayerVisibility?.([sliceId]);
-                                    }}
-                                  />
-                                )}
-                                <Swatch
-                                  fill={fill}
-                                  stroke={stroke}
-                                  icon={legendEntry.icon}
-                                  geometryType={legendEntry.geometryType}
-                                />
-                                <div>{legendEntry.legendName}</div>
-                              </CategoryRow>
-                            )}
-
-                          {/* CATEGORIES */}
-                          {legendEntry.categories &&
-                            legendEntry.categories.length > 0 &&
-                            legendEntry.categories.map((cat, i) => {
-                              const isEnabled = cat.enabled !== false;
-                              const hasToggle = !!onToggleCategory;
-
-                              const displayFillColor: RGBAColor = isEnabled
-                                ? cat.fillColor
-                                : [
-                                    cat.fillColor[0],
-                                    cat.fillColor[1],
-                                    cat.fillColor[2],
-                                    100,
-                                  ];
-
-                              return (
-                                <CategoryRow key={`${sliceId}-${i}`}>
-                                  {hasToggle && (
-                                    <VisibilityCheckbox
-                                      type="checkbox"
-                                      checked={isEnabled}
-                                      onChange={() =>
-                                        onToggleCategory(sliceId, cat.label)
-                                      }
-                                    />
-                                  )}
-                                  <Swatch
-                                    fill={displayFillColor}
-                                    stroke={cat.strokeColor}
-                                    icon={legendEntry.icon}
-                                    geometryType={legendEntry.geometryType}
-                                  />
-                                  <div>{cat.label}</div>
-                                </CategoryRow>
-                              );
-                            })}
-
-                          {/* METRIC GRADIENT */}
-                          {legendEntry.metric && (
-                            <>
-                              <GradientBar
-                                gradient={`linear-gradient(to right,
-                                  rgba(${legendEntry.metric.startColor[0]},${legendEntry.metric.startColor[1]},${legendEntry.metric.startColor[2]},${legendEntry.metric.startColor[3]}),
-                                  rgba(${legendEntry.metric.endColor[0]},${legendEntry.metric.endColor[1]},${legendEntry.metric.endColor[2]},${legendEntry.metric.endColor[3]})
-                                )`}
-                              />
-                              <Bounds>
-                                <div>
-                                  {formatLegendNumber(legendEntry.metric.lower)}
-                                </div>
-                                <div>{`${formatLegendNumber(legendEntry.metric.upper)}${legendEntry.metric.lower !== legendEntry.metric.upper ? '+' : ''}`}</div>
-                              </Bounds>
-                            </>
-                          )}
-                        </div>
+                        <LegendEntryContent
+                          key={sliceId}
+                          sliceId={sliceId}
+                          legendEntry={legendEntry}
+                          isVisible={entryVisible}
+                          showEntryCheckbox={entries.length > 1}
+                          onToggleVisibility={() => {
+                            setOptimisticVisibility(prev => ({
+                              ...prev,
+                              [sliceId]: !entryVisible,
+                            }));
+                            onToggleLayerVisibility?.([sliceId]);
+                          }}
+                          onToggleCategory={onToggleCategory}
+                        />
                       );
                     })}
                   </Content>
