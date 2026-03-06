@@ -87,7 +87,7 @@ export type MetricEntry = {
   endColor: RGBAColor;
 };
 
-export type LayerInfo = {
+export type LegendEntry = {
   legendName: string;
   legendParentTitle?: string;
   sliceName: string;
@@ -100,13 +100,8 @@ export type LayerInfo = {
   initialCollapsed?: boolean; // Whether this legend entry starts collapsed
 };
 
-export type LegendGroupEntry = {
-  sliceId: string;
-  group: LayerInfo;
-};
-
 export type LegendGroup = {
   displayTitle: string;
-  entries: LegendGroupEntry[];
+  entries: { sliceId: string; legendEntry: LegendEntry }[];
   initialCollapsed: boolean; // true only if ALL entries have initialCollapsed
 };

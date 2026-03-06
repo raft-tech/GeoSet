@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { LayerInfo, LegendGroup } from '../types';
+import type { LegendEntry, LegendGroup } from '../types';
 
 export function useDebouncedValue<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -17,13 +17,13 @@ export function useDebouncedValue<T>(value: T, delay: number): T {
  * appear under a single collapsible header.
  */
 export function useGroupedLegend(
-  legendsBySlice: Record<string, LayerInfo>,
+  legendsBySlice: Record<string, LegendEntry>,
 ): LegendGroup[] {
   return useMemo(() => {
     const groupMap = new Map<
       string,
       {
-        entries: { sliceId: string; group: LayerInfo }[];
+        entries: { sliceId: string; legendEntry: LegendEntry }[];
         allCollapsed: boolean;
       }
     >();
@@ -36,14 +36,14 @@ export function useGroupedLegend(
 
       const existing = groupMap.get(displayTitle);
       if (existing) {
-        existing.entries.push({ sliceId, group });
+        existing.entries.push({ sliceId, legendEntry: group });
         // initialCollapsed only if ALL entries have it
         if (!group.initialCollapsed) {
           existing.allCollapsed = false;
         }
       } else {
         groupMap.set(displayTitle, {
-          entries: [{ sliceId, group }],
+          entries: [{ sliceId, legendEntry: group }],
           allCollapsed: !!group.initialCollapsed,
         });
       }

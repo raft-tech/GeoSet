@@ -4,7 +4,7 @@ import { styled } from '@superset-ui/core';
 import { useState, useEffect, useRef } from 'react';
 import MapIcon from '@material-ui/icons/MapTwoTone';
 import { RGBAColor } from '../utils/colors';
-import type { LayerInfo, LegendGroup } from '../types';
+import type { LegendEntry, LegendGroup } from '../types';
 import { Swatch } from '../utils/legendSwatch';
 import { formatLegendNumber } from '../utils/formatNumber';
 
@@ -216,23 +216,23 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
     setExpanded(prev => ({ ...prev, [title]: !currentlyOpen }));
   };
 
-  // Get default colors for title swatch based on group type
+  // Get default colors for title swatch based on layer type
   const getDefaultColors = (
-    group: LayerInfo,
+    layer: LegendEntry,
   ): { fill: RGBAColor; stroke: RGBAColor } => {
-    if (group.simpleStyle) {
+    if (layer.simpleStyle) {
       return {
-        fill: group.simpleStyle.fillColor,
-        stroke: group.simpleStyle.strokeColor,
+        fill: layer.simpleStyle.fillColor,
+        stroke: layer.simpleStyle.strokeColor,
       };
     }
-    if (group.metric) {
-      return { fill: group.metric.startColor, stroke: group.metric.startColor };
+    if (layer.metric) {
+      return { fill: layer.metric.startColor, stroke: layer.metric.startColor };
     }
-    if (group.categories && group.categories.length > 0) {
+    if (layer.categories && layer.categories.length > 0) {
       return {
-        fill: group.categories[0].fillColor,
-        stroke: group.categories[0].strokeColor,
+        fill: layer.categories[0].fillColor,
+        stroke: layer.categories[0].strokeColor,
       };
     }
     return { fill: [0, 122, 135, 255], stroke: [0, 122, 135, 255] };
@@ -294,8 +294,8 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
             const someVisibleSomeNot =
               visibleSliceIds.length > 0 &&
               visibleSliceIds.length < allSliceIds.length;
-            const hasPartialCategories = entries.some(({ group }) => {
-              const categories = group.categories || [];
+            const hasPartialCategories = entries.some(({ legendEntry }) => {
+              const categories = legendEntry.categories || [];
               if (categories.length === 0) return false;
               const enabledCount = categories.filter(
                 cat => cat.enabled !== false,
@@ -337,31 +337,32 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
                 {/* Content — render each entry's content sequentially */}
                 {isOpen && (
                   <Content>
-                    {entries.map(({ sliceId, group }) => {
-                      const { fill, stroke } = getDefaultColors(group);
+                    {entries.map(({ sliceId, legendEntry }) => {
+                      const { fill, stroke } = getDefaultColors(legendEntry);
                       return (
                         <div key={sliceId}>
                           {/* SIMPLE - show icon and slice name */}
-                          {group.type === 'simple' && group.simpleStyle && (
-                            <CategoryRow>
-                              <GroupEntryCheckbox
-                                sliceId={sliceId}
-                                hasMultipleEntries={entries.length > 1}
-                              />
-                              <Swatch
-                                fill={fill}
-                                stroke={stroke}
-                                icon={group.icon}
-                                geometryType={group.geometryType}
-                              />
-                              <div>{group.legendName}</div>
-                            </CategoryRow>
-                          )}
+                          {legendEntry.type === 'simple' &&
+                            legendEntry.simpleStyle && (
+                              <CategoryRow>
+                                <GroupEntryCheckbox
+                                  sliceId={sliceId}
+                                  hasMultipleEntries={entries.length > 1}
+                                />
+                                <Swatch
+                                  fill={fill}
+                                  stroke={stroke}
+                                  icon={legendEntry.icon}
+                                  geometryType={legendEntry.geometryType}
+                                />
+                                <div>{legendEntry.legendName}</div>
+                              </CategoryRow>
+                            )}
 
                           {/* CATEGORIES */}
-                          {group.categories &&
-                            group.categories.length > 0 &&
-                            group.categories.map((cat, i) => {
+                          {legendEntry.categories &&
+                            legendEntry.categories.length > 0 &&
+                            legendEntry.categories.map((cat, i) => {
                               const isEnabled = cat.enabled !== false;
                               const hasToggle = !!onToggleCategory;
 
@@ -388,8 +389,8 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
                                   <Swatch
                                     fill={displayFillColor}
                                     stroke={cat.strokeColor}
-                                    icon={group.icon}
-                                    geometryType={group.geometryType}
+                                    icon={legendEntry.icon}
+                                    geometryType={legendEntry.geometryType}
                                   />
                                   <div>{cat.label}</div>
                                 </CategoryRow>
@@ -397,19 +398,19 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
                             })}
 
                           {/* METRIC GRADIENT */}
-                          {group.metric && (
+                          {legendEntry.metric && (
                             <>
                               <GradientBar
                                 gradient={`linear-gradient(to right,
-                                  rgba(${group.metric.startColor[0]},${group.metric.startColor[1]},${group.metric.startColor[2]},${group.metric.startColor[3]}),
-                                  rgba(${group.metric.endColor[0]},${group.metric.endColor[1]},${group.metric.endColor[2]},${group.metric.endColor[3]})
+                                  rgba(${legendEntry.metric.startColor[0]},${legendEntry.metric.startColor[1]},${legendEntry.metric.startColor[2]},${legendEntry.metric.startColor[3]}),
+                                  rgba(${legendEntry.metric.endColor[0]},${legendEntry.metric.endColor[1]},${legendEntry.metric.endColor[2]},${legendEntry.metric.endColor[3]})
                                 )`}
                               />
                               <Bounds>
                                 <div>
-                                  {formatLegendNumber(group.metric.lower)}
+                                  {formatLegendNumber(legendEntry.metric.lower)}
                                 </div>
-                                <div>{`${formatLegendNumber(group.metric.upper)}${group.metric.lower !== group.metric.upper ? '+' : ''}`}</div>
+                                <div>{`${formatLegendNumber(legendEntry.metric.upper)}${legendEntry.metric.lower !== legendEntry.metric.upper ? '+' : ''}`}</div>
                               </Bounds>
                             </>
                           )}
