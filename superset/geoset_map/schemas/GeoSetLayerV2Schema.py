@@ -8,12 +8,7 @@ from typing import Any
 
 from marshmallow import fields, Schema, validates_schema, ValidationError
 
-from superset.geoset_map.schemas.base import BaseGeoSetLayerSchema
-from superset.geoset_map.schemas.GeoSetLayerV1Schema import (
-    ColorByCategorySchema,
-    ColorByValueSchema,
-    GlobalColoringSchema,
-)
+from superset.geoset_map.schemas.GeoSetLayerV1Schema import GeoSetLayerV1Schema
 
 
 class LegendSchemaV2(Schema):
@@ -34,18 +29,15 @@ class LegendSchemaV2(Schema):
     name = fields.String(load_default=None, allow_none=True)
 
 
-class GeoSetLayerV2Schema(BaseGeoSetLayerSchema):
+class GeoSetLayerV2Schema(GeoSetLayerV1Schema):
     """Schema for GeoSet map layer configuration (version 2).
 
-    Validates the complete configuration for a GeoSet map layer, including
-    global coloring, optional categorical or value-based coloring, and legend settings.
+    Extends V1 with updated legend schema.
 
     Changes from V1:
     - Legend now has a required 'title' field
     - Legend 'name' is optional and must be null when colorByCategory or
       colorByValue is provided
-
-    Note: Only one of color_by_category or color_by_value can be provided, not both.
 
     Example with colorByCategory::
 
@@ -100,15 +92,6 @@ class GeoSetLayerV2Schema(BaseGeoSetLayerSchema):
         }
     """
 
-    global_coloring = fields.Nested(
-        GlobalColoringSchema, required=True, data_key="globalColoring"
-    )
-    color_by_category = fields.Nested(
-        ColorByCategorySchema, load_default=None, data_key="colorByCategory"
-    )
-    color_by_value = fields.Nested(
-        ColorByValueSchema, load_default=None, data_key="colorByValue"
-    )
     legend = fields.Nested(LegendSchemaV2, required=True)
 
     @validates_schema
