@@ -825,10 +825,8 @@ const DeckMulti = (props: DeckMultiProps) => {
     [sortedLayers, categoryVisibility],
   );
 
-  console.log('[Multi] legendsBySlice:', legendsBySlice);
   // Consolidate legend entries that share the same display title
   const consolidatedGroups = useConsolidatedLegend(legendsBySlice);
-  console.log('[Multi] consolidatedGroups:', consolidatedGroups);
 
   // Clear cached autozoom when static viewport is enabled so autozoom
   // recalculates fresh if the user toggles static back off
