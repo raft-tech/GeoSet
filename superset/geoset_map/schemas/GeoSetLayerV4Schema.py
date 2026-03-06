@@ -13,7 +13,8 @@ from typing import Any
 
 from marshmallow import fields, Schema, validate, validates_schema, ValidationError
 
-from superset.geoset_map.schemas.GeoSetLayerV1Schema import ColorField, NumberOrPercent
+from superset.geoset_map.schemas.base import NumberOrPercent
+from superset.geoset_map.schemas.GeoSetLayerV1Schema import ColorField
 from superset.geoset_map.schemas.GeoSetLayerV3Schema import GeoSetLayerV3Schema
 
 
