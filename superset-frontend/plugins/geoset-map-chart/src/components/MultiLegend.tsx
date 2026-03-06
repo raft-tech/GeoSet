@@ -315,11 +315,10 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
                       indeterminate={isIndeterminate}
                       onChange={e => {
                         e.stopPropagation();
-                        const newVal = !isVisible;
                         setOptimisticVisibility(prev => ({
                           ...prev,
                           ...Object.fromEntries(
-                            allSliceIds.map(id => [id, newVal]),
+                            allSliceIds.map(id => [id, !isVisible]),
                           ),
                         }));
                         onToggleLayerVisibility?.(allSliceIds);

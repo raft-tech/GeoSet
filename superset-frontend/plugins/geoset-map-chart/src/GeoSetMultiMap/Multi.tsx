@@ -565,8 +565,7 @@ const DeckMulti = (props: DeckMultiProps) => {
   const handleToggleLayerVisibility = useCallback(
     (sliceIds: string[]) => {
       // If ANY are currently visible → turn all OFF; if NONE visible → turn all ON
-      const anyVisible = sliceIds.some(id => layerVisibility[id] !== false);
-      const newVisible = !anyVisible;
+      const isGroupVisible = sliceIds.some(id => layerVisibility[id] !== false);
 
       const catUpdates: Record<string, Record<string, boolean>> = {};
 
@@ -577,7 +576,7 @@ const DeckMulti = (props: DeckMultiProps) => {
           entry.legendEntry.categories;
 
         if (isCategoricalLayer) {
-          if (!newVisible) {
+          if (isGroupVisible) {
             // Turning OFF — disable all categories
             const allCategoriesOff: Record<string, boolean> = {};
             entry.legendEntry.categories!.forEach(cat => {
@@ -607,7 +606,7 @@ const DeckMulti = (props: DeckMultiProps) => {
 
       setLayerVisibility(prev => ({
         ...prev,
-        ...Object.fromEntries(sliceIds.map(id => [id, newVisible])),
+        ...Object.fromEntries(sliceIds.map(id => [id, !isGroupVisible])),
       }));
     },
     [subSlicesLayers, categoryVisibility, layerVisibility],
