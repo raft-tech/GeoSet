@@ -245,6 +245,8 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
   const showCheckboxes = totalSlices > 1;
   console.log('totalSlices', totalSlices, 'showCheckboxes', showCheckboxes, 'consolidatedGroups', consolidatedGroups);
 
+  // Per-entry visibility checkbox for simple (non-categorical) layers inside
+  // a consolidated group. Categorical layers already have per-category checkboxes.
   const ConsolidatedEntryCheckbox: React.FC<{
     sliceId: string;
     isConsolidated: boolean;
