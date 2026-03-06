@@ -1,8 +1,8 @@
 ######################################################################
-# Dockerfile.rhel — RHEL UBI8 zero-CVE GeoSet image
+# Dockerfile.rhel — RHEL UBI8 hardened GeoSet image
 #
-# A hardened alternative to the default Debian-based Dockerfile with
-# 0 high or critical CVEs present within the final image.
+# A hardened alternative to the default Debian-based Dockerfile
+# targeting zero fixable high/critical CVEs in the final image.
 #
 # BUILD STAGES:
 #   1. postgres-ecpg     — Rocky Linux 8 stage that grabs the ecpg
@@ -257,6 +257,8 @@ RUN uv pip install --no-cache --reinstall \
         "brotli>=1.2.0" \
         "cryptography>=46.0.5" \
         "pillow>=12.1.1" \
+        "protobuf>=4.25.8" \
+        "pyarrow>=17.0.0" \
         "pyasn1>=0.6.2" \
         "urllib3>=2.6.3" \
         "setuptools>=78.1.1"
@@ -271,9 +273,14 @@ RUN rm -rf /usr/lib/python3.11/site-packages/setuptools-65.5.1* \
 RUN rpm -e --nodeps nodejs nodejs-docs nodejs-full-i18n npm 2>/dev/null || true \
     && rpm -e --nodeps dnf dnf-data dnf-plugins-core dnf-plugin-subscription-manager \
                        python3-dnf python3-dnf-plugins-core python3-libdnf libdnf \
-                       yum gnupg2 gnupg2-smime 2>/dev/null || true \
+                       yum 2>/dev/null || true \
     && rpm -e --nodeps tar 2>/dev/null || true \
     && rpm -qa | grep -i brotli | xargs -r rpm -e --nodeps 2>/dev/null || true \
+    # Remove vulnerable system Python packages (app uses venv copies)
+    && rpm -e --nodeps python3-setuptools-wheel platform-python-setuptools \
+                       python3.11-setuptools-wheel python3.11-setuptools \
+                       python3-urllib3 2>/dev/null || true \
+    && rpm -e --nodeps --allmatches gnupg2 gnupg2-smime 2>/dev/null || true \
     && rm -rf /var/cache/dnf/* /var/cache/yum/* /var/lib/dnf/* /var/lib/rpm/__db* \
     && find / -name 'libbrotli*.so*' -delete 2>/dev/null || true
 
