@@ -55,6 +55,7 @@ Argument: `$ARGUMENTS` — a PR number (numeric) or a full commit SHA, optionall
 
 8. **Report results**
    - URL: `http://localhost:<port>`
+   - Login: `admin` / `admin`
    - Stack name: `<stack-name>`
    - Image: `ebienstock/geoset:<tag>`
    - Base: RHEL if `--run-rhel` was used, Debian otherwise
