@@ -28,23 +28,23 @@ export function useGroupedLegend(
       }
     >();
 
-    for (const [sliceId, group] of Object.entries(legendsBySlice)) {
+    for (const [sliceId, legendEntry] of Object.entries(legendsBySlice)) {
       const displayTitle =
-        group.type === 'simple'
-          ? group.legendParentTitle || group.sliceName
-          : group.legendName;
+        legendEntry.type === 'simple'
+          ? legendEntry.legendParentTitle || legendEntry.sliceName
+          : legendEntry.legendName;
 
       const existing = groupMap.get(displayTitle);
       if (existing) {
-        existing.entries.push({ sliceId, legendEntry: group });
+        existing.entries.push({ sliceId, legendEntry });
         // initialCollapsed only if ALL entries have it
-        if (!group.initialCollapsed) {
+        if (!legendEntry.initialCollapsed) {
           existing.allCollapsed = false;
         }
       } else {
         groupMap.set(displayTitle, {
-          entries: [{ sliceId, legendEntry: group }],
-          allCollapsed: !!group.initialCollapsed,
+          entries: [{ sliceId, legendEntry }],
+          allCollapsed: !!legendEntry.initialCollapsed,
         });
       }
     }
