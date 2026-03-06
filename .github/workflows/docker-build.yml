@@ -1,0 +1,129 @@
+name: Docker Build
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  Debian:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Build and Push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: lean
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ebienstock/geoset:${{ github.event.pull_request.head.sha || github.sha }}
+          cache-from: type=gha,scope=debian
+          cache-to: type=gha,mode=max,scope=debian
+
+  RHEL:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Build and Push RHEL
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.rhel
+          target: production
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ebienstock/geoset:${{ github.event.pull_request.head.sha || github.sha }}-rhel
+          cache-from: type=gha,scope=rhel
+          cache-to: type=gha,mode=max,scope=rhel
+
+  check-sample-data-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.check.outputs.changed }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for sample-data changes
+        id: check
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- sample-data/)
+            if [ -n "$CHANGED" ]; then
+              echo "changed=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "changed=false" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+
+  Ingest:
+    runs-on: ubuntu-latest
+    needs: check-sample-data-changes
+    if: needs.check-sample-data-changes.outputs.changed == 'true'
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Build and Push Data Ingest
+        uses: docker/build-push-action@v6
+        with:
+          context: ./sample-data
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ebienstock/geoset:data-ingest-latest
+          cache-from: type=gha,scope=data-ingest
+          cache-to: type=gha,mode=max,scope=data-ingest

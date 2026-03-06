@@ -2,7 +2,7 @@
 
 ## Overview
 
-This directory contains the data ingest pipeline for GeoSet sample data. It fetches geospatial data from external APIs, transforms it, and stores it in a PostGIS database for use by Superset.
+This directory contains the data ingest pipeline for GeoSet sample data. It fetches geospatial data from external APIs, transforms it, and stores it in a PostGIS database for use within GeoSet examples.
 
 ## How to Use
 
@@ -46,11 +46,11 @@ superset (:8088)              ← Flask backend (REST API, charts)
 
 A run-once container that calls three external data sources, transforms the data, and stores it in PostGIS:
 
-| Script | Source | Table |
-|--------|--------|-------|
+| Script                       | Source            | Table                     |
+| ---------------------------- | ----------------- | ------------------------- |
 | `census_state_boundaries.py` | Census Bureau API | `census_state_boundaries` |
-| `nifc_wildfire_locations.py` | NIFC ArcGIS API | `nifc_wildfire_locations` |
-| `nhc_best_track.py` | NHC/NOAA API | `nhc_best_track` |
+| `nifc_wildfire_locations.py` | NIFC ArcGIS API   | `nifc_wildfire_locations` |
+| `nhc_best_track.py`          | NHC/NOAA API      | `nhc_best_track`          |
 
 The ingest is **idempotent** — if a table already has data, the script skips it. Shared utilities (connection, retry, skip-if-populated) live in `utils.py`.
 
