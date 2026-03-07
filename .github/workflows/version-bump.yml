@@ -20,16 +20,19 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Get PR title
+      - name: Get PR info
         id: pr
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          PR_TITLE=$(gh pr list --search "${{ github.sha }}" --state merged --json title --jq '.[0].title')
+          PR_JSON=$(gh pr list --search "${{ github.sha }}" --state merged --json title,number --jq '.[0]')
+          PR_TITLE=$(echo "$PR_JSON" | jq -r '.title // empty')
+          PR_NUMBER=$(echo "$PR_JSON" | jq -r '.number // empty')
           if [ -z "$PR_TITLE" ]; then
             PR_TITLE=$(git log -1 --pretty=%s)
           fi
           echo "title=$PR_TITLE" >> "$GITHUB_OUTPUT"
+          echo "number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
 
       - name: Bump version and update changelog
         run: |
@@ -43,9 +46,15 @@ jobs:
           sed -i "s/\*\*Current Version:\*\* $CURRENT_VERSION/**Current Version:** $NEW_VERSION/" VERSIONING.md
 
           PR_TITLE="${{ steps.pr.outputs.title }}"
-          sed -i "/^| Version | Description |/,/^$/{
-            /^|---------/a\\
-          | $NEW_VERSION  | $PR_TITLE |
+          PR_NUMBER="${{ steps.pr.outputs.number }}"
+          if [ -n "$PR_NUMBER" ]; then
+            PR_LINK="[#$PR_NUMBER](https://github.com/${{ github.repository }}/pull/$PR_NUMBER)"
+          else
+            PR_LINK=""
+          fi
+          sed -i "/^| Version | PR | Description |/,/^$/{
+            /^| ------- | -- |/a\\
+          | $NEW_VERSION | $PR_LINK | $PR_TITLE |
           }" VERSIONING.md
 
           echo "NEW_VERSION=$NEW_VERSION" >> "$GITHUB_ENV"
