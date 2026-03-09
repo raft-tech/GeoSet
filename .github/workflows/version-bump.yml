@@ -13,7 +13,7 @@ jobs:
   # Phase 1: Create version bump PR (runs for non-version-bump commits)
   bump-version:
     runs-on: ubuntu-latest
-    if: ${{ !startsWith(github.event.head_commit.message, 'chore: bump version to') }}
+    if: "!startsWith(github.event.head_commit.message, 'chore: bump version to')"
 
     steps:
       - name: Checkout Code
@@ -38,28 +38,12 @@ jobs:
       - name: Bump version and update changelog
         id: version
         run: |
-          CURRENT_VERSION=$(grep -oP '(?<=\*\*Current Version:\*\* )\S+' VERSIONING.md)
-          MAJOR=$(echo "$CURRENT_VERSION" | cut -d. -f1)
-          MINOR=$(echo "$CURRENT_VERSION" | cut -d. -f2)
-          PATCH=$(echo "$CURRENT_VERSION" | cut -d. -f3)
-          NEW_PATCH=$((PATCH + 1))
-          NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
-
-          sed -i "s/\*\*Current Version:\*\* $CURRENT_VERSION/**Current Version:** $NEW_VERSION/" VERSIONING.md
-
-          PR_TITLE="${{ steps.pr.outputs.title }}"
-          PR_NUMBER="${{ steps.pr.outputs.number }}"
-          if [ -n "$PR_NUMBER" ]; then
-            PR_LINK="[#$PR_NUMBER](https://github.com/${{ github.repository }}/pull/$PR_NUMBER)"
-          else
-            PR_LINK=""
-          fi
-          # Insert new changelog row after the table separator line
-          NEW_ROW="| $NEW_VERSION | $PR_LINK | $PR_TITLE |"
-          awk -v row="$NEW_ROW" '/^\| -+ \| -+ \| -+ \|$/ { print; print row; next } 1' VERSIONING.md > VERSIONING.md.tmp
-          mv VERSIONING.md.tmp VERSIONING.md
-
-          echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+          OUTPUT=$(./scripts/bump_version.sh \
+            --pr-title "${{ steps.pr.outputs.title }}" \
+            --pr-number "${{ steps.pr.outputs.number }}" \
+            --repo "${{ github.repository }}")
+          echo "$OUTPUT"
+          echo "new_version=$(echo "$OUTPUT" | grep '^NEW_VERSION=' | cut -d= -f2)" >> "$GITHUB_OUTPUT"
 
       - name: Create Pull Request
         env:
@@ -83,7 +67,7 @@ jobs:
   # Phase 2: Tag and build Docker (runs when a version bump PR is merged)
   create-tag:
     runs-on: ubuntu-latest
-    if: ${{ startsWith(github.event.head_commit.message, 'chore: bump version to') }}
+    if: "startsWith(github.event.head_commit.message, 'chore: bump version to')"
     outputs:
       new_version: ${{ steps.version.outputs.new_version }}
 
