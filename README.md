@@ -59,7 +59,7 @@ docker compose up
 
 #### Alternative Docker Image
 
-The Dockerfile at the root of the repository uses the same Debian-based image used by upstream Superset. This image suffers from numerous high and critical CVEs. For environments with increased security requirements we offer an image based on RHEL 8 with 0 high and 0 critical CVEs. This image can be used in place of the Debian image by running the following command. Note, these images have identical behavior.
+The Dockerfile at the root of the repository uses the same Debian-based image used by upstream Superset. This image suffers from numerous high and critical CVEs. For environments with increased security requirements we offer a hardened image based on RHEL 8 with 0 critical and 0 fixable high CVEs. This image can be used in place of the Debian image by running the following command. Note, these images have identical behavior.
 
 ```bash
 DOCKERFILE=Dockerfile.rhel docker compose up

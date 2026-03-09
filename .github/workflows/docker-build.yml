@@ -1,0 +1,147 @@
+name: Docker Build
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  SHORT_SHA: ${{ github.event.pull_request.head.sha && format('{0}', github.event.pull_request.head.sha) || github.sha }}
+
+jobs:
+  set-tag:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - name: Compute short SHA tag
+        id: tag
+        run: |
+          FULL_SHA="${{ env.SHORT_SHA }}"
+          echo "tag=${FULL_SHA:0:7}" >> "$GITHUB_OUTPUT"
+
+  Debian:
+    runs-on: ubuntu-latest
+    needs: set-tag
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Build and Push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: lean
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ebienstock/geoset:${{ needs.set-tag.outputs.tag }}
+          build-args: BUILD_VERSION=${{ needs.set-tag.outputs.tag }}
+          cache-from: type=gha,scope=debian
+          cache-to: type=gha,mode=max,scope=debian
+
+  RHEL:
+    runs-on: ubuntu-latest
+    needs: set-tag
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Build and Push RHEL
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.rhel
+          target: production
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ebienstock/geoset:${{ needs.set-tag.outputs.tag }}-rhel
+          build-args: BUILD_VERSION=${{ needs.set-tag.outputs.tag }}
+          cache-from: type=gha,scope=rhel
+          cache-to: type=gha,mode=max,scope=rhel
+
+  check-sample-data-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.check.outputs.changed }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for sample-data changes
+        id: check
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- sample-data/)
+            if [ -n "$CHANGED" ]; then
+              echo "changed=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "changed=false" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+
+  Ingest:
+    runs-on: ubuntu-latest
+    needs: [set-tag, check-sample-data-changes]
+    if: needs.check-sample-data-changes.outputs.changed == 'true'
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Build and Push Data Ingest
+        uses: docker/build-push-action@v6
+        with:
+          context: ./sample-data
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ebienstock/geoset:data-ingest-${{ needs.set-tag.outputs.tag }}
+          cache-from: type=gha,scope=data-ingest
+          cache-to: type=gha,mode=max,scope=data-ingest
