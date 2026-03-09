@@ -333,6 +333,10 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
     Record<string, boolean>
   >({});
 
+  // Clear optimistic overrides once the real layerVisibility catches up
+  useEffect(() => {
+    setOptimisticVisibility({});
+  }, [layerVisibility]);
 
   if (legendGroups.length === 0) return null;
 
@@ -406,11 +410,6 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
                           ),
                         }));
                         onToggleLayerVisibility?.(allSliceIds);
-                        setOptimisticVisibility(prev => {
-                          const next = { ...prev };
-                          allSliceIds.forEach(id => delete next[id]);
-                          return next;
-                        });
                       }}
                     />
                   )}
@@ -443,11 +442,6 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
                               [sliceId]: !entryVisible,
                             }));
                             onToggleLayerVisibility?.([sliceId]);
-                            setOptimisticVisibility(prev => {
-                              const next = { ...prev };
-                              delete next[sliceId];
-                              return next;
-                            });
                           }}
                           onToggleCategory={onToggleCategory}
                         />
