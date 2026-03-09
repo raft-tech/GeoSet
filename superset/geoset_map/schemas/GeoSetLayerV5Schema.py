@@ -9,6 +9,7 @@ Changes from V4:
   ``colorByValue.breakpoints`` now accept numbers **or** percentage strings.
 """
 
+import copy
 from typing import Any
 
 from marshmallow import fields, Schema, validates_schema, ValidationError
@@ -89,7 +90,10 @@ class ColorByValueSchemaV5(Schema):
                             "and upperBound."
                         )
         else:
-            # Some values are percentages — validate what we can
+            # Some values are percentages — validate what we can.
+            # Note: breakpoint-within-bounds validation is skipped when types
+            # are mixed (numbers + percentages) because percentages are
+            # resolved to actual values on the frontend at render time.
             if (
                 upper is not None
                 and lower is not None
@@ -167,4 +171,4 @@ class GeoSetLayerV5Schema(GeoSetLayerV4Schema):
         Returns:
             The schema in V5 format (unchanged).
         """
-        return data.copy()
+        return copy.deepcopy(data)

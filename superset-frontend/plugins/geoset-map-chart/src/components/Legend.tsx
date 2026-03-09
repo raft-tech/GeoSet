@@ -26,7 +26,7 @@ import { formatNumber, styled } from '@superset-ui/core';
 import { MetricLegend, RGBAColor, toRGBA } from '../utils/colors';
 import { rgbaArrayToCssString } from '../utils/colorsFallback';
 import { Swatch } from '../utils/legendSwatch';
-import { formatLegendNumber } from '../utils/formatNumber';
+import { formatBoundLabel } from '../utils/formatNumber';
 import CategorySizeGrid, { CategorySizeGridItem } from './CategorySizeGrid';
 import GraduatedIcons from './GraduatedIcons';
 
@@ -167,19 +167,22 @@ const Legend = ({
       <div className="legend-labels">
         <span>
           {metricLegend.min != null
-            ? metricLegend.usesPercentBounds &&
-              metricLegend.min !== metricLegend.max
-              ? `≤\u2009${formatLegendNumber(metricLegend.min)}`
-              : formatLegendNumber(metricLegend.min)
+            ? formatBoundLabel(
+                metricLegend.min,
+                'lower',
+                metricLegend.min !== metricLegend.max,
+                !!metricLegend.usesPercentBounds,
+              )
             : ''}
         </span>
         <span>
           {metricLegend.max != null
-            ? metricLegend.min !== metricLegend.max
-              ? metricLegend.usesPercentBounds
-                ? `>\u2009${formatLegendNumber(metricLegend.max)}`
-                : `${formatLegendNumber(metricLegend.max)}+`
-              : formatLegendNumber(metricLegend.max)
+            ? formatBoundLabel(
+                metricLegend.max,
+                'upper',
+                metricLegend.min !== metricLegend.max,
+                !!metricLegend.usesPercentBounds,
+              )
             : ''}
         </span>
       </div>
@@ -251,14 +254,12 @@ const Legend = ({
     ? (() => {
         const { lower, upper } = sizeLegend!;
         const gridItems: CategorySizeGridItem[] = categoryEntries.map(
-          ([k, v]) => {
-            return {
-              key: k,
-              label: String(v.legend_name || formatCategoryLabel(k)),
-              fillColor: toRGBA(v.color ?? undefined, [0, 0, 0, 255]),
-              enabled: v.enabled !== false,
-            };
-          },
+          ([k, v]) => ({
+            key: k,
+            label: String(v.legend_name || formatCategoryLabel(k)),
+            fillColor: toRGBA(v.color ?? undefined, [0, 0, 0, 255]),
+            enabled: v.enabled !== false,
+          }),
         );
 
         return (

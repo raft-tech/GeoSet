@@ -340,9 +340,12 @@ class TestV4ToV5Upgrade:
             "legend": {"title": "test_title", "name": "test_name"},
         }
         original = copy.deepcopy(v4_data)
-        GeoSetLayerV5Schema.upgrade_from_previous_version(v4_data)
+        v5_data = GeoSetLayerV5Schema.upgrade_from_previous_version(v4_data)
 
         assert v4_data == original
+        # Ensure deep copy: nested objects should not be shared
+        assert v4_data["globalColoring"] is not v5_data["globalColoring"]
+        assert v4_data["legend"] is not v5_data["legend"]
 
     def test_upgraded_schema_validates(self):
         """Upgraded V4 schema should pass V5 validation."""

@@ -165,6 +165,7 @@ export default function transformProps(chartProps: ChartProps) {
   let metricDomain: [number, number] | null = null;
   let metricColorScale: ((v: number) => number[]) | null = null;
   let metricLegend: MetricLegend | null = null;
+  let resolvedMetric: ColorByValueConfig | undefined;
 
   if (colorByValue && rawData.length > 0) {
     const {
@@ -221,6 +222,7 @@ export default function transformProps(chartProps: ChartProps) {
           lowerBound: lower,
           upperBound: upper,
         };
+        resolvedMetric = spec;
 
         metricColorScale = computeMetricColorScaleUnified(spec, [lower, upper]);
 
@@ -311,19 +313,17 @@ export default function transformProps(chartProps: ChartProps) {
   }
 
   // --- Combined metric+size validation ---
-  const isCombinedMetricSize: boolean = (() => {
-    if (!metricLegend || !sizeLegend) return false;
-    const metricCol = colorByValue?.valueColumn;
-    const sizeCol = pointSizeConfigDynamic?.valueColumn;
-    if (metricCol !== sizeCol) {
-      console.warn(
-        `[GeoSet Legend] colorByValue.valueColumn ("${metricCol}") != ` +
-          `pointSize.valueColumn ("${sizeCol}"). Rendering legends separately.`,
-      );
-      return false;
-    }
-    return true;
-  })();
+  const isCombinedMetricSize: boolean =
+    !!metricLegend &&
+    !!sizeLegend &&
+    colorByValue?.valueColumn === pointSizeConfigDynamic?.valueColumn;
+
+  if (metricLegend && sizeLegend && !isCombinedMetricSize) {
+    console.warn(
+      `[GeoSet Legend] colorByValue.valueColumn ("${colorByValue?.valueColumn}") != ` +
+        `pointSize.valueColumn ("${pointSizeConfigDynamic?.valueColumn}"). Rendering legends separately.`,
+    );
+  }
 
   // --- Parse raw features with caching ---
   const rawFeatures = parseRawFeatures(rawData, dimension, filterNulls);
@@ -524,7 +524,7 @@ export default function transformProps(chartProps: ChartProps) {
     features = features.map(f => {
       const val = f.properties?.[sizeValueColumn];
       if (val == null) return f;
-      return { ...f, sizeValue: sizeScale!(Number(val)) };
+      return { ...f, sizeValue: sizeScale(Number(val)) };
     });
   }
 
@@ -566,7 +566,7 @@ export default function transformProps(chartProps: ChartProps) {
     limitReached,
     visualConfig: {
       dimension,
-      metric: colorByValue as ColorByValueConfig | undefined,
+      metric: resolvedMetric,
       filled,
       stroked,
       extruded,
