@@ -112,3 +112,4 @@ The GeoSet example dashboard (`Geoset_example_dashboard`) ships with two multi-l
 - **Fire Cause filter** — a native filter scoped to the Wildfire Tracker chart
 - **Hurricane Season filter** — a native filter on year, scoped to the Hurricane Tracker chart
 - **Hurricane Name filter** — a native filter on storm name, cascades from Hurricane Season
+- **Wildfire Intensity By Incident Size** — a standalone layer showing NIFC wildfire incidents with color and point size scaled by incident size (acres)
