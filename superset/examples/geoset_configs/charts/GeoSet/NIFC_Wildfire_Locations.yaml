@@ -48,7 +48,7 @@ params:
   minMaxZoomSlider:
   - 0
   - 22
-  schema_version: 4
+  schema_version: 5
   geojsonConfig: "{\n  \"globalColoring\": {\n    \"fillColor\": [255, 69, 0, 200],\n\
     \    \"strokeColor\": [0, 0, 0, 255],\n    \"strokeWidth\": 1,\n    \"fillPattern\"\
     : \"solid\"\n  },\n  \"colorByCategory\": {\n    \"dimension\": \"fire_cause\"\

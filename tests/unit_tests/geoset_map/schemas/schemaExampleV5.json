@@ -15,15 +15,8 @@
           "fillColor": [0, 0, 255, 255],
           "legend_entry_name": "category_1_legend_name"
         }
-      },
-      {
-        "category_2_name": {
-          "fillColor": [255, 0, 0, 255],
-          "legend_entry_name": "category_2_legend_name"
-        }
       }
-    ],
-    "defaultLegendName": ["Other"]
+    ]
   },
   "colorByValue": {
     "valueColumn": "population",
