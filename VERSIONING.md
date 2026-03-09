@@ -11,7 +11,11 @@
 - **MINOR** (0.X.0) — Tied to the upstream Superset minor version
 - **PATCH** (0.0.X) — New GeoSet features, enhancements, bug fixes, or mid-release upstream syncs.
 
+## Automation
+
+Version incrementing is handled automatically by the `Version Bump` GitHub Actions workflow ([`.github/workflows/version-bump.yml`](.github/workflows/version-bump.yml)). When a PR is merged to `main`, the workflow increments the patch version, updates the changelog below, creates a git tag, and triggers Docker image builds. No manual version changes are needed.
+
 ## Changelog
 
-| Version | PR | Description |
-| ------- | -- | ----------- |
+| Version | PR  | Description |
+| ------- | --- | ----------- |
