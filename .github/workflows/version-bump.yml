@@ -10,10 +10,10 @@ permissions:
   pull-requests: write
 
 jobs:
-  # Phase 1: Create version bump PR (runs when a human merges to main)
+  # Phase 1: Create version bump PR (runs for non-version-bump commits)
   bump-version:
     runs-on: ubuntu-latest
-    if: github.actor != 'github-actions[bot]'
+    if: ${{ !startsWith(github.event.head_commit.message, 'chore: bump version to') }}
 
     steps:
       - name: Checkout Code
@@ -80,10 +80,10 @@ jobs:
             --base main \
             --head "$BRANCH"
 
-  # Phase 2: Tag and build Docker (runs when the bot's version bump PR is merged)
+  # Phase 2: Tag and build Docker (runs when a version bump PR is merged)
   create-tag:
     runs-on: ubuntu-latest
-    if: github.actor == 'github-actions[bot]'
+    if: ${{ startsWith(github.event.head_commit.message, 'chore: bump version to') }}
     outputs:
       new_version: ${{ steps.version.outputs.new_version }}
 
