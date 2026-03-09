@@ -16,7 +16,7 @@ env:
 
 jobs:
   set-tag:
-    if: ${{ !startsWith(github.head_ref, 'chore/version-bump-') }}
+    if: "!startsWith(github.head_ref, 'chore/version-bump-')"
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.tag.outputs.tag }}
