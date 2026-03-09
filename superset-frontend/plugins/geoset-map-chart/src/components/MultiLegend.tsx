@@ -146,6 +146,10 @@ const CategoryRow = styled.div`
   gap: 8px;
 `;
 
+const MetricBlock = styled.div`
+  margin: 6px 0;
+`;
+
 const GradientBar = styled.div<{ gradient: string }>`
   height: 12px;
   width: 100%;
@@ -288,7 +292,7 @@ const LegendEntryContent: React.FC<{
 
       {/* METRIC GRADIENT */}
       {legendEntry.metric && (
-        <>
+        <MetricBlock>
           {showEntryCheckbox && (
             <CategoryRow>
               <VisibilityCheckbox
@@ -315,7 +319,7 @@ const LegendEntryContent: React.FC<{
             <div>{formatLegendNumber(legendEntry.metric.lower)}</div>
             <div>{`${formatLegendNumber(legendEntry.metric.upper)}${legendEntry.metric.lower !== legendEntry.metric.upper ? '+' : ''}`}</div>
           </Bounds>
-        </>
+        </MetricBlock>
       )}
     </div>
   );
