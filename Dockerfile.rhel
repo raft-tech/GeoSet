@@ -242,7 +242,7 @@ EXPOSE ${SUPERSET_PORT}
 FROM python-common AS production
 
 # Build version injected at build time
-ARG BUILD_VERSION="6.0.0"
+ARG BUILD_VERSION="x.y.z"
 
 # Copy ecpg utility from postgres stage
 COPY --from=postgres-ecpg /usr/pgsql-18/bin/ecpg /usr/bin/ecpg

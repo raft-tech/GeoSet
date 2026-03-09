@@ -11,9 +11,24 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+env:
+  SHORT_SHA: ${{ github.event.pull_request.head.sha && format('{0}', github.event.pull_request.head.sha) || github.sha }}
+
 jobs:
+  set-tag:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - name: Compute short SHA tag
+        id: tag
+        run: |
+          FULL_SHA="${{ env.SHORT_SHA }}"
+          echo "tag=${FULL_SHA:0:7}" >> "$GITHUB_OUTPUT"
+
   Debian:
     runs-on: ubuntu-latest
+    needs: set-tag
 
     steps:
       - name: Checkout Code
@@ -38,12 +53,14 @@ jobs:
           target: lean
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ebienstock/geoset:${{ github.event.pull_request.head.sha || github.sha }}
+          tags: ebienstock/geoset:${{ needs.set-tag.outputs.tag }}
+          build-args: BUILD_VERSION=${{ needs.set-tag.outputs.tag }}
           cache-from: type=gha,scope=debian
           cache-to: type=gha,mode=max,scope=debian
 
   RHEL:
     runs-on: ubuntu-latest
+    needs: set-tag
 
     steps:
       - name: Checkout Code
@@ -69,7 +86,8 @@ jobs:
           target: production
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ebienstock/geoset:${{ github.event.pull_request.head.sha || github.sha }}-rhel
+          tags: ebienstock/geoset:${{ needs.set-tag.outputs.tag }}-rhel
+          build-args: BUILD_VERSION=${{ needs.set-tag.outputs.tag }}
           cache-from: type=gha,scope=rhel
           cache-to: type=gha,mode=max,scope=rhel
 
@@ -99,7 +117,7 @@ jobs:
 
   Ingest:
     runs-on: ubuntu-latest
-    needs: check-sample-data-changes
+    needs: [set-tag, check-sample-data-changes]
     if: needs.check-sample-data-changes.outputs.changed == 'true'
 
     steps:
@@ -124,6 +142,6 @@ jobs:
           context: ./sample-data
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ebienstock/geoset:data-ingest-latest
+          tags: ebienstock/geoset:data-ingest-${{ needs.set-tag.outputs.tag }}
           cache-from: type=gha,scope=data-ingest
           cache-to: type=gha,mode=max,scope=data-ingest

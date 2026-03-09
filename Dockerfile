@@ -217,6 +217,9 @@ EXPOSE ${SUPERSET_PORT}
 ######################################################################
 FROM python-common AS lean
 
+# Build version injected at build time
+ARG BUILD_VERSION="x.y.z"
+
 # Install Python dependencies using docker/pip-install.sh
 COPY requirements/base.txt requirements/
 RUN --mount=type=cache,target=${SUPERSET_HOME}/.cache/uv \
@@ -228,6 +231,9 @@ RUN uv pip install .[postgres]
 RUN python -m compileall /app/superset
 
 COPY docker/pythonpath_dev/ /app/docker/pythonpath_dev/
+
+# Write version info at build time
+RUN printf '{"GIT_SHA":"","version":"%s"}' "$BUILD_VERSION" > /app/superset/static/version_info.json
 
 USER superset
 
