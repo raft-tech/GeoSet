@@ -29,8 +29,9 @@ Argument: `$ARGUMENTS` — a PR number (numeric) or a full commit SHA, optionall
    - **No matching runs found** → warn the user that no CI build was found for this commit. Ask if they want to try pulling the image anyway. If they decline, stop.
 
 4. **Determine the image tag**
-   - If `rhel=true`: tag is `<full-sha>-rhel`
-   - Otherwise: tag is `<full-sha>`
+   - Compute the short SHA: first 7 characters of the full SHA.
+   - If `rhel=true`: tag is `<short-sha>-rhel`
+   - Otherwise: tag is `<short-sha>`
 
 5. **Pull the image**
    - Run: `docker pull ebienstock/geoset:<tag>`
