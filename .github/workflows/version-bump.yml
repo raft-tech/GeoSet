@@ -68,6 +68,8 @@ jobs:
           BRANCH="chore/version-bump-${{ steps.version.outputs.new_version }}"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Delete stale remote branch from a previous failed run, if it exists
+          git push origin --delete "$BRANCH" 2>/dev/null || true
           git checkout -b "$BRANCH"
           git add VERSIONING.md
           git commit -m "chore: bump version to ${{ steps.version.outputs.new_version }}"
