@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   frontend-build:
-    if: ${{ !startsWith(github.head_ref, 'chore/version-bump-') }}
+    if: "!startsWith(github.head_ref, 'chore/version-bump-')"
     runs-on: ubuntu-latest
     env:
       NODE_OPTIONS: "--max_old_space_size=4096"
