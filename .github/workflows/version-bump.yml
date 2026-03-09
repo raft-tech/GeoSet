@@ -54,10 +54,10 @@ jobs:
           else
             PR_LINK=""
           fi
-          sed -i "/^| Version | PR | Description |/,/^$/{
-            /^| ------- | -- |/a\\
-          | $NEW_VERSION | $PR_LINK | $PR_TITLE |
-          }" VERSIONING.md
+          # Insert new changelog row after the table separator line
+          NEW_ROW="| $NEW_VERSION | $PR_LINK | $PR_TITLE |"
+          awk -v row="$NEW_ROW" '/^\| -+ \| -+ \| -+ \|$/ { print; print row; next } 1' VERSIONING.md > VERSIONING.md.tmp
+          mv VERSIONING.md.tmp VERSIONING.md
 
           echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
 
