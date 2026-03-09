@@ -1,6 +1,0 @@
-{
-  "ref": "refs/heads/main",
-  "head_commit": {
-    "message": "feat: some feature (#123)"
-  }
-}

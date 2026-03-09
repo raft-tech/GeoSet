@@ -1,6 +1,0 @@
-{
-  "ref": "refs/heads/main",
-  "head_commit": {
-    "message": "chore: bump version to 6.0.34 (#307)"
-  }
-}
