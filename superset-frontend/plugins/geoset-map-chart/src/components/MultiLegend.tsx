@@ -333,7 +333,7 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
     Record<string, boolean>
   >({});
 
-  // Clear optimistic overrides once the real layerVisibility catches up
+  // Wipe optimistic state once real visibility lands (prevents stale batch-toggle entries)
   useEffect(() => {
     setOptimisticVisibility({});
   }, [layerVisibility]);
