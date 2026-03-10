@@ -1,7 +1,8 @@
 # Wiki Mapping Reference
 
 Maps code areas to wiki pages that may need updating when those areas change.
-Used by the `/sync-wiki` skill to determine which documentation to review.
+Used by the documentation sync process (`.claude/sync-documentation.md`) to determine
+which documentation to review.
 
 **This mapping works in both directions:**
 

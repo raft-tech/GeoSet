@@ -24,7 +24,7 @@ When pulling in upstream Apache Superset changes, update the **"Based on"** fiel
 
 ## Documentation
 
-Wiki pages live in `wiki/` and are synced to the GitHub Wiki on merge to main via `.github/workflows/sync-wiki.yml`. Use `/sync-wiki` to review code changes and update wiki pages and README.md before committing. The code-to-wiki mapping is in `.claude/wiki-mapping.md`.
+Wiki pages live in `wiki/` and are synced to the GitHub Wiki on merge to main via `.github/workflows/sync-wiki.yml`. Documentation sync runs automatically as a background process during `/commit-and-push` and `/merge-request` — it audits wiki pages, README.md, and inline documentation against code changes. The instructions are in `.claude/sync-documentation.md` and the code-to-wiki mapping is in `.claude/wiki-mapping.md`.
 
 ## Important Notes
 

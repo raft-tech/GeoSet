@@ -1,7 +1,8 @@
-# Sync Wiki
+# Sync Documentation
 
-Review code changes on the current branch and update wiki pages and README.md to stay
-in sync with the codebase.
+Review code changes on the current branch and update documentation to stay in sync with
+the codebase. This covers wiki pages, README.md, and inline documentation (docstrings,
+comments) for changed files.
 
 ## Steps
 
@@ -46,16 +47,24 @@ in sync with the codebase.
    - The correct versioning policy
    - Any new changelog entries
 
-7. **Report what was done.** Summarize:
+7. **Check inline documentation.** For each changed source file, verify that:
+   - Docstrings on modified functions/classes still accurately describe behavior
+   - Comments near changed logic are still correct
+   - No stale references to renamed or removed symbols
+   Only fix documentation that is clearly wrong — do not add new docstrings or comments
+   to code that didn't have them before.
+
+8. **Report what was done.** Summarize:
    - Which wiki pages were checked
    - Which pages were updated and what changed
    - Which pages needed no changes
+   - Any inline documentation fixes made
    - Any issues found that require manual attention (e.g., missing screenshots)
 
 ## Important Notes
 
-- This skill modifies files in `wiki/` and optionally `README.md`. It does NOT commit
-  or push. Use `/commit-and-push` afterward.
+- This process modifies files in `wiki/`, optionally `README.md`, and potentially source
+  files (docstrings/comments only). It does NOT commit or push.
 - The `.github/workflows/sync-wiki.yml` workflow syncs `wiki/` to the GitHub Wiki when
   changes are merged to main. No manual wiki editing is needed.
 - When documenting GeoJSON Config schema changes, refer to the Marshmallow schemas in
