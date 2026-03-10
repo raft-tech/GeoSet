@@ -371,7 +371,12 @@ const DeckMulti = (props: DeckMultiProps) => {
 
                 // Build the LegendEntry based on what coloring mode is active
                 const { categories, visualConfig } = transformedProps;
-                const { dimension, metricLegend } = visualConfig;
+                const {
+                  dimension,
+                  metricLegend,
+                  sizeLegend,
+                  isCombinedMetricSize,
+                } = visualConfig;
                 const hasCategories =
                   dimension && categories && Object.keys(categories).length > 0;
                 const hasMetric =
@@ -387,12 +392,16 @@ const DeckMulti = (props: DeckMultiProps) => {
                   ? toTitleCase(params.legend.name)
                   : null;
 
+                const buildSizeEntry = () =>
+                  sizeLegend ? { ...sizeLegend } : undefined;
+
                 let legendEntry: LegendEntry;
 
                 if (hasMetric) {
                   // Metric-based coloring (gradient)
                   // Use legend.title from JSON for legend header
                   const ml = metricLegend as MetricLegend;
+                  const isCombined = isCombinedMetricSize === true;
                   legendEntry = {
                     legendName: legendTitle || legendName,
                     sliceName: subslice.slice_name,
@@ -405,6 +414,8 @@ const DeckMulti = (props: DeckMultiProps) => {
                       startColor: ml.startColor,
                       endColor: ml.endColor,
                     },
+                    sizeEntry: isCombined ? buildSizeEntry() : undefined,
+                    isCombinedMetricSize: isCombined,
                     initialCollapsed: sliceLegendCollapsed,
                   };
                 } else if (hasCategories) {
@@ -427,6 +438,7 @@ const DeckMulti = (props: DeckMultiProps) => {
                     geometryType: transformPropsGeojsonLayer,
                     type: 'categorical',
                     categories: categoryEntries,
+                    sizeEntry: buildSizeEntry(),
                     initialCollapsed: sliceLegendCollapsed,
                   };
                 } else {
@@ -447,6 +459,7 @@ const DeckMulti = (props: DeckMultiProps) => {
                       fillColor,
                       strokeColor,
                     },
+                    sizeEntry: buildSizeEntry(),
                     initialCollapsed: sliceLegendCollapsed,
                   };
                 }
