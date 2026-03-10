@@ -104,6 +104,7 @@ The GeoSet example dashboard (`Geoset_example_dashboard`) ships with two multi-l
 
 - **Hurricane Tracker** — a multi-layer map combining:
   - **Storm Track Points** — NHC best track observation points colored by max wind speed (yellow to red)
+  - **Storm Track Points Text Overlay** — max gust wind speed labels at each observation point
   - **Storm Track Lines** — aggregated best track lines per storm per year
   - **Census State Boundaries** — US state boundary polygons
 - **Wildfire Tracker** — a multi-layer map combining:

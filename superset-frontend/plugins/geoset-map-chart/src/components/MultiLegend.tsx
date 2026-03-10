@@ -139,6 +139,7 @@ const ExpandIcon = styled.div(
 const Content = styled.div`
   margin-top: 8px;
   padding-left: 20px;
+  padding-right: 24px;
 `;
 
 const CategoryRow = styled.div`
