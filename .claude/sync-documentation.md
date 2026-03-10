@@ -1,74 +1,27 @@
 # Sync Documentation
 
-Review code changes on the current branch and update documentation to stay in sync with
-the codebase. This covers wiki pages, README.md, and inline documentation (docstrings,
-comments) for changed files.
+Investigate all GeoSet-specific files changed on this branch and resolve documentation
+drift, inconsistencies, and gaps. This includes wiki pages, README.md, comments, and
+docstrings.
 
-## Steps
+## Scope
 
-1. **Read the mapping reference** at `.claude/wiki-mapping.md` to understand which code
-   paths map to which wiki pages.
+Focus on files changed in the fork — exclude untouched upstream Superset files. Key areas:
 
-2. **Identify changed files.** Run `git diff --name-only` (unstaged) and
-   `git diff --cached --name-only` (staged) to catch uncommitted work. Also run
-   `git diff main...HEAD --name-only` to capture everything committed on the branch
-   since it diverged from main. Union all three lists.
+- `wiki/` — all wiki pages
+- `README.md`
+- `superset/geoset_map/` — GeoSet backend (schemas, API)
+- `superset-frontend/plugins/geoset-map-chart/` — GeoSet frontend plugin
+- `superset/examples/geoset*` and `superset/cli/geoset.py` — example data
+- `sample-data/` — data ingestion
+- `docker-compose*.yml`, `docker/`, `Dockerfile*` — Docker configuration
+- `VERSIONING.md`
 
-3. **Match changed files to wiki pages (both directions).** For each changed file:
-   - If a **code file** changed, look up which wiki page(s) it maps to (forward check).
-   - If a **wiki file** (`wiki/*.md`) or `README.md` changed, look up which code paths
-     map to that wiki page (reverse check) — these source files must be read and
-     validated against the wiki content.
-   Collect a deduplicated list of wiki pages and their associated source files that
-   need review.
+## How
 
-4. **Review each affected wiki page.** For each one:
-   a. Read the wiki page.
-   b. Read the associated source files (whether they triggered the mapping via a code
-      change or via a reverse lookup from a wiki change).
-   c. Compare the wiki content against the current state of the code. Look for:
-      - Incorrect version numbers, file paths, or command references
-      - Missing documentation for new features, config fields, or controls
-      - References to files, directories, or commands that no longer exist
-      - Outdated code examples or JSON config samples
-      - Broken internal wiki links
-   d. If updates are needed, edit the wiki page to reflect the current code.
-
-5. **Check README.md for overlap.** If any wiki page was updated, also read README.md
-   and check for overlapping content that may be inconsistent. Pay special attention to:
-   - Feature lists
-   - Quick Start / installation instructions
-   - Links to wiki pages
-
-6. **Special case: VERSIONING.md.** If VERSIONING.md was changed, ensure
-   wiki/Versioning-And-Changelog.md reflects:
-   - The correct current version number
-   - The correct "Based on" upstream version
-   - The correct versioning policy
-   - Any new changelog entries
-
-7. **Check inline documentation.** For each changed source file, verify that:
-   - Docstrings on modified functions/classes still accurately describe behavior
-   - Comments near changed logic are still correct
-   - No stale references to renamed or removed symbols
-   Only fix documentation that is clearly wrong — do not add new docstrings or comments
-   to code that didn't have them before.
-
-8. **Report what was done.** Summarize:
-   - Which wiki pages were checked
-   - Which pages were updated and what changed
-   - Which pages needed no changes
-   - Any inline documentation fixes made
-   - Any issues found that require manual attention (e.g., missing screenshots)
-
-## Important Notes
-
-- This process modifies files in `wiki/`, optionally `README.md`, and potentially source
-  files (docstrings/comments only). It does NOT commit or push.
-- The `.github/workflows/sync-wiki.yml` workflow syncs `wiki/` to the GitHub Wiki when
-  changes are merged to main. No manual wiki editing is needed.
-- When documenting GeoJSON Config schema changes, refer to the Marshmallow schemas in
-  `superset/geoset_map/schemas/` and the frontend `transformProps.ts` for the canonical
-  list of supported fields.
-- When documenting control panel changes, refer to the `controlPanel.ts` files in
-  `layers/GeoSetLayer/` and `GeoSetMultiMap/`.
+1. Find changed files: union of `git diff --name-only`, `git diff --cached --name-only`,
+   and `git diff main...HEAD --name-only`.
+2. For each changed file, determine what documentation it affects and verify accuracy.
+3. Fix anything out of sync. Only fix clearly wrong docs — don't add new docstrings or
+   comments where none existed.
+4. Report what was checked, what was fixed, and anything needing manual attention.
