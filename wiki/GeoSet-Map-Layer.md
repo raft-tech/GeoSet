@@ -58,12 +58,12 @@ Sets the zoom range at which this layer is visible. Useful for multi-layer maps 
 
 Only available for the **Point** layer type.
 
-| Control           | Description                                                       |
-| ----------------- | ----------------------------------------------------------------- |
-| Enable Clustering | Groups nearby points into cluster circles                         |
-| Cluster Radius    | Pixel radius for grouping points into a cluster                   |
-| Min Zoom          | Zoom level at which clustering stops and individual points appear |
-| Min Points        | Minimum number of points required to form a cluster               |
+| Control                | Description                                                       |
+| ---------------------- | ----------------------------------------------------------------- |
+| Enable Clustering      | Groups nearby points into cluster circles                         |
+| Cluster Radius         | Pixel radius for grouping points into a cluster                   |
+| Cluster Max Zoom       | Zoom level at which clustering stops and individual points appear |
+| Min Points per Cluster | Minimum number of points required to form a cluster               |
 
 ### Hover Data Columns
 

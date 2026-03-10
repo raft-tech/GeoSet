@@ -99,7 +99,7 @@ The GeoSet map plugin is a Superset chart plugin built on [deck.gl](https://deck
 | File | Purpose |
 |---|---|
 | `utils/colors.ts` | Color scale computation, category color mapping, metric gradient logic |
-| `utils/buildPolygonLayers.ts` | Constructs SolidPolygonLayer + LineLayer pairs for polygon rendering |
+| `utils/layerBuilders/buildPolygonLayers.ts` | Constructs SolidPolygonLayer + LineLayer pairs for polygon rendering |
 | `utils/fitViewport.ts` | Autozoom calculation to fit features in the viewport |
 | `utils/liveViewportStore.ts` | Module-level store for live viewport state (bypasses Redux to avoid "Altered" chart state) |
 | `components/MultiLegend.tsx` | Drag-and-drop multi-layer legend with toggle/isolate |

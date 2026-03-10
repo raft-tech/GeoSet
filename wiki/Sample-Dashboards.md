@@ -17,9 +17,9 @@ The demo stack loads three datasets from public APIs:
 | Active Wildfire Locations | NIFC ArcGIS API | `nifc_wildfire_locations` |
 | Hurricane Best Track | NHC/NOAA API | `nhc_best_track` |
 
-These datasets power two pre-built dashboards:
+These datasets power two multi-layer map charts inside the **GeoSet Example Dashboard**:
 
-### Hurricane Tracker
+### Hurricane Tracker (2024 and 2025 Hurricanes and Tropical Storms)
 
 A multi-layer map combining:
 - **Storm Track Points** — NHC best track observation points colored by max wind speed (yellow → red gradient)
@@ -28,7 +28,7 @@ A multi-layer map combining:
 
 Includes native dashboard filters for **Hurricane Season** (year) and **Hurricane Name** (cascades from Season).
 
-### Wildfire Tracker
+### Wildfire Tracker (NIFC Wildfire Locations)
 
 A multi-layer map combining:
 - **NIFC Wildfire Locations** — active wildfire points colored by fire cause (Human, Natural, Undetermined)
