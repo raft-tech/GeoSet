@@ -3,6 +3,12 @@
 Maps code areas to wiki pages that may need updating when those areas change.
 Used by the `/sync-wiki` skill to determine which documentation to review.
 
+**This mapping works in both directions:**
+
+- **Forward (code → wiki):** When a code file changes, check the mapped wiki page(s).
+- **Reverse (wiki → code):** When a wiki file changes, read the mapped source files
+  to validate the wiki content is accurate.
+
 ## Code-to-Wiki Mappings
 
 | Code Path Pattern | Wiki Page(s) | Section(s) to Check |

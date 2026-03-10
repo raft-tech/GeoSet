@@ -12,13 +12,18 @@ in sync with the codebase.
    `git diff --cached --name-only` (staged) to get the current working tree changes.
    Also run `git diff main...HEAD --name-only` to capture all changes on the branch.
 
-3. **Match changed files to wiki pages.** For each changed file, look up which wiki
-   page(s) and section(s) it maps to in the mapping table. Collect a deduplicated list
-   of wiki pages that need review.
+3. **Match changed files to wiki pages (both directions).** For each changed file:
+   - If a **code file** changed, look up which wiki page(s) it maps to (forward check).
+   - If a **wiki file** (`wiki/*.md`) or `README.md` changed, look up which code paths
+     map to that wiki page (reverse check) — these source files must be read and
+     validated against the wiki content.
+   Collect a deduplicated list of wiki pages and their associated source files that
+   need review.
 
 4. **Review each affected wiki page.** For each one:
    a. Read the wiki page.
-   b. Read the changed source files that triggered the mapping.
+   b. Read the associated source files (whether they triggered the mapping via a code
+      change or via a reverse lookup from a wiki change).
    c. Compare the wiki content against the current state of the code. Look for:
       - Incorrect version numbers, file paths, or command references
       - Missing documentation for new features, config fields, or controls
