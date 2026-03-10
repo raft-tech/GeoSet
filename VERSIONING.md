@@ -17,8 +17,8 @@ Version incrementing is handled automatically by the `Version Bump` GitHub Actio
 
 ## Changelog
 
-| Version | PR  | Description |
-| ------- | --- | ----------- |
-| 6.0.35 | [#289](https://github.com/raft-tech/GeoSet/pull/289) | #283 feat(geoset-map): consolidate duplicate legend entries by display title |
-| 6.0.34 | [#306](https://github.com/raft-tech/GeoSet/pull/306) | chore: extract bump script and fix YAML quoting |
-| 6.0.33 | [#301](https://github.com/raft-tech/GeoSet/pull/301) | fix: version bump fails when stale branch exists |
+| Version | PR                                                   | Description                                                             |
+| ------- | ---------------------------------------------------- | ----------------------------------------------------------------------- |
+| 6.0.35  | [#289](https://github.com/raft-tech/GeoSet/pull/289) | feat(geoset-map): consolidate duplicate legend entries by display title |
+| 6.0.34  | [#306](https://github.com/raft-tech/GeoSet/pull/306) | chore: extract bump script and fix YAML quoting                         |
+| 6.0.33  | [#301](https://github.com/raft-tech/GeoSet/pull/301) | fix: version bump fails when stale branch exists                        |
