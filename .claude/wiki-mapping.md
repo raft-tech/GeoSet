@@ -29,7 +29,8 @@ Used by the `/sync-wiki` skill to determine which documentation to review.
 | `sample-data/` | wiki/Sample-Dashboards.md | All sections |
 | `superset/examples/geoset*` | wiki/Sample-Dashboards.md | Adding a New Example |
 | `superset/cli/geoset.py` | wiki/Sample-Dashboards.md | Demo Stack Architecture |
-| `.github/workflows/sync-wiki.yml` | (meta — the wiki sync workflow itself) |
+| `README.md` | wiki/Home.md, wiki/Getting-Started.md | Feature list, Quick Start instructions |
+| `.github/workflows/sync-wiki.yml` | (meta — no wiki update needed) | — |
 
 Note: `...` in frontend paths is shorthand for `plugins/geoset-map-chart`.
 

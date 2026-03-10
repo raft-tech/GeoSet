@@ -65,8 +65,8 @@ Once all containers are healthy, open **http://localhost** in your browser and l
 ## Common Commands
 
 ```bash
-# Start all services
-docker compose up
+# Start all services (detached)
+docker compose up -d
 
 # Rebuild after Dockerfile changes
 docker compose up --build

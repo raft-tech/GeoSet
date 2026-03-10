@@ -9,8 +9,9 @@ in sync with the codebase.
    paths map to which wiki pages.
 
 2. **Identify changed files.** Run `git diff --name-only` (unstaged) and
-   `git diff --cached --name-only` (staged) to get the current working tree changes.
-   Also run `git diff main...HEAD --name-only` to capture all changes on the branch.
+   `git diff --cached --name-only` (staged) to catch uncommitted work. Also run
+   `git diff main...HEAD --name-only` to capture everything committed on the branch
+   since it diverged from main. Union all three lists.
 
 3. **Match changed files to wiki pages (both directions).** For each changed file:
    - If a **code file** changed, look up which wiki page(s) it maps to (forward check).

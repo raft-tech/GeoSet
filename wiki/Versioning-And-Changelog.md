@@ -22,7 +22,7 @@ Version incrementing is handled automatically by the `Version Bump` GitHub Actio
 
 - [`VERSIONING.md`](../blob/main/VERSIONING.md) — current version, versioning policy, and changelog
 
-## Changelog
+## Changelog (Recent)
 
 | Version | PR                                                   | Description                                                             |
 | ------- | ---------------------------------------------------- | ----------------------------------------------------------------------- |
@@ -30,4 +30,4 @@ Version incrementing is handled automatically by the `Version Bump` GitHub Actio
 | 6.0.34  | [#306](https://github.com/raft-tech/GeoSet/pull/306) | chore: extract bump script and fix YAML quoting                         |
 | 6.0.33  | [#301](https://github.com/raft-tech/GeoSet/pull/301) | fix: version bump fails when stale branch exists                        |
 
-> For the full changelog, see [`VERSIONING.md`](../blob/main/VERSIONING.md) in the repository.
+> This table shows recent entries only. The version-bump workflow updates `VERSIONING.md` automatically on each merge; this wiki page may lag behind. For the full changelog, see [`VERSIONING.md`](../blob/main/VERSIONING.md) in the repository.
