@@ -13,6 +13,10 @@ params:
       autozoom: true
       legendCollapsed: false
       initiallyHidden: false
+    - uuid: ca81b751-384f-4a10-924f-40e9793462bf
+      autozoom: true
+      legendCollapsed: false
+      initiallyHidden: false
     - uuid: a1a862f1-2907-4ff5-a261-0d8e5199f63f
       autozoom: true
       legendCollapsed: false

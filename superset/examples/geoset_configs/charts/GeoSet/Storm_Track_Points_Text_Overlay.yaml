@@ -1,0 +1,48 @@
+slice_name: Storm Track Points Text Overlay
+description: Displays max gust wind speed labels at storm track observation points.
+certified_by: null
+certification_details: null
+viz_type: deck_geoset_map_layer
+params:
+  datasource: 29__table
+  viz_type: deck_geoset_map_layer
+  slice_id: 185
+  mapbox_style: mapbox://styles/mapbox/light-v9
+  autozoom: true
+  geojson: observation_point
+  row_limit: 10000
+  geoJsonLayer: TextOverlay
+  textLabelColumn: max_gust_mph
+  adhoc_filters:
+  - clause: WHERE
+    comparator: No filter
+    expressionType: SIMPLE
+    operator: TEMPORAL_RANGE
+    subject: effective_timestamp
+  minMaxZoomSlider:
+  - 5
+  - 22
+  hoverDataColumns: []
+  featureInfoColumns: []
+  geojsonConfig: "{\n  \"globalColoring\": {\n    \"fillColor\": [180, 30, 15, 255],\n\
+    \    \"strokeColor\": [0, 0, 0, 255],\n    \"strokeWidth\": 2,\n    \"fillPattern\"\
+    : \"solid\"\n  },\n  \"textOverlayStyle\": {\n    \"fontFamily\": \"Arial, sans-serif\"\
+    ,\n    \"fontSize\": 18,\n    \"bold\": true,\n    \"offset\": [-25, 25]\n  },\n\
+    \  \"legend\": {\n    \"title\": \"Wind Speed (mph)\",\n    \"name\": \"Max Gust\
+    \ Labels\"\n  }\n}"
+  schema_version: 3
+  extra_form_data: {}
+  dashboards: []
+query_context: '{"datasource":{"id":29,"type":"table"},"force":false,"queries":[{"filters":[{"col":"effective_timestamp","op":"TEMPORAL_RANGE","val":"No
+  filter"}],"extras":{"having":"","where":""},"applied_time_extras":{},"columns":[{"label":"geojson","sqlExpression":"ST_AsGeoJSON(observation_point,
+  6)","expressionType":"SQL"},"max_gust_mph"],"metrics":[],"annotation_layers":[],"row_limit":10000,"series_limit":0,"group_others_when_limit_reached":false,"order_desc":true,"url_params":{},"custom_params":{},"custom_form_data":{},"groupby":[]}],"form_data":{"datasource":"29__table","viz_type":"deck_geoset_map_layer","slice_id":185,"mapbox_style":"mapbox://styles/mapbox/light-v9","autozoom":true,"geojson":"observation_point","row_limit":10000,"geoJsonLayer":"TextOverlay","textLabelColumn":"max_gust_mph","adhoc_filters":[{"clause":"WHERE","comparator":"No
+  filter","expressionType":"SIMPLE","operator":"TEMPORAL_RANGE","subject":"effective_timestamp"}],"minMaxZoomSlider":[5,22],"hoverDataColumns":[],"featureInfoColumns":[],"geojsonConfig":"{\n  \"globalColoring\":
+  {\n    \"fillColor\": [180, 30, 15, 255],\n    \"strokeColor\": [0, 0, 0, 255],\n    \"strokeWidth\":
+  2,\n    \"fillPattern\": \"solid\"\n  },\n  \"textOverlayStyle\": {\n    \"fontFamily\":
+  \"Arial, sans-serif\",\n    \"fontSize\": 18,\n    \"bold\": true,\n    \"offset\":
+  [-25, 25]\n  },\n  \"legend\": {\n    \"title\": \"Wind Speed (mph)\",\n    \"name\":
+  \"Max Gust Labels\"\n  }\n}","schema_version":3,"extra_form_data":{},"dashboards":[],"force":false,"result_format":"json","result_type":"full"},"result_format":"json","result_type":"full"}'
+cache_timeout: null
+uuid: ca81b751-384f-4a10-924f-40e9793462bf
+version: 1.0.0
+dataset_uuid: 05f56898-3fc6-4bba-9c63-8dafb32343ea
