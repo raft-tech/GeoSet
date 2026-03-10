@@ -9,6 +9,10 @@ permissions:
   contents: write
   pull-requests: write
 
+concurrency:
+  group: version-bump
+  cancel-in-progress: false
+
 jobs:
   # Phase 1: Create version bump PR (runs for non-version-bump commits)
   bump-version:
@@ -45,24 +49,52 @@ jobs:
           echo "$OUTPUT"
           echo "new_version=$(echo "$OUTPUT" | grep '^NEW_VERSION=' | cut -d= -f2)" >> "$GITHUB_OUTPUT"
 
-      - name: Create Pull Request
+      - name: Create or update Pull Request
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          BRANCH="chore/version-bump-${{ steps.version.outputs.new_version }}"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          # Delete stale remote branch from a previous failed run, if it exists
-          git push origin --delete "$BRANCH" 2>/dev/null || true
-          git checkout -b "$BRANCH"
-          git add VERSIONING.md
-          git commit -m "chore: bump version to ${{ steps.version.outputs.new_version }}"
-          git push origin "$BRANCH"
-          gh pr create \
-            --title "chore: bump version to ${{ steps.version.outputs.new_version }}" \
-            --body "Automated version bump and changelog update." \
-            --base main \
-            --head "$BRANCH"
+
+          # Check for an existing open version bump PR
+          EXISTING_PR=$(gh pr list --search "chore: bump version to" --state open \
+            --json number,headRefName --jq '.[0]')
+          EXISTING_BRANCH=$(echo "$EXISTING_PR" | jq -r '.headRefName // empty')
+
+          if [[ -n "$EXISTING_BRANCH" ]]; then
+            # Append changelog entry to the existing bump branch
+            git fetch origin "$EXISTING_BRANCH"
+            git checkout "$EXISTING_BRANCH"
+
+            # Re-run the bump script on top of the existing branch
+            ./scripts/bump_version.sh \
+              --pr-title "${{ steps.pr.outputs.title }}" \
+              --pr-number "${{ steps.pr.outputs.number }}" \
+              --repo "${{ github.repository }}"
+
+            git add VERSIONING.md
+            git commit -m "chore: add changelog entry for #${{ steps.pr.outputs.number }}"
+            git push origin "$EXISTING_BRANCH"
+
+            # Update the PR title to reflect the latest version
+            NEW_VERSION=$(sed -n 's/.*\*\*Current Version:\*\* \([^ ]*\).*/\1/p' VERSIONING.md)
+            gh pr edit "$EXISTING_BRANCH" \
+              --title "chore: bump version to $NEW_VERSION"
+          else
+            # Create a new bump PR
+            BRANCH="chore/version-bump-${{ steps.version.outputs.new_version }}"
+            # Delete stale remote branch from a previous failed run, if it exists
+            git push origin --delete "$BRANCH" 2>/dev/null || true
+            git checkout -b "$BRANCH"
+            git add VERSIONING.md
+            git commit -m "chore: bump version to ${{ steps.version.outputs.new_version }}"
+            git push origin "$BRANCH"
+            gh pr create \
+              --title "chore: bump version to ${{ steps.version.outputs.new_version }}" \
+              --body "Automated version bump and changelog update." \
+              --base main \
+              --head "$BRANCH"
+          fi
 
   # Phase 2: Tag and build Docker (runs when a version bump PR is merged)
   create-tag:
