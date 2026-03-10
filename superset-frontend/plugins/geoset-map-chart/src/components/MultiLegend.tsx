@@ -1,50 +1,17 @@
-/* eslint-disable no-console */
-/* eslint-disable react-hooks/rules-of-hooks */
 import { styled } from '@superset-ui/core';
 import { useState, useEffect, useRef } from 'react';
 import MapIcon from '@material-ui/icons/MapTwoTone';
 import { RGBAColor } from '../utils/colors';
+import type { LegendEntry, LegendGroup } from '../types';
 import { Swatch } from '../utils/legendSwatch';
 import { formatLegendNumber } from '../utils/formatNumber';
-import type { SizeLegend } from './Legend';
 import GraduatedIcons from './GraduatedIcons';
 import CategorySizeGrid, { CategorySizeGridItem } from './CategorySizeGrid';
 
-export type CategoryEntry = {
-  label: string;
-  fillColor: RGBAColor;
-  strokeColor: RGBAColor;
-  enabled?: boolean; // Whether category is visible (default true)
-};
-
-export type MetricEntry = {
-  lower: number;
-  upper: number;
-  startColor: RGBAColor;
-  endColor: RGBAColor;
-};
-
-export type SizeEntry = SizeLegend;
-
-export type LegendGroup = {
-  legendName: string;
-  legendParentTitle?: string;
-  sliceName: string;
-  icon?: string;
-  geometryType?: string;
-  type: 'simple' | 'categorical' | 'metric';
-  simpleStyle?: { fillColor: RGBAColor; strokeColor: RGBAColor };
-  categories?: CategoryEntry[];
-  metric?: MetricEntry;
-  sizeEntry?: SizeEntry;
-  isCombinedMetricSize?: boolean;
-  initialCollapsed?: boolean; // Whether this legend entry starts collapsed
-};
-
 export type MultiLegendProps = {
-  legendsBySlice: Record<string, LegendGroup>;
+  legendGroups: LegendGroup[];
   layerVisibility?: Record<string, boolean>;
-  onToggleLayerVisibility?: (sliceId: string) => void;
+  onToggleLayerVisibility?: (sliceIds: string[]) => void;
   // Toggle a single category within a slice
   onToggleCategory?: (sliceId: string, categoryLabel: string) => void;
 };
@@ -181,6 +148,14 @@ const CategoryRow = styled.div`
   gap: 8px;
 `;
 
+const MetricBlock = styled.div`
+  margin: 6px 0;
+`;
+
+const MetricScale = styled.div<{ indent?: boolean }>`
+  ${({ indent }) => indent && 'padding-left: 22px;'}
+`;
+
 const GradientBar = styled.div<{ gradient: string }>`
   height: 12px;
   width: 100%;
@@ -230,50 +205,248 @@ const IndeterminateCheckbox: React.FC<{
   );
 };
 
+const getDefaultColors = (
+  layer: LegendEntry,
+): { fill: RGBAColor; stroke: RGBAColor } => {
+  if (layer.simpleStyle) {
+    return {
+      fill: layer.simpleStyle.fillColor,
+      stroke: layer.simpleStyle.strokeColor,
+    };
+  }
+  if (layer.metric) {
+    return { fill: layer.metric.startColor, stroke: layer.metric.startColor };
+  }
+  if (layer.categories && layer.categories.length > 0) {
+    return {
+      fill: layer.categories[0].fillColor,
+      stroke: layer.categories[0].strokeColor,
+    };
+  }
+  return { fill: [0, 122, 135, 255], stroke: [0, 122, 135, 255] };
+};
+
+const LegendEntryContent: React.FC<{
+  sliceId: string;
+  legendEntry: LegendEntry;
+  isVisible: boolean;
+  showEntryCheckbox: boolean;
+  onToggleVisibility: () => void;
+  onToggleCategory?: (sliceId: string, categoryLabel: string) => void;
+}> = ({
+  sliceId,
+  legendEntry,
+  isVisible,
+  showEntryCheckbox,
+  onToggleVisibility,
+  onToggleCategory,
+}) => {
+  const { fill, stroke } = getDefaultColors(legendEntry);
+
+  return (
+    <div>
+      {/* SIMPLE - show icon and slice name (skip when sizeEntry handles the display) */}
+      {legendEntry.type === 'simple' &&
+        legendEntry.simpleStyle &&
+        !legendEntry.sizeEntry && (
+          <CategoryRow>
+            {showEntryCheckbox && (
+              <VisibilityCheckbox
+                type="checkbox"
+                checked={isVisible}
+                onChange={onToggleVisibility}
+              />
+            )}
+            <Swatch
+              fill={fill}
+              stroke={stroke}
+              icon={legendEntry.icon}
+              geometryType={legendEntry.geometryType}
+            />
+            <div>{legendEntry.legendName}</div>
+          </CategoryRow>
+        )}
+
+      {/* CATEGORIES — grid with size circles when sizeEntry present */}
+      {legendEntry.categories &&
+        legendEntry.categories.length > 0 &&
+        (() => {
+          const hasSizeGrid =
+            legendEntry.sizeEntry &&
+            legendEntry.sizeEntry.startSize !== legendEntry.sizeEntry.endSize;
+          const hasToggle = !!onToggleCategory;
+
+          if (hasSizeGrid) {
+            const { lower, upper } = legendEntry.sizeEntry!;
+            const gridItems: CategorySizeGridItem[] =
+              legendEntry.categories!.map((cat, i) => ({
+                key: `cat-${i}`,
+                label: cat.label,
+                fillColor: cat.fillColor,
+                enabled: cat.enabled !== false,
+              }));
+
+            return (
+              <CategorySizeGrid
+                categories={gridItems}
+                lower={lower}
+                upper={upper}
+                icon={legendEntry.icon}
+                usesPercentBounds={legendEntry.sizeEntry!.usesPercentBounds}
+                renderLabel={item => (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      opacity: item.enabled ? 1 : 0.5,
+                      paddingRight: 8,
+                    }}
+                  >
+                    {hasToggle && (
+                      <VisibilityCheckbox
+                        type="checkbox"
+                        checked={item.enabled}
+                        onChange={() => onToggleCategory(sliceId, item.label)}
+                      />
+                    )}
+                    <span>{item.label}</span>
+                  </div>
+                )}
+              />
+            );
+          }
+
+          // Standard category rows (no sizeEntry)
+          return (
+            <>
+              {legendEntry.categories!.map((cat, i) => {
+                const isEnabled = cat.enabled !== false;
+                const displayFillColor: RGBAColor = isEnabled
+                  ? cat.fillColor
+                  : [cat.fillColor[0], cat.fillColor[1], cat.fillColor[2], 100];
+
+                return (
+                  <CategoryRow key={`${sliceId}-${i}`}>
+                    {hasToggle && (
+                      <VisibilityCheckbox
+                        type="checkbox"
+                        checked={isEnabled}
+                        onChange={() => onToggleCategory(sliceId, cat.label)}
+                      />
+                    )}
+                    <Swatch
+                      fill={displayFillColor}
+                      stroke={cat.strokeColor}
+                      icon={legendEntry.icon}
+                      geometryType={legendEntry.geometryType}
+                    />
+                    <div>{cat.label}</div>
+                  </CategoryRow>
+                );
+              })}
+            </>
+          );
+        })()}
+
+      {/* COMBINED METRIC+SIZE — gradient-colored circles */}
+      {legendEntry.isCombinedMetricSize &&
+        legendEntry.metric &&
+        legendEntry.sizeEntry &&
+        legendEntry.sizeEntry.startSize !== legendEntry.sizeEntry.endSize && (
+          <GraduatedIcons
+            lower={legendEntry.sizeEntry.lower}
+            upper={legendEntry.sizeEntry.upper}
+            startColor={legendEntry.metric.startColor}
+            endColor={legendEntry.metric.endColor}
+            icon={legendEntry.icon}
+            usesPercentBounds={legendEntry.sizeEntry.usesPercentBounds}
+          />
+        )}
+
+      {/* METRIC GRADIENT — only when NOT combined */}
+      {!legendEntry.isCombinedMetricSize && legendEntry.metric && (
+        <MetricBlock>
+          {showEntryCheckbox && (
+            <CategoryRow>
+              <VisibilityCheckbox
+                type="checkbox"
+                checked={isVisible}
+                onChange={onToggleVisibility}
+              />
+              <Swatch
+                fill={fill}
+                stroke={stroke}
+                icon={legendEntry.icon}
+                geometryType={legendEntry.geometryType}
+              />
+              <div>{legendEntry.legendName}</div>
+            </CategoryRow>
+          )}
+          <MetricScale indent={showEntryCheckbox}>
+            <GradientBar
+              gradient={`linear-gradient(to right,
+                rgba(${legendEntry.metric.startColor[0]},${legendEntry.metric.startColor[1]},${legendEntry.metric.startColor[2]},${legendEntry.metric.startColor[3]}),
+                rgba(${legendEntry.metric.endColor[0]},${legendEntry.metric.endColor[1]},${legendEntry.metric.endColor[2]},${legendEntry.metric.endColor[3]})
+              )`}
+            />
+            <Bounds>
+              <div>{formatLegendNumber(legendEntry.metric.lower)}</div>
+              <div>{`${formatLegendNumber(legendEntry.metric.upper)}${legendEntry.metric.lower !== legendEntry.metric.upper ? '+' : ''}`}</div>
+            </Bounds>
+          </MetricScale>
+        </MetricBlock>
+      )}
+
+      {/* SIZE LEGEND — only when NOT combined and no category×size grid */}
+      {!legendEntry.isCombinedMetricSize &&
+        !(legendEntry.categories && legendEntry.categories.length > 0) &&
+        legendEntry.sizeEntry &&
+        legendEntry.sizeEntry.startSize !== legendEntry.sizeEntry.endSize && (
+          <GraduatedIcons
+            lower={legendEntry.sizeEntry.lower}
+            upper={legendEntry.sizeEntry.upper}
+            startColor={legendEntry.metric?.startColor}
+            endColor={legendEntry.metric?.endColor}
+            fillColor={fill}
+            icon={legendEntry.icon}
+            usesPercentBounds={legendEntry.sizeEntry.usesPercentBounds}
+          />
+        )}
+    </div>
+  );
+};
+
 export const MultiLegend: React.FC<MultiLegendProps> = ({
-  legendsBySlice,
+  legendGroups,
   layerVisibility = {},
   onToggleLayerVisibility,
   onToggleCategory,
 }) => {
-  const sliceIds = Object.keys(legendsBySlice);
-
   const [isLegendOpen, setIsLegendOpen] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [optimisticVisibility, setOptimisticVisibility] = useState<
     Record<string, boolean>
   >({});
 
-  if (sliceIds.length === 0) return null;
+  // Wipe optimistic state once real visibility lands (prevents stale batch-toggle entries)
+  useEffect(() => {
+    setOptimisticVisibility({});
+  }, [layerVisibility]);
 
-  const toggle = (id: string) => {
-    const group = legendsBySlice[id];
-    // When toggling, invert current state (respecting initialCollapsed if not yet toggled)
-    const currentlyOpen = expanded[id] ?? !group?.initialCollapsed;
-    setExpanded(prev => ({ ...prev, [id]: !currentlyOpen }));
+  if (legendGroups.length === 0) return null;
+
+  const toggle = (title: string, initialCollapsed: boolean) => {
+    const currentlyOpen = expanded[title] ?? !initialCollapsed;
+    setExpanded(prev => ({ ...prev, [title]: !currentlyOpen }));
   };
 
-  // Get default colors for title swatch based on group type
-  const getDefaultColors = (
-    group: LegendGroup,
-  ): { fill: RGBAColor; stroke: RGBAColor } => {
-    if (group.simpleStyle) {
-      return {
-        fill: group.simpleStyle.fillColor,
-        stroke: group.simpleStyle.strokeColor,
-      };
-    }
-    if (group.metric) {
-      return { fill: group.metric.startColor, stroke: group.metric.startColor };
-    }
-    if (group.categories && group.categories.length > 0) {
-      return {
-        fill: group.categories[0].fillColor,
-        stroke: group.categories[0].strokeColor,
-      };
-    }
-    return { fill: [0, 122, 135, 255], stroke: [0, 122, 135, 255] };
-  };
+  const showGroupCheckboxes = legendGroups.length > 1;
+
+  const isSliceVisible = (id: string): boolean =>
+    id in optimisticVisibility
+      ? optimisticVisibility[id]
+      : layerVisibility[id] !== false;
 
   return (
     <LegendContainer>
@@ -287,32 +460,38 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
           <LegendHeader>
             <CloseButton onClick={() => setIsLegendOpen(false)}>✕</CloseButton>
           </LegendHeader>
-          {sliceIds.map(id => {
-            const group = legendsBySlice[id];
-            // Use expanded state if user has toggled, otherwise respect initialCollapsed setting
-            const isOpen = expanded[id] ?? !group.initialCollapsed;
-            const { fill, stroke } = getDefaultColors(group);
+          {legendGroups.map(legendGroup => {
+            const { displayTitle, entries, initialCollapsed } = legendGroup;
+            const allSliceIds = entries.map(e => e.sliceId);
+            const isOpen = expanded[displayTitle] ?? !initialCollapsed;
 
-            const isVisible =
-              id in optimisticVisibility
-                ? optimisticVisibility[id]
-                : layerVisibility[id] !== false; // default to visible
+            // Visibility: checked if ANY constituent layer is visible
+            const visibleSliceIds = allSliceIds.filter(isSliceVisible);
+            const isVisible = visibleSliceIds.length > 0;
 
-            // Calculate indeterminate state for categorical layers
-            const categories = group.categories || [];
-            const enabledCount = categories.filter(
-              cat => cat.enabled !== false,
-            ).length;
+            // Indeterminate: some visible/some not, or any entry has partial categories
+            const someVisibleSomeNot =
+              visibleSliceIds.length > 0 &&
+              visibleSliceIds.length < allSliceIds.length;
+            const hasPartialCategories = entries.some(
+              ({ sliceId, legendEntry }) => {
+                const categories = legendEntry.categories || [];
+                if (categories.length === 0) return false;
+                if (!isSliceVisible(sliceId)) return false;
+                const enabledCount = categories.filter(
+                  cat => cat.enabled !== false,
+                ).length;
+                return enabledCount < categories.length;
+              },
+            );
             const isIndeterminate =
-              categories.length > 0 &&
-              enabledCount > 0 &&
-              enabledCount < categories.length;
+              someVisibleSomeNot || (isVisible && hasPartialCategories);
 
             return (
-              <Group key={id}>
+              <Group key={displayTitle}>
                 {/* Header */}
                 <Header>
-                  {sliceIds.length > 1 && (
+                  {showGroupCheckboxes && (
                     <IndeterminateCheckbox
                       checked={isVisible}
                       indeterminate={isIndeterminate}
@@ -320,179 +499,45 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
                         e.stopPropagation();
                         setOptimisticVisibility(prev => ({
                           ...prev,
-                          [id]: !isVisible,
+                          ...Object.fromEntries(
+                            allSliceIds.map(id => [id, !isVisible]),
+                          ),
                         }));
-                        onToggleLayerVisibility?.(id);
+                        onToggleLayerVisibility?.(allSliceIds);
                       }}
                     />
                   )}
-                  <TitleRow onClick={() => toggle(id)}>
-                    <LegendTitle>
-                      {group.type === 'simple'
-                        ? group.legendParentTitle
-                        : group.legendName}
-                    </LegendTitle>
+                  <TitleRow
+                    onClick={() => toggle(displayTitle, initialCollapsed)}
+                  >
+                    <LegendTitle>{displayTitle}</LegendTitle>
                     <ExpandIcon>{isOpen ? '▾' : '▸'}</ExpandIcon>
                   </TitleRow>
                 </Header>
 
-                {/* Content */}
+                {/* Content — render each entry's content */}
                 {isOpen && (
                   <Content>
-                    {/* SIMPLE - show icon and slice name (skip when sizeEntry handles the display) */}
-                    {group.type === 'simple' &&
-                      group.simpleStyle &&
-                      !group.sizeEntry && (
-                        <CategoryRow>
-                          <Swatch
-                            fill={fill}
-                            stroke={stroke}
-                            icon={group.icon}
-                            geometryType={group.geometryType}
-                          />
-                          <div>{group.legendName}</div>
-                        </CategoryRow>
-                      )}
-
-                    {/* CATEGORIES — grid with size circles when sizeEntry present */}
-                    {group.categories &&
-                      group.categories.length > 0 &&
-                      (() => {
-                        const hasSizeGrid =
-                          group.sizeEntry &&
-                          group.sizeEntry.startSize !== group.sizeEntry.endSize;
-                        const hasToggle = !!onToggleCategory;
-
-                        if (hasSizeGrid) {
-                          const { lower, upper } = group.sizeEntry!;
-                          const gridItems: CategorySizeGridItem[] =
-                            group.categories!.map((cat, i) => ({
-                              key: `cat-${i}`,
-                              label: cat.label,
-                              fillColor: cat.fillColor,
-                              enabled: cat.enabled !== false,
+                    {entries.map(({ sliceId, legendEntry }) => {
+                      const entryVisible = isSliceVisible(sliceId);
+                      return (
+                        <LegendEntryContent
+                          key={sliceId}
+                          sliceId={sliceId}
+                          legendEntry={legendEntry}
+                          isVisible={entryVisible}
+                          showEntryCheckbox={entries.length > 1}
+                          onToggleVisibility={() => {
+                            setOptimisticVisibility(prev => ({
+                              ...prev,
+                              [sliceId]: !entryVisible,
                             }));
-
-                          return (
-                            <CategorySizeGrid
-                              categories={gridItems}
-                              lower={lower}
-                              upper={upper}
-                              icon={group.icon}
-                              usesPercentBounds={
-                                group.sizeEntry!.usesPercentBounds
-                              }
-                              renderLabel={item => (
-                                <div
-                                  style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 6,
-                                    opacity: item.enabled ? 1 : 0.5,
-                                    paddingRight: 8,
-                                  }}
-                                >
-                                  {hasToggle && (
-                                    <VisibilityCheckbox
-                                      type="checkbox"
-                                      checked={item.enabled}
-                                      onChange={() =>
-                                        onToggleCategory(id, item.label)
-                                      }
-                                    />
-                                  )}
-                                  <span>{item.label}</span>
-                                </div>
-                              )}
-                            />
-                          );
-                        }
-
-                        // Standard category rows (no sizeEntry)
-                        return (
-                          <>
-                            {group.categories!.map((cat, i) => {
-                              const isEnabled = cat.enabled !== false;
-                              const displayFillColor: RGBAColor = isEnabled
-                                ? cat.fillColor
-                                : [
-                                    cat.fillColor[0],
-                                    cat.fillColor[1],
-                                    cat.fillColor[2],
-                                    100,
-                                  ];
-
-                              return (
-                                <CategoryRow key={i}>
-                                  {hasToggle && (
-                                    <VisibilityCheckbox
-                                      type="checkbox"
-                                      checked={isEnabled}
-                                      onChange={() =>
-                                        onToggleCategory(id, cat.label)
-                                      }
-                                    />
-                                  )}
-                                  <Swatch
-                                    fill={displayFillColor}
-                                    stroke={cat.strokeColor}
-                                    icon={group.icon}
-                                    geometryType={group.geometryType}
-                                  />
-                                  <div>{cat.label}</div>
-                                </CategoryRow>
-                              );
-                            })}
-                          </>
-                        );
-                      })()}
-
-                    {/* COMBINED METRIC+SIZE — 4 gradient-colored circles */}
-                    {group.isCombinedMetricSize &&
-                      group.metric &&
-                      group.sizeEntry &&
-                      group.sizeEntry.startSize !== group.sizeEntry.endSize && (
-                        <GraduatedIcons
-                          lower={group.sizeEntry.lower}
-                          upper={group.sizeEntry.upper}
-                          startColor={group.metric.startColor}
-                          endColor={group.metric.endColor}
-                          icon={group.icon}
-                          usesPercentBounds={group.sizeEntry.usesPercentBounds}
+                            onToggleLayerVisibility?.([sliceId]);
+                          }}
+                          onToggleCategory={onToggleCategory}
                         />
-                      )}
-
-                    {/* METRIC GRADIENT — only when NOT combined */}
-                    {!group.isCombinedMetricSize && group.metric && (
-                      <>
-                        <GradientBar
-                          gradient={`linear-gradient(to right,
-                            rgba(${group.metric.startColor[0]},${group.metric.startColor[1]},${group.metric.startColor[2]},${group.metric.startColor[3]}),
-                            rgba(${group.metric.endColor[0]},${group.metric.endColor[1]},${group.metric.endColor[2]},${group.metric.endColor[3]})
-                          )`}
-                        />
-                        <Bounds>
-                          <div>{formatLegendNumber(group.metric.lower)}</div>
-                          <div>{`${formatLegendNumber(group.metric.upper)}${group.metric.lower !== group.metric.upper ? '+' : ''}`}</div>
-                        </Bounds>
-                      </>
-                    )}
-
-                    {/* SIZE LEGEND — only when NOT combined and no category×size grid */}
-                    {!group.isCombinedMetricSize &&
-                      !(group.categories && group.categories.length > 0) &&
-                      group.sizeEntry &&
-                      group.sizeEntry.startSize !== group.sizeEntry.endSize && (
-                        <GraduatedIcons
-                          lower={group.sizeEntry.lower}
-                          upper={group.sizeEntry.upper}
-                          startColor={group.metric?.startColor}
-                          endColor={group.metric?.endColor}
-                          fillColor={fill}
-                          icon={group.icon}
-                          usesPercentBounds={group.sizeEntry.usesPercentBounds}
-                        />
-                      )}
+                      );
+                    })}
                   </Content>
                 )}
               </Group>

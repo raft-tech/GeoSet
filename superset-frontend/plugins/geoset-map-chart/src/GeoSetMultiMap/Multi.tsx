@@ -44,7 +44,9 @@ import { TooltipProps } from '../components/Tooltip';
 import { LayerState } from '../types';
 import buildGeoSetMapLayerQuery from '../buildQuery';
 import transformGeoSetMapLayerProps from '../transformProps';
-import MultiLegend, { LegendGroup } from '../components/MultiLegend';
+import MultiLegend from '../components/MultiLegend';
+import type { CategoryEntry, LegendEntry } from '../types';
+import { useGroupedLegend } from '../utils/hooks';
 import MapControls from '../components/MapControls';
 import { CategoryState, MetricLegend, RGBAColor } from '../utils/colors';
 import { getGeometryType } from '../utils/dataProcessing';
@@ -52,6 +54,16 @@ import { fetchMapboxApiKey, getCachedMapboxApiKey } from '../utils/mapboxApi';
 import { multiChartMigration } from '../utils/migrationApi';
 import ClickPopupBox, { ClickedFeatureInfo } from '../components/ClickPopupBox';
 import { setLiveViewport } from '../utils/liveViewportStore';
+// Apply enabled state to legend categories based on visibility map
+const applyCategoryEnabledState = (
+  categories: CategoryEntry[] | undefined,
+  visibility: Record<string, boolean>,
+): CategoryEntry[] | undefined =>
+  categories?.map(cat => ({
+    ...cat,
+    enabled: visibility[cat.label] !== false,
+  }));
+
 // Utility to convert snake_case or camelCase to Title Case
 const toTitleCase = (str: string) =>
   str
@@ -104,7 +116,7 @@ export type DeckMultiProps = {
 type SubsliceLayerEntry = {
   sliceId: number;
   layerStates: LayerState[];
-  legendGroup: LegendGroup;
+  legendEntry: LegendEntry;
   features: JsonObject[];
   autozoom: boolean;
   // Store data needed to rebuild layer when category visibility changes
@@ -357,7 +369,7 @@ const DeckMulti = (props: DeckMultiProps) => {
                   }
                 })();
 
-                // Build the LegendGroup based on what coloring mode is active
+                // Build the LegendEntry based on what coloring mode is active
                 const { categories, visualConfig } = transformedProps;
                 const {
                   dimension,
@@ -383,14 +395,14 @@ const DeckMulti = (props: DeckMultiProps) => {
                 const buildSizeEntry = () =>
                   sizeLegend ? { ...sizeLegend } : undefined;
 
-                let legendGroup: LegendGroup;
+                let legendEntry: LegendEntry;
 
                 if (hasMetric) {
                   // Metric-based coloring (gradient)
                   // Use legend.title from JSON for legend header
                   const ml = metricLegend as MetricLegend;
                   const isCombined = isCombinedMetricSize === true;
-                  legendGroup = {
+                  legendEntry = {
                     legendName: legendTitle || legendName,
                     sliceName: subslice.slice_name,
                     icon,
@@ -419,7 +431,7 @@ const DeckMulti = (props: DeckMultiProps) => {
                       strokeColor: visualConfig.strokeColor as RGBAColor,
                     }));
 
-                  legendGroup = {
+                  legendEntry = {
                     legendName: legendTitle || legendName,
                     sliceName: subslice.slice_name,
                     icon,
@@ -436,7 +448,7 @@ const DeckMulti = (props: DeckMultiProps) => {
                   const fillColor = visualConfig.fillColor as RGBAColor;
                   const strokeColor = visualConfig.strokeColor as RGBAColor;
 
-                  legendGroup = {
+                  legendEntry = {
                     legendName: legendNameFromJson || legendName,
                     legendParentTitle: legendTitle || subslice.slice_name,
                     sliceName: subslice.slice_name,
@@ -476,7 +488,7 @@ const DeckMulti = (props: DeckMultiProps) => {
                 return {
                   sliceId: subsliceCopy.slice_id,
                   layerStates: newLayerStates,
-                  legendGroup,
+                  legendEntry,
                   features: layerFeatures,
                   autozoom: sliceAutozoom,
                   // Store data needed to rebuild layer when category visibility changes
@@ -557,11 +569,11 @@ const DeckMulti = (props: DeckMultiProps) => {
         setCategoryVisibility(
           Object.fromEntries(
             hiddenLayers
-              .filter(e => e.legendGroup.categories?.length)
+              .filter(e => e.legendEntry.categories?.length)
               .map(e => [
                 String(e.sliceId),
                 Object.fromEntries(
-                  e.legendGroup.categories!.map(c => [c.label, false]),
+                  e.legendEntry.categories!.map(c => [c.label, false]),
                 ),
               ]),
           ),
@@ -572,49 +584,56 @@ const DeckMulti = (props: DeckMultiProps) => {
 
   const { height, width } = props;
 
-  // Toggle layer visibility callback
+  // Toggle layer visibility callback (supports legend groups with multiple sliceIds)
   const handleToggleLayerVisibility = useCallback(
-    (sliceId: string) => {
-      const entry = subSlicesLayers.find(e => String(e.sliceId) === sliceId);
-      const isCurrentlyVisible = layerVisibility[sliceId] !== false;
+    (sliceIds: string[]) => {
+      // If ANY are currently visible → turn all OFF; if NONE visible → turn all ON
+      const isGroupVisible = sliceIds.some(id => layerVisibility[id] !== false);
 
-      const isCategoricalLayer =
-        entry?.legendGroup.type === 'categorical' &&
-        entry.legendGroup.categories;
+      const buildCategoryMap = (
+        categories: CategoryEntry[],
+        value: boolean,
+      ): Record<string, boolean> =>
+        Object.fromEntries(categories.map(c => [c.label, value]));
 
-      // If turning OFF the layer, also turn off all category checkboxes
-      if (isCurrentlyVisible && isCategoricalLayer) {
-        const allCategoriesOff: Record<string, boolean> = {};
-        entry.legendGroup.categories!.forEach(cat => {
-          allCategoriesOff[cat.label] = false;
-        });
-        setCategoryVisibility(prev => ({
-          ...prev,
-          [sliceId]: allCategoriesOff,
-        }));
-      } else if (!isCurrentlyVisible && isCategoricalLayer) {
-        // If trying to turn ON, check if any category is enabled
-        // If all categories were explicitly disabled, re-enable them all
-        const sliceCatVisibility = categoryVisibility[sliceId] || {};
-        const anyEnabled = entry.legendGroup.categories!.some(
-          cat => sliceCatVisibility[cat.label] !== false,
-        );
-        // If all categories are off, re-enable them all when turning layer on
-        if (!anyEnabled && Object.keys(sliceCatVisibility).length > 0) {
-          const allCategoriesOn: Record<string, boolean> = {};
-          entry.legendGroup.categories!.forEach(cat => {
-            allCategoriesOn[cat.label] = true;
-          });
-          setCategoryVisibility(prev => ({
-            ...prev,
-            [sliceId]: allCategoriesOn,
-          }));
+      const catUpdates: Record<string, Record<string, boolean>> = {};
+
+      sliceIds.forEach(sliceId => {
+        const entry = subSlicesLayers.find(e => String(e.sliceId) === sliceId);
+        const isCategoricalLayer =
+          entry?.legendEntry.type === 'categorical' &&
+          entry.legendEntry.categories;
+
+        if (isCategoricalLayer) {
+          if (isGroupVisible) {
+            // Turning OFF — disable all categories
+            catUpdates[sliceId] = buildCategoryMap(
+              entry.legendEntry.categories!,
+              false,
+            );
+          } else {
+            // Turning ON — re-enable categories if all were off
+            const sliceCatVisibility = categoryVisibility[sliceId] || {};
+            const anyEnabled = entry.legendEntry.categories!.some(
+              cat => sliceCatVisibility[cat.label] !== false,
+            );
+            if (!anyEnabled && Object.keys(sliceCatVisibility).length > 0) {
+              catUpdates[sliceId] = buildCategoryMap(
+                entry.legendEntry.categories!,
+                true,
+              );
+            }
+          }
         }
+      });
+
+      if (Object.keys(catUpdates).length > 0) {
+        setCategoryVisibility(prev => ({ ...prev, ...catUpdates }));
       }
 
       setLayerVisibility(prev => ({
         ...prev,
-        [sliceId]: !isCurrentlyVisible,
+        ...Object.fromEntries(sliceIds.map(id => [id, !isGroupVisible])),
       }));
     },
     [subSlicesLayers, categoryVisibility, layerVisibility],
@@ -659,7 +678,7 @@ const DeckMulti = (props: DeckMultiProps) => {
         }
 
         // Skip if not a categorical layer
-        if (entry.legendGroup.type !== 'categorical') {
+        if (entry.legendEntry.type !== 'categorical') {
           return entry;
         }
 
@@ -706,12 +725,10 @@ const DeckMulti = (props: DeckMultiProps) => {
 
         anyChanged = true;
 
-        // Update legendGroup categories with enabled state
-        const updatedLegendCategories = entry.legendGroup.categories?.map(
-          cat => ({
-            ...cat,
-            enabled: sliceCatVisibility[cat.label] !== false,
-          }),
+        // Update legendEntry categories with enabled state
+        const updatedLegendCategories = applyCategoryEnabledState(
+          entry.legendEntry.categories,
+          sliceCatVisibility,
         );
 
         return {
@@ -721,8 +738,8 @@ const DeckMulti = (props: DeckMultiProps) => {
             ...entry.transformedProps,
             categories: updatedCategories,
           },
-          legendGroup: {
-            ...entry.legendGroup,
+          legendEntry: {
+            ...entry.legendEntry,
             categories: updatedLegendCategories,
           },
         };
@@ -741,7 +758,7 @@ const DeckMulti = (props: DeckMultiProps) => {
       const updates: Record<string, boolean> = {};
 
       subSlicesLayers.forEach(entry => {
-        const { type, categories } = entry.legendGroup;
+        const { type, categories } = entry.legendEntry;
 
         // Only apply to categorical layers
         if (type !== 'categorical' || !categories) {
@@ -802,29 +819,29 @@ const DeckMulti = (props: DeckMultiProps) => {
   });
 
   // Build legendsBySlice for MultiLegend component, with category enabled state applied
-  const legendsBySlice: Record<string, LegendGroup> = useMemo(
+  const legendsBySlice: Record<string, LegendEntry> = useMemo(
     () =>
       Object.fromEntries(
         sortedLayers.map(entry => {
           const sliceId = String(entry.sliceId);
-          const group = entry.legendGroup;
+          const { legendEntry } = entry;
 
           // If no categories, return as-is
-          if (!group.categories) {
-            return [sliceId, group];
+          if (!legendEntry.categories) {
+            return [sliceId, legendEntry];
           }
 
           // Apply category visibility state
           const sliceCatVisibility = categoryVisibility[sliceId] || {};
-          const updatedCategories = group.categories.map(cat => ({
-            ...cat,
-            enabled: sliceCatVisibility[cat.label] !== false,
-          }));
+          const updatedCategories = applyCategoryEnabledState(
+            legendEntry.categories,
+            sliceCatVisibility,
+          )!;
 
           return [
             sliceId,
             {
-              ...group,
+              ...legendEntry,
               categories: updatedCategories,
             },
           ];
@@ -832,6 +849,9 @@ const DeckMulti = (props: DeckMultiProps) => {
       ),
     [sortedLayers, categoryVisibility],
   );
+
+  // Group legend entries that share the same display title
+  const legendGroups = useGroupedLegend(legendsBySlice);
 
   // Clear cached autozoom when static viewport is enabled so autozoom
   // recalculates fresh if the user toggles static back off
@@ -1030,7 +1050,7 @@ const DeckMulti = (props: DeckMultiProps) => {
         onEmptyClick={handleClosePopup}
       />
       <MultiLegend
-        legendsBySlice={legendsBySlice}
+        legendGroups={legendGroups}
         layerVisibility={layerVisibility}
         onToggleLayerVisibility={handleToggleLayerVisibility}
         onToggleCategory={handleToggleCategory}
