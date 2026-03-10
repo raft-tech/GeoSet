@@ -103,7 +103,7 @@ Applies a single style to all features. Used when you don't need per-category or
 | `lineStyle`   | string         | Line rendering style: `"solid"`, `"dashed"`, or `"dotted"`. Optional, defaults to `null`.                                    |
 | `fillPattern` | string         | `"solid"` (required)                                                                                                         |
 | `pointType`   | string         | Icon name for point layers (e.g., `"circle"`, `"point"`, or any registered SVG icon). Optional, defaults to `null` (circle). |
-| `pointSize`   | integer        | Static size of point icons in pixels (1–50). Optional, defaults to `null`.                                                   |
+| `pointSize`   | integer        | Static size of point icons in pixels (1–100). Optional, defaults to `null`.                                                  |
 
 ### `colorByCategory`
 

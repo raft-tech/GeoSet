@@ -76,7 +76,7 @@ class GlobalColoringSchema(Schema):
     point_size = fields.Integer(
         load_default=None,
         data_key="pointSize",
-        validate=validate.Range(min=1, max=50),
+        validate=validate.Range(min=1, max=100),
     )
 
 
