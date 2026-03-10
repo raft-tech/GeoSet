@@ -1,0 +1,70 @@
+slice_name: Wildfire Intensity By Incident Size
+description: NIFC wildfire incident locations with intensity by incident size
+certified_by: null
+certification_details: null
+viz_type: deck_geoset_map_layer
+params:
+  datasource: 46__table
+  viz_type: deck_geoset_map_layer
+  mapbox_style: mapbox://styles/mapbox/light-v9
+  autozoom: true
+  geojson: origin_coordinate
+  row_limit: 10000
+  geoJsonLayer: Point
+  clusterMaxZoom: 14
+  clusterMinPoints: 2
+  clusterRadius: 40
+  adhoc_filters:
+  - clause: WHERE
+    subject: fire_discovery_time
+    operator: TEMPORAL_RANGE
+    comparator: No filter
+    expressionType: SIMPLE
+  minMaxZoomSlider:
+  - 0
+  - 22
+  hoverDataColumns:
+  - label: Incident Name
+    sqlExpression: incident_name
+    expressionType: SQL
+  - label: Incident Size (acres)
+    sqlExpression: incident_size
+    expressionType: SQL
+  - label: State
+    sqlExpression: origin_state_code
+    expressionType: SQL
+  featureInfoColumns:
+  - label: Incident Name
+    sqlExpression: incident_name
+    expressionType: SQL
+  - label: Fire Cause
+    sqlExpression: fire_cause
+    expressionType: SQL
+  - label: Incident Size (acres)
+    sqlExpression: incident_size
+    expressionType: SQL
+  - label: State
+    sqlExpression: origin_state_code
+    expressionType: SQL
+  - label: County
+    sqlExpression: origin_county_name
+    expressionType: SQL
+  - label: Discovery Time
+    sqlExpression: fire_discovery_time
+    expressionType: SQL
+  geojsonConfig: "{\n  \"globalColoring\": {\n    \"fillColor\": [255, 69, 0, 200],\n\
+    \    \"strokeColor\": [0, 0, 0, 255],\n    \"strokeWidth\": 0,\n    \"fillPattern\"\
+    : \"solid\",\n    \"pointType\": \"point\"\n  },\n  \"colorByValue\": {\n    \"\
+    breakpoints\": [],\n    \"endColor\": [255, 20, 20, 255],\n    \"lowerBound\"\
+    : 10,\n    \"startColor\": [255, 235, 0, 255],\n    \"upperBound\": 300,\n   \
+    \ \"valueColumn\": \"incident_size\"\n  },\n  \"pointSize\": {\n    \"valueColumn\"\
+    : \"incident_size\",\n    \"startSize\": 3,\n    \"endSize\": 16,\n    \"lowerBound\"\
+    : 3,\n    \"upperBound\": 500\n  },\n  \"legend\": {\n    \"title\": \"NIFC Wildfires\
+    \ Intensity By Acres\",\n    \"name\": null\n  }\n}"
+  schema_version: 4
+  extra_form_data: {}
+  dashboards: []
+cache_timeout: null
+uuid: 58fc94be-9ba7-422a-845b-7560f2995fa9
+version: 1.0.0
+dataset_uuid: 76d55c98-dfec-4fb9-819e-05a673da945b
