@@ -36,6 +36,7 @@ import {
   RGBAColor,
   toRGBA,
   resolvePercentOrNumber,
+  isPercentString,
 } from './utils/colors';
 import { GeoJsonFeature } from './types';
 import {
@@ -231,8 +232,7 @@ export default function transformProps(chartProps: ChartProps) {
         const noGradient = lower === upper;
 
         const hasMetricPctBound =
-          (typeof lowerBound === 'string' && lowerBound.endsWith('%')) ||
-          (typeof upperBound === 'string' && upperBound.endsWith('%'));
+          isPercentString(lowerBound) || isPercentString(upperBound);
 
         metricLegend = {
           min: lower,
@@ -298,8 +298,7 @@ export default function transformProps(chartProps: ChartProps) {
         [sizeLower, sizeUpper],
       );
       const hasPctBound =
-        (typeof lowerBound === 'string' && lowerBound.endsWith('%')) ||
-        (typeof upperBound === 'string' && upperBound.endsWith('%'));
+        isPercentString(lowerBound) || isPercentString(upperBound);
       sizeLegend = {
         lower: sizeLower,
         upper: sizeUpper,
