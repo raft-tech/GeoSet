@@ -5,6 +5,8 @@ import { RGBAColor } from '../utils/colors';
 import type { LegendEntry, LegendGroup } from '../types';
 import { Swatch } from '../utils/legendSwatch';
 import { formatLegendNumber } from '../utils/formatNumber';
+import GraduatedIcons from './GraduatedIcons';
+import CategorySizeGrid, { CategorySizeGridItem } from './CategorySizeGrid';
 
 export type MultiLegendProps = {
   legendGroups: LegendGroup[];
@@ -244,59 +246,127 @@ const LegendEntryContent: React.FC<{
 
   return (
     <div>
-      {/* SIMPLE - show icon and slice name */}
-      {legendEntry.type === 'simple' && legendEntry.simpleStyle && (
-        <CategoryRow>
-          {showEntryCheckbox && (
-            <VisibilityCheckbox
-              type="checkbox"
-              checked={isVisible}
-              onChange={onToggleVisibility}
+      {/* SIMPLE - show icon and slice name (skip when sizeEntry handles the display) */}
+      {legendEntry.type === 'simple' &&
+        legendEntry.simpleStyle &&
+        !legendEntry.sizeEntry && (
+          <CategoryRow>
+            {showEntryCheckbox && (
+              <VisibilityCheckbox
+                type="checkbox"
+                checked={isVisible}
+                onChange={onToggleVisibility}
+              />
+            )}
+            <Swatch
+              fill={fill}
+              stroke={stroke}
+              icon={legendEntry.icon}
+              geometryType={legendEntry.geometryType}
             />
-          )}
-          <Swatch
-            fill={fill}
-            stroke={stroke}
-            icon={legendEntry.icon}
-            geometryType={legendEntry.geometryType}
-          />
-          <div>{legendEntry.legendName}</div>
-        </CategoryRow>
-      )}
+            <div>{legendEntry.legendName}</div>
+          </CategoryRow>
+        )}
 
-      {/* CATEGORIES */}
+      {/* CATEGORIES — grid with size circles when sizeEntry present */}
       {legendEntry.categories &&
         legendEntry.categories.length > 0 &&
-        legendEntry.categories.map((cat, i) => {
-          const isEnabled = cat.enabled !== false;
+        (() => {
+          const hasSizeGrid =
+            legendEntry.sizeEntry &&
+            legendEntry.sizeEntry.startSize !== legendEntry.sizeEntry.endSize;
           const hasToggle = !!onToggleCategory;
 
-          const displayFillColor: RGBAColor = isEnabled
-            ? cat.fillColor
-            : [cat.fillColor[0], cat.fillColor[1], cat.fillColor[2], 100];
+          if (hasSizeGrid) {
+            const { lower, upper } = legendEntry.sizeEntry!;
+            const gridItems: CategorySizeGridItem[] =
+              legendEntry.categories!.map((cat, i) => ({
+                key: `cat-${i}`,
+                label: cat.label,
+                fillColor: cat.fillColor,
+                enabled: cat.enabled !== false,
+              }));
 
-          return (
-            <CategoryRow key={`${sliceId}-${i}`}>
-              {hasToggle && (
-                <VisibilityCheckbox
-                  type="checkbox"
-                  checked={isEnabled}
-                  onChange={() => onToggleCategory(sliceId, cat.label)}
-                />
-              )}
-              <Swatch
-                fill={displayFillColor}
-                stroke={cat.strokeColor}
+            return (
+              <CategorySizeGrid
+                categories={gridItems}
+                lower={lower}
+                upper={upper}
                 icon={legendEntry.icon}
-                geometryType={legendEntry.geometryType}
+                usesPercentBounds={legendEntry.sizeEntry!.usesPercentBounds}
+                renderLabel={item => (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      opacity: item.enabled ? 1 : 0.5,
+                      paddingRight: 8,
+                    }}
+                  >
+                    {hasToggle && (
+                      <VisibilityCheckbox
+                        type="checkbox"
+                        checked={item.enabled}
+                        onChange={() => onToggleCategory(sliceId, item.label)}
+                      />
+                    )}
+                    <span>{item.label}</span>
+                  </div>
+                )}
               />
-              <div>{cat.label}</div>
-            </CategoryRow>
-          );
-        })}
+            );
+          }
 
-      {/* METRIC GRADIENT */}
-      {legendEntry.metric && (
+          // Standard category rows (no sizeEntry)
+          return (
+            <>
+              {legendEntry.categories!.map((cat, i) => {
+                const isEnabled = cat.enabled !== false;
+                const displayFillColor: RGBAColor = isEnabled
+                  ? cat.fillColor
+                  : [cat.fillColor[0], cat.fillColor[1], cat.fillColor[2], 100];
+
+                return (
+                  <CategoryRow key={`${sliceId}-${i}`}>
+                    {hasToggle && (
+                      <VisibilityCheckbox
+                        type="checkbox"
+                        checked={isEnabled}
+                        onChange={() => onToggleCategory(sliceId, cat.label)}
+                      />
+                    )}
+                    <Swatch
+                      fill={displayFillColor}
+                      stroke={cat.strokeColor}
+                      icon={legendEntry.icon}
+                      geometryType={legendEntry.geometryType}
+                    />
+                    <div>{cat.label}</div>
+                  </CategoryRow>
+                );
+              })}
+            </>
+          );
+        })()}
+
+      {/* COMBINED METRIC+SIZE — gradient-colored circles */}
+      {legendEntry.isCombinedMetricSize &&
+        legendEntry.metric &&
+        legendEntry.sizeEntry &&
+        legendEntry.sizeEntry.startSize !== legendEntry.sizeEntry.endSize && (
+          <GraduatedIcons
+            lower={legendEntry.sizeEntry.lower}
+            upper={legendEntry.sizeEntry.upper}
+            startColor={legendEntry.metric.startColor}
+            endColor={legendEntry.metric.endColor}
+            icon={legendEntry.icon}
+            usesPercentBounds={legendEntry.sizeEntry.usesPercentBounds}
+          />
+        )}
+
+      {/* METRIC GRADIENT — only when NOT combined */}
+      {!legendEntry.isCombinedMetricSize && legendEntry.metric && (
         <MetricBlock>
           {showEntryCheckbox && (
             <CategoryRow>
@@ -328,6 +398,22 @@ const LegendEntryContent: React.FC<{
           </MetricScale>
         </MetricBlock>
       )}
+
+      {/* SIZE LEGEND — only when NOT combined and no category×size grid */}
+      {!legendEntry.isCombinedMetricSize &&
+        !(legendEntry.categories && legendEntry.categories.length > 0) &&
+        legendEntry.sizeEntry &&
+        legendEntry.sizeEntry.startSize !== legendEntry.sizeEntry.endSize && (
+          <GraduatedIcons
+            lower={legendEntry.sizeEntry.lower}
+            upper={legendEntry.sizeEntry.upper}
+            startColor={legendEntry.metric?.startColor}
+            endColor={legendEntry.metric?.endColor}
+            fillColor={fill}
+            icon={legendEntry.icon}
+            usesPercentBounds={legendEntry.sizeEntry.usesPercentBounds}
+          />
+        )}
     </div>
   );
 };

@@ -54,7 +54,7 @@ import { commonLayerProps } from '../common';
 import TooltipRow from '../../TooltipRow';
 import { calculateAutozoomViewport, Viewport } from '../../utils/fitViewport';
 import { TooltipProps } from '../../components/Tooltip';
-import Legend from '../../components/Legend';
+import Legend, { SizeLegend } from '../../components/Legend';
 import MapControls from '../../components/MapControls';
 import { GeoJsonFeature, LayerState } from '../../types';
 import { useDebouncedValue } from '../../utils/hooks';
@@ -411,6 +411,10 @@ export function getLayer(
           let iconName = pointType.replace('-icon', '');
           if (!iconName) iconName = 'circle';
 
+          const hasDynamicSize = sortedFeatures.some(
+            f => (f as any).sizeValue != null,
+          );
+
           return new IconLayer({
             id: `icon-layer-${fd.slice_id}-${sortedFeatures.length}`,
             data: sortedFeatures as Feature<Geometry, GeoJsonProperties>[],
@@ -426,13 +430,16 @@ export function getLayer(
                 anchorY: 128,
               };
             },
-            getSize: () => iconSize,
+            getSize: hasDynamicSize
+              ? (f: any) => (f as any).sizeValue ?? iconSize
+              : () => iconSize,
             sizeScale: 2,
             sizeUnits: 'pixels',
             updateTriggers: {
               getIcon: [iconName, fillColorArray, sortedFeatures.length],
               getIconColor: [sortedFeatures.length],
               getPosition: [sortedFeatures.length],
+              getSize: [iconSize, hasDynamicSize],
             },
             loadOptions: {
               imagebitmap: {
@@ -444,6 +451,10 @@ export function getLayer(
           });
         }
 
+        const hasDynamicRadius = sortedFeatures.some(
+          f => (f as any).sizeValue != null,
+        );
+
         return new ScatterplotLayer({
           id: `point-layer-${fd.slice_id}`,
           data: sortedFeatures as Feature<Geometry, GeoJsonProperties>[],
@@ -454,11 +465,16 @@ export function getLayer(
           getFillColor: (feature: any) => feature.color || fillColorArray,
           getLineColor: () => strokeColorArray,
           getLineWidth: lineWidth ?? (fd.lineWidth || 1),
-          getRadius: () => iconSize,
+          getRadius: hasDynamicRadius
+            ? (f: any) => (f as any).sizeValue ?? iconSize
+            : () => iconSize,
           radiusUnits: 'pixels',
           radiusMinPixels: 1,
-          radiusMaxPixels: 50,
+          radiusMaxPixels: 200,
           radiusScale: 1,
+          updateTriggers: {
+            getRadius: [iconSize, hasDynamicRadius],
+          },
           ...baseLayerProps,
         });
       }
@@ -708,6 +724,8 @@ export type DeckGLGeoJsonProps = {
     categoryColorMapping?: {};
     strokeColorMapping?: {};
     metricLegend?: MetricLegend | null;
+    sizeLegend?: SizeLegend | null;
+    isCombinedMetricSize?: boolean;
   };
 };
 
@@ -1195,6 +1213,9 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
         forceCategorical
         categories={categories}
         metricLegend={metricLegend}
+        sizeLegend={propVisualConfig?.sizeLegend}
+        fillColor={fillColorObj}
+        isCombinedMetricSize={propVisualConfig?.isCombinedMetricSize}
         format={props.formData.legend_format}
         position="tl"
         showSingleCategory={showSingleCategory}

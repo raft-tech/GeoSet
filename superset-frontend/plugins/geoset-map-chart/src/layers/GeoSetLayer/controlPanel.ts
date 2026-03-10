@@ -55,6 +55,7 @@ const defaultGeojsonConfig = JSON.stringify(
       strokeWidth: 2,
       fillPattern: 'solid',
     },
+    pointSize: 6,
     // colorByCategory: {
     //   dimension: 'category_column',
     //   categoricalColors: [

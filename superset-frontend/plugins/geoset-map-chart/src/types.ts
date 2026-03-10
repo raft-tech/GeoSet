@@ -21,6 +21,7 @@
 
 import { Layer } from '@deck.gl/core';
 import type { RGBAColor } from './utils/colors';
+import type { SizeLegend } from './components/Legend';
 
 export type Range = [number, number];
 export type Point = [number, number];
@@ -37,6 +38,7 @@ export interface GeoJsonFeature {
   properties: { [key: string]: any };
   extraProps?: { [key: string]: any };
   color?: number[]; // optionally added by addColor
+  sizeValue?: number; // pre-computed pixel size for dynamic point sizing
 }
 
 export function toHex(color: ColorType): string {
@@ -97,6 +99,8 @@ export type LegendEntry = {
   simpleStyle?: { fillColor: RGBAColor; strokeColor: RGBAColor };
   categories?: CategoryEntry[];
   metric?: MetricEntry;
+  sizeEntry?: SizeLegend;
+  isCombinedMetricSize?: boolean;
   initialCollapsed?: boolean; // Whether this legend entry starts collapsed
 };
 
