@@ -38,20 +38,20 @@ Includes a native dashboard filter for **Fire Cause**.
 
 ## Running the Demo Stack
 
-The demo uses a separate Docker Compose file (`docker-compose-geoset.yml`) that is fully independent from the main `docker-compose.yml`. It runs on different ports and separate volumes so the two stacks don't interfere.
+The demo stack uses the `docker-compose.yml` at the project root. It includes PostGIS and a one-shot data ingest container that loads the sample datasets automatically.
 
 ```bash
 # Start the demo stack
-docker compose -f docker-compose-geoset.yml up
+docker compose up
 
 # Start with a full rebuild
-docker compose -f docker-compose-geoset.yml up --build
+docker compose up --build
 
 # Stop
-docker compose -f docker-compose-geoset.yml down
+docker compose down
 
 # Stop and wipe all data (full reset)
-docker compose -f docker-compose-geoset.yml down -v
+docker compose down -v
 ```
 
 Access the demo at **http://localhost:9001** with credentials `admin` / `admin`.
@@ -106,7 +106,7 @@ Multi Map charts reference sub-layer charts by integer ID in `deck_slices`. Sinc
 ### 4. Rebuild
 
 ```bash
-docker compose -f docker-compose-geoset.yml up --build
+docker compose up --build
 ```
 
 The importer walks the entire `geoset_configs/` directory — all dashboards, charts, and datasets are picked up automatically.

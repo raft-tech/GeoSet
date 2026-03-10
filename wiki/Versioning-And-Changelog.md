@@ -2,36 +2,32 @@
 
 ## Current Version
 
-GeoSet is currently at version **1.0.0**, based on Apache Superset 6.0.0.
+GeoSet is currently at version **6.0.35**, based on Apache Superset 6.0.0.
+
+> GeoSet aligns with Apache Superset's major and minor version. For example, when Superset releases version 6.1.0, GeoSet will sync with Superset, and GeoSet's version will be set to 6.1.0. However, the GeoSet and Superset patch version numbers (the third value) increment independently. Our patch version is simply a counter of how many merge requests GeoSet has merged since the last sync with upstream Superset.
 
 ## Versioning Policy
 
-GeoSet follows [Semantic Versioning](https://semver.org/):
-
 | Increment | When |
 |---|---|
-| **MAJOR** (X.0.0) | Breaking changes to GeoSet-specific features, APIs, or chart configuration schema |
-| **MINOR** (0.X.0) | New GeoSet features, enhancements, or non-breaking upstream Superset rebases |
-| **PATCH** (0.0.X) | Bug fixes and minor improvements |
+| **MAJOR** (X.0.0) | Tied to the upstream Superset major version |
+| **MINOR** (0.X.0) | Tied to the upstream Superset minor version |
+| **PATCH** (0.0.X) | New GeoSet features, enhancements, bug fixes, or mid-release upstream syncs |
 
-GeoSet versioning is independent of the upstream Apache Superset version. The upstream base version is tracked in `GEOSET/VERSION.md` for reference.
+## Automation
+
+Version incrementing is handled automatically by the `Version Bump` GitHub Actions workflow ([`.github/workflows/version-bump.yml`](../blob/main/.github/workflows/version-bump.yml)). When a PR is merged to `main`, the workflow increments the patch version, updates the changelog, creates a git tag, and triggers Docker image builds. No manual version changes are needed.
 
 ## Files
 
-- [`GEOSET/VERSION.md`](../blob/main/GEOSET/VERSION.md) — current version and full versioning policy
-- [`GEOSET/CHANGELOG.md`](../blob/main/GEOSET/CHANGELOG.md) — full release history
+- [`VERSIONING.md`](../blob/main/VERSIONING.md) — current version, versioning policy, and changelog
 
-## Release History
+## Changelog
 
-### 1.0.0 — Initial Release
+| Version | PR                                                   | Description                                                             |
+| ------- | ---------------------------------------------------- | ----------------------------------------------------------------------- |
+| 6.0.35  | [#289](https://github.com/raft-tech/GeoSet/pull/289) | feat(geoset-map): consolidate duplicate legend entries by display title |
+| 6.0.34  | [#306](https://github.com/raft-tech/GeoSet/pull/306) | chore: extract bump script and fix YAML quoting                         |
+| 6.0.33  | [#301](https://github.com/raft-tech/GeoSet/pull/301) | fix: version bump fails when stale branch exists                        |
 
-Initial release of GeoSet with:
-
-- GeoSet Map Layer chart type with Polygon, Point, Line, and GeoJSON support
-- GeoSet Multi Map chart type for composing multiple layers
-- Category-based and metric-gradient coloring
-- Point clustering, measurement tool, feature info popups
-- Multi-layer legend with drag-and-drop ordering and visibility toggles
-- Static viewport control with Save/Close and Capture Map Viewport
-- Sample data ingestion pipeline and example Hurricane/Wildfire dashboards
-- Docker Compose deployment configuration
+> For the full changelog, see [`VERSIONING.md`](../blob/main/VERSIONING.md) in the repository.

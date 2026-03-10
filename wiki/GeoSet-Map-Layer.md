@@ -87,7 +87,10 @@ Applies a single style to all features. Used when you don't need per-category or
     "fillColor": [40, 147, 179, 255],
     "strokeColor": [0, 0, 0, 255],
     "strokeWidth": 2,
-    "fillPattern": "solid"
+    "lineStyle": "solid",
+    "fillPattern": "solid",
+    "pointType": "circle",
+    "pointSize": 10
   }
 }
 ```
@@ -97,7 +100,10 @@ Applies a single style to all features. Used when you don't need per-category or
 | `fillColor` | `[R, G, B, A]` | Fill color as RGBA (0–255) |
 | `strokeColor` | `[R, G, B, A]` | Stroke/outline color as RGBA |
 | `strokeWidth` | number | Stroke width in pixels |
-| `fillPattern` | string | `"solid"` or an icon name for point layers |
+| `lineStyle` | string | Line rendering style: `"solid"`, `"dashed"`, or `"dotted"`. Optional, defaults to `null`. |
+| `fillPattern` | string | `"solid"` (required) |
+| `pointType` | string | Icon name for point layers (e.g., `"circle"`, `"point"`, or any registered SVG icon). Optional, defaults to `null` (circle). |
+| `pointSize` | integer | Static size of point icons in pixels (1–50). Optional, defaults to `null`. |
 
 ### `colorByCategory`
 
@@ -175,3 +181,29 @@ Controls how this chart's layer appears in a multi-layer legend.
 |---|---|
 | `title` | Group heading in the multi-layer legend |
 | `name` | Label for this specific layer within the group |
+
+### `textOverlayStyle`
+
+Controls the appearance of text annotations rendered on the map. Only applies when a Text Label Column is selected in the chart controls. Color is inherited from `globalColoring.fillColor`.
+
+```json
+{
+  "textOverlayStyle": {
+    "fontFamily": "Arial, sans-serif",
+    "fontSize": 14,
+    "bold": false,
+    "offset": [0, 0]
+  }
+}
+```
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `fontFamily` | string | `"Arial, sans-serif"` | CSS font family for text labels |
+| `fontSize` | integer | `14` | Font size in pixels (1–128) |
+| `bold` | boolean | `false` | Whether to render text in bold |
+| `offset` | `[x, y]` | `[0, 0]` | Pixel offset from the feature's anchor point |
+
+## Schema Versioning
+
+The GeoJSON Config is validated on the backend through versioned Marshmallow schemas (V1, V2, V3, etc.). When you save a chart, the frontend includes a `schema_version` number. If a chart was saved with an older schema version, the backend can automatically upgrade it to the latest version via the `/geoset_map/schema/<from>/<to>` conversion endpoint. This means older chart configurations continue to work as new fields are added in later schema versions.

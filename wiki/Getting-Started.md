@@ -65,14 +65,11 @@ Once all containers are healthy, open **http://localhost** in your browser and l
 ## Common Commands
 
 ```bash
-# Start all services (Base Superset)
-docker compose up -d
+# Start all services
+docker compose up
 
-# Start all services (GeoSet Stack)
-docker compose -f docker-compose-geoset.yml up
-
-# Rebuild after Dockerfile changes (GeoSet stack)
-docker compose -f docker-compose-geoset.yml up --build
+# Rebuild after Dockerfile changes
+docker compose up --build
 
 # View logs for a specific service
 docker compose logs -f superset
@@ -85,9 +82,6 @@ docker compose down
 
 # Stop and remove all data (full reset)
 docker compose down -v
-
-# Rebuild after Dockerfile changes
-docker compose up -d --build
 ```
 
 ## Next Steps

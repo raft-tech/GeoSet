@@ -8,6 +8,15 @@ All merge requests should set the target branch to `main`.
 
 If a merge request already exists for source branch, update the merge request title and body if necessary.
 
+## Wiki Audit (Automatic)
+
+Before creating or updating the merge request, you MUST run a documentation audit.
+Follow the full instructions in `.claude/commands/sync-wiki.md` to check whether any
+changed files on this branch require wiki updates. If the audit produces wiki or README
+changes, commit them to the branch before creating or updating the MR.
+
+This step is not optional — it runs every time.
+
 ## Reviewers
 
 Always add the following reviewers to every PR using the `--reviewer` flag. **Do not** add the PR author as a reviewer - GitHub will reject it.
