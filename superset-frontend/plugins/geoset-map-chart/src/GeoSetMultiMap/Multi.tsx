@@ -45,7 +45,7 @@ import { LayerState } from '../types';
 import buildGeoSetMapLayerQuery from '../buildQuery';
 import transformGeoSetMapLayerProps from '../transformProps';
 import MultiLegend from '../components/MultiLegend';
-import type { LegendEntry } from '../types';
+import type { CategoryEntry, LegendEntry } from '../types';
 import { useGroupedLegend } from '../utils/hooks';
 import MapControls from '../components/MapControls';
 import { CategoryState, MetricLegend, RGBAColor } from '../utils/colors';
@@ -54,6 +54,16 @@ import { fetchMapboxApiKey, getCachedMapboxApiKey } from '../utils/mapboxApi';
 import { multiChartMigration } from '../utils/migrationApi';
 import ClickPopupBox, { ClickedFeatureInfo } from '../components/ClickPopupBox';
 import { setLiveViewport } from '../utils/liveViewportStore';
+// Apply enabled state to legend categories based on visibility map
+const applyCategoryEnabledState = (
+  categories: CategoryEntry[] | undefined,
+  visibility: Record<string, boolean>,
+): CategoryEntry[] | undefined =>
+  categories?.map(cat => ({
+    ...cat,
+    enabled: visibility[cat.label] !== false,
+  }));
+
 // Utility to convert snake_case or camelCase to Title Case
 const toTitleCase = (str: string) =>
   str
@@ -567,6 +577,12 @@ const DeckMulti = (props: DeckMultiProps) => {
       // If ANY are currently visible → turn all OFF; if NONE visible → turn all ON
       const isGroupVisible = sliceIds.some(id => layerVisibility[id] !== false);
 
+      const buildCategoryMap = (
+        categories: CategoryEntry[],
+        value: boolean,
+      ): Record<string, boolean> =>
+        Object.fromEntries(categories.map(c => [c.label, value]));
+
       const catUpdates: Record<string, Record<string, boolean>> = {};
 
       sliceIds.forEach(sliceId => {
@@ -578,11 +594,10 @@ const DeckMulti = (props: DeckMultiProps) => {
         if (isCategoricalLayer) {
           if (isGroupVisible) {
             // Turning OFF — disable all categories
-            const allCategoriesOff: Record<string, boolean> = {};
-            entry.legendEntry.categories!.forEach(cat => {
-              allCategoriesOff[cat.label] = false;
-            });
-            catUpdates[sliceId] = allCategoriesOff;
+            catUpdates[sliceId] = buildCategoryMap(
+              entry.legendEntry.categories!,
+              false,
+            );
           } else {
             // Turning ON — re-enable categories if all were off
             const sliceCatVisibility = categoryVisibility[sliceId] || {};
@@ -590,11 +605,10 @@ const DeckMulti = (props: DeckMultiProps) => {
               cat => sliceCatVisibility[cat.label] !== false,
             );
             if (!anyEnabled && Object.keys(sliceCatVisibility).length > 0) {
-              const allCategoriesOn: Record<string, boolean> = {};
-              entry.legendEntry.categories!.forEach(cat => {
-                allCategoriesOn[cat.label] = true;
-              });
-              catUpdates[sliceId] = allCategoriesOn;
+              catUpdates[sliceId] = buildCategoryMap(
+                entry.legendEntry.categories!,
+                true,
+              );
             }
           }
         }
@@ -699,11 +713,9 @@ const DeckMulti = (props: DeckMultiProps) => {
         anyChanged = true;
 
         // Update legendEntry categories with enabled state
-        const updatedLegendCategories = entry.legendEntry.categories?.map(
-          cat => ({
-            ...cat,
-            enabled: sliceCatVisibility[cat.label] !== false,
-          }),
+        const updatedLegendCategories = applyCategoryEnabledState(
+          entry.legendEntry.categories,
+          sliceCatVisibility,
         );
 
         return {
@@ -808,10 +820,10 @@ const DeckMulti = (props: DeckMultiProps) => {
 
           // Apply category visibility state
           const sliceCatVisibility = categoryVisibility[sliceId] || {};
-          const updatedCategories = legendEntry.categories.map(cat => ({
-            ...cat,
-            enabled: sliceCatVisibility[cat.label] !== false,
-          }));
+          const updatedCategories = applyCategoryEnabledState(
+            legendEntry.categories,
+            sliceCatVisibility,
+          )!;
 
           return [
             sliceId,

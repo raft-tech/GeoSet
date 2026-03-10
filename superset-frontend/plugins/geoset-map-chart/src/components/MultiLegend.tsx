@@ -351,6 +351,11 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
 
   const showGroupCheckboxes = legendGroups.length > 1;
 
+  const isSliceVisible = (id: string): boolean =>
+    id in optimisticVisibility
+      ? optimisticVisibility[id]
+      : layerVisibility[id] !== false;
+
   return (
     <LegendContainer>
       {!isLegendOpen ? (
@@ -369,10 +374,7 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
             const isOpen = expanded[displayTitle] ?? !initialCollapsed;
 
             // Visibility: checked if ANY constituent layer is visible
-            const visibleSliceIds = allSliceIds.filter(id => {
-              if (id in optimisticVisibility) return optimisticVisibility[id];
-              return layerVisibility[id] !== false;
-            });
+            const visibleSliceIds = allSliceIds.filter(isSliceVisible);
             const isVisible = visibleSliceIds.length > 0;
 
             // Indeterminate: some visible/some not, or any entry has partial categories
@@ -383,11 +385,7 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
               ({ sliceId, legendEntry }) => {
                 const categories = legendEntry.categories || [];
                 if (categories.length === 0) return false;
-                const entryVisible =
-                  sliceId in optimisticVisibility
-                    ? optimisticVisibility[sliceId]
-                    : layerVisibility[sliceId] !== false;
-                if (!entryVisible) return false;
+                if (!isSliceVisible(sliceId)) return false;
                 const enabledCount = categories.filter(
                   cat => cat.enabled !== false,
                 ).length;
@@ -429,10 +427,7 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
                 {isOpen && (
                   <Content>
                     {entries.map(({ sliceId, legendEntry }) => {
-                      const entryVisible =
-                        sliceId in optimisticVisibility
-                          ? optimisticVisibility[sliceId]
-                          : layerVisibility[sliceId] !== false;
+                      const entryVisible = isSliceVisible(sliceId);
                       return (
                         <LegendEntryContent
                           key={sliceId}
