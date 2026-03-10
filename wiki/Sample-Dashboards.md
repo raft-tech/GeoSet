@@ -64,16 +64,16 @@ Access the demo at **http://localhost:9001** with credentials `admin` / `admin`.
 Browser (:9001)
     │
     ▼
-superset-node-geoset       ← Webpack dev server (hot reload)
+superset-node              ← Webpack dev server (hot reload)
     │
     ▼ API calls
-superset-geoset (:8088)    ← Flask backend
+superset (:8088)           ← Flask backend
     │
-    ├──▶ db-geoset          ← PostgreSQL (Superset metadata)
+    ├──▶ db                 ← PostgreSQL (Superset metadata)
     └──▶ postgis (:5433)    ← PostGIS (geospatial data)
               │
               ▼
-    geoset-sample-data-ingest  ← One-shot data loader
+    sample-data-ingest         ← One-shot data loader
 ```
 
 ## Adding a New Example Dataset or Dashboard

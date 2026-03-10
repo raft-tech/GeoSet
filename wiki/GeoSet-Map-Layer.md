@@ -22,12 +22,13 @@ Select the column in your dataset that contains GeoJSON geometry. This can be a 
 
 ### Layer Type
 
-| Type        | Description                                                              |
-| ----------- | ------------------------------------------------------------------------ |
-| **Polygon** | Filled polygons with configurable stroke. Best for boundary/area data.   |
-| **Point**   | Individual points or icons at coordinate locations. Supports clustering. |
-| **Line**    | Polylines and paths. Supports dashed/dotted styles.                      |
-| **GeoJSON** | Raw GeoJSON — auto-detects geometry type from the data.                  |
+| Type             | Description                                                              |
+| ---------------- | ------------------------------------------------------------------------ |
+| **Polygon**      | Filled polygons with configurable stroke. Best for boundary/area data.   |
+| **Point**        | Individual points or icons at coordinate locations. Supports clustering. |
+| **Line**         | Polylines and paths. Supports dashed/dotted styles.                      |
+| **Text Overlay** | Text labels rendered at feature locations. Requires a Text Label Column. |
+| **GeoJSON**      | Raw GeoJSON — auto-detects geometry type from the data.                  |
 
 ### Row Limit
 
@@ -162,7 +163,7 @@ Colors features using a gradient based on a numeric column value.
 | `lowerBound`  | Value that maps to `startColor`. Set to `null` to use the data minimum. |
 | `startColor`  | RGBA color for the lowest value                                         |
 | `endColor`    | RGBA color for the highest value                                        |
-| `breakpoints` | Optional array of intermediate `{ value, color }` stops                 |
+| `breakpoints` | Optional array of intermediate numeric value stops                      |
 
 ### `legend`
 
