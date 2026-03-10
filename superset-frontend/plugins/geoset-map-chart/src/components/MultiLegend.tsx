@@ -150,6 +150,10 @@ const MetricBlock = styled.div`
   margin: 6px 0;
 `;
 
+const MetricScale = styled.div<{ indent?: boolean }>`
+  ${({ indent }) => indent && 'padding-left: 22px;'}
+`;
+
 const GradientBar = styled.div<{ gradient: string }>`
   height: 12px;
   width: 100%;
@@ -309,16 +313,18 @@ const LegendEntryContent: React.FC<{
               <div>{legendEntry.legendName}</div>
             </CategoryRow>
           )}
-          <GradientBar
-            gradient={`linear-gradient(to right,
-              rgba(${legendEntry.metric.startColor[0]},${legendEntry.metric.startColor[1]},${legendEntry.metric.startColor[2]},${legendEntry.metric.startColor[3]}),
-              rgba(${legendEntry.metric.endColor[0]},${legendEntry.metric.endColor[1]},${legendEntry.metric.endColor[2]},${legendEntry.metric.endColor[3]})
-            )`}
-          />
-          <Bounds>
-            <div>{formatLegendNumber(legendEntry.metric.lower)}</div>
-            <div>{`${formatLegendNumber(legendEntry.metric.upper)}${legendEntry.metric.lower !== legendEntry.metric.upper ? '+' : ''}`}</div>
-          </Bounds>
+          <MetricScale indent={showEntryCheckbox}>
+            <GradientBar
+              gradient={`linear-gradient(to right,
+                rgba(${legendEntry.metric.startColor[0]},${legendEntry.metric.startColor[1]},${legendEntry.metric.startColor[2]},${legendEntry.metric.startColor[3]}),
+                rgba(${legendEntry.metric.endColor[0]},${legendEntry.metric.endColor[1]},${legendEntry.metric.endColor[2]},${legendEntry.metric.endColor[3]})
+              )`}
+            />
+            <Bounds>
+              <div>{formatLegendNumber(legendEntry.metric.lower)}</div>
+              <div>{`${formatLegendNumber(legendEntry.metric.upper)}${legendEntry.metric.lower !== legendEntry.metric.upper ? '+' : ''}`}</div>
+            </Bounds>
+          </MetricScale>
         </MetricBlock>
       )}
     </div>
