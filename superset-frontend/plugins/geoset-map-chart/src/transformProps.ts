@@ -38,7 +38,8 @@ import {
   resolvePercentOrNumber,
   isPercentString,
 } from './utils/colors';
-import { GeoJsonFeature } from './types';
+import type { GeoJsonFeature } from './types';
+import type { SizeLegend } from './components/Legend';
 import {
   normalizeNullCategory,
   parseRawFeatures,
@@ -250,15 +251,7 @@ export default function transformProps(chartProps: ChartProps) {
 
   // --- Size scale & legend (for dynamic pointSize) ---
   let sizeScale: ((val: number) => number) | null = null;
-  let sizeLegend: {
-    lower: number;
-    upper: number;
-    startSize: number;
-    endSize: number;
-    valueColumn: string;
-    legendTitle?: string;
-    usesPercentBounds?: boolean;
-  } | null = null;
+  let sizeLegend: SizeLegend | null = null;
 
   if (pointSizeConfigDynamic?.valueColumn && rawData.length > 0) {
     const {
