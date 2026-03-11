@@ -1,7 +1,5 @@
 """Marshmallow schemas for GeoSet map layer configuration validation."""
 
-import re
-
 from marshmallow import fields, Schema, validate, validates_schema, ValidationError
 
 from superset.geoset_map.schemas.base import BaseGeoSetLayerSchema
