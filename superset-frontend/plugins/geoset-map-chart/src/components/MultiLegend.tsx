@@ -5,6 +5,7 @@ import { RGBAColor } from '../utils/colors';
 import type { LegendEntry, LegendGroup } from '../types';
 import { Swatch } from '../utils/legendSwatch';
 import { formatLegendNumber } from '../utils/formatNumber';
+import { getDefaultColors } from '../utils/legendHelpers';
 import GraduatedIcons from './GraduatedIcons';
 import CategorySizeGrid, { CategorySizeGridItem } from './CategorySizeGrid';
 
@@ -204,27 +205,6 @@ const IndeterminateCheckbox: React.FC<{
       onChange={onChange}
     />
   );
-};
-
-const getDefaultColors = (
-  layer: LegendEntry,
-): { fill: RGBAColor; stroke: RGBAColor } => {
-  if (layer.simpleStyle) {
-    return {
-      fill: layer.simpleStyle.fillColor,
-      stroke: layer.simpleStyle.strokeColor,
-    };
-  }
-  if (layer.metric) {
-    return { fill: layer.metric.startColor, stroke: layer.metric.startColor };
-  }
-  if (layer.categories && layer.categories.length > 0) {
-    return {
-      fill: layer.categories[0].fillColor,
-      stroke: layer.categories[0].strokeColor,
-    };
-  }
-  return { fill: [0, 122, 135, 255], stroke: [0, 122, 135, 255] };
 };
 
 const LegendEntryContent: React.FC<{

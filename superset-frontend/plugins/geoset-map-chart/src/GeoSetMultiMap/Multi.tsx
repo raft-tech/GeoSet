@@ -54,15 +54,7 @@ import { fetchMapboxApiKey, getCachedMapboxApiKey } from '../utils/mapboxApi';
 import { multiChartMigration } from '../utils/migrationApi';
 import ClickPopupBox, { ClickedFeatureInfo } from '../components/ClickPopupBox';
 import { setLiveViewport } from '../utils/liveViewportStore';
-// Apply enabled state to legend categories based on visibility map
-const applyCategoryEnabledState = (
-  categories: CategoryEntry[] | undefined,
-  visibility: Record<string, boolean>,
-): CategoryEntry[] | undefined =>
-  categories?.map(cat => ({
-    ...cat,
-    enabled: visibility[cat.label] !== false,
-  }));
+import { applyCategoryEnabledState } from '../utils/legendHelpers';
 
 // Utility to convert snake_case or camelCase to Title Case
 const toTitleCase = (str: string) =>

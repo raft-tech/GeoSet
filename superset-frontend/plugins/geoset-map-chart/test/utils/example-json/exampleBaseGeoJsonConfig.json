@@ -8,6 +8,7 @@
     "fillPattern": "solid"
   },
   "legend": {
-    "name": "Water Coverage For US States"
+    "name": "human_readable_legend_chart_title",
+    "title": "title_for_legend_section"
   }
 }
