@@ -206,6 +206,13 @@ export default function transformProps(chartProps: ChartProps) {
         const resolvedBreakpoints = (breakpoints ?? []).map(
           (bp: number | string) => resolvePercentOrNumber(bp, sortedValues, 0),
         );
+        if (lower > upper) {
+          console.warn(
+            '[GeoSet] Resolved colorByValue lowerBound (%s) is greater than upperBound (%s). All features will receive startColor.',
+            lower,
+            upper,
+          );
+        }
         metricDomain = [lower, upper];
 
         const start: RGBAColor = hasValidFill(startColor)
@@ -280,6 +287,13 @@ export default function transformProps(chartProps: ChartProps) {
         sortedSizeValues,
         sortedSizeValues[sortedSizeValues.length - 1],
       );
+      if (sizeLower > sizeUpper) {
+        console.warn(
+          '[GeoSet] Resolved pointSize lowerBound (%s) is greater than upperBound (%s). Size scaling may behave unexpectedly.',
+          sizeLower,
+          sizeUpper,
+        );
+      }
       sizeScale = computeSizeScale(
         {
           valueColumn: sizeValueColumn,

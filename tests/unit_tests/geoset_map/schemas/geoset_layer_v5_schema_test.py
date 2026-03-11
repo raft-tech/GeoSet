@@ -183,6 +183,33 @@ class TestColorByValueSchemaV5:
                 "breakpoints": ["75%", "25%", "50%"],
             })
 
+    def test_valid_all_percentage_bounds_and_breakpoints(self):
+        """All-percentage config (bounds + breakpoints) should be accepted."""
+        schema = ColorByValueSchemaV5()
+        data = {
+            "valueColumn": "population",
+            "lowerBound": "10%",
+            "upperBound": "90%",
+            "startColor": [0, 255, 0, 255],
+            "endColor": [255, 0, 0, 255],
+            "breakpoints": ["25%", "50%", "75%"],
+        }
+        result = schema.load(data)
+        assert result["lower_bound"] == "10%"
+        assert result["upper_bound"] == "90%"
+        assert result["breakpoints"] == ["25%", "50%", "75%"]
+
+    def test_mixed_type_breakpoints_skip_ordering_validation(self):
+        """Mixed-type breakpoints (numbers and percentages) should skip ordering check."""
+        schema = ColorByValueSchemaV5()
+        result = schema.load({
+            "valueColumn": "x",
+            "startColor": [0, 255, 0, 255],
+            "endColor": [255, 0, 0, 255],
+            "breakpoints": ["25%", 50, "75%"],
+        })
+        assert result["breakpoints"] == ["25%", 50, "75%"]
+
     def test_rejects_numeric_breakpoint_outside_bounds(self):
         """Numeric breakpoints outside bounds should fail."""
         schema = ColorByValueSchemaV5()
