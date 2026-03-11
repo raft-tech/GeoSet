@@ -7,7 +7,7 @@ If there is an outstanding merge request associated with the active branch, upda
 ## Documentation Sync (Automatic, Background)
 
 Before committing, launch a background Agent to run a documentation audit. The agent
-should follow the full instructions in `.claude/sync-documentation.md` to check whether
+should follow the full instructions in `.claude/skills/sync-documentation.md` to check whether
 any changed files require wiki, README, or inline documentation updates.
 
 Run this agent in the background so it does not block the commit workflow. While the

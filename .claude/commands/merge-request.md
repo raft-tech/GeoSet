@@ -12,7 +12,7 @@ If a merge request already exists for source branch, update the merge request ti
 
 Before creating or updating the merge request, launch a background Agent to run a
 documentation audit. The agent should follow the full instructions in
-`.claude/sync-documentation.md` to check whether any changed files on this branch
+`.claude/skills/sync-documentation.md` to check whether any changed files on this branch
 require wiki, README, or inline documentation updates.
 
 Run this agent in the background so it does not block MR preparation. While the agent
