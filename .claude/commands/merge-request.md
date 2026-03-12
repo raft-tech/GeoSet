@@ -8,18 +8,6 @@ All merge requests should set the target branch to `main`.
 
 If a merge request already exists for source branch, update the merge request title and body if necessary.
 
-## Documentation Sync (Automatic, Background)
-
-Before creating or updating the merge request, launch a background Agent to run a
-documentation audit. The agent should follow the full instructions in
-`.claude/skills/sync-documentation.md` to check whether any changed files on this branch
-require wiki, README, or inline documentation updates.
-
-Run this agent in the background so it does not block MR preparation. While the agent
-runs, proceed with analyzing changes and drafting the MR title and body. Before actually
-creating the MR, wait for the agent to finish. If it produced any documentation changes,
-commit them to the branch first (skip re-running the documentation sync for that commit).
-
 ## Reviewers
 
 Always add the following reviewers to every PR using the `--reviewer` flag. **Do not** add the PR author as a reviewer - GitHub will reject it.
