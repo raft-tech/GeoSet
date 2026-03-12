@@ -1,11 +1,20 @@
-# GeoSet
+<p align="center">
+  <img src="superset/static/assets/images/geoset-logo.svg" alt="GeoSet" width="500" />
+</p>
 
-TODO: LOGO!
+<p align="center">
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/license/apache-2-0)
+[![Based on Superset](https://img.shields.io/badge/Based%20on-Apache%20Superset-orange.svg)](https://github.com/apache/superset)
+[![PostGIS](https://img.shields.io/badge/PostGIS-Compatible-brightgreen.svg)](https://postgis.net/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg?logo=docker&logoColor=white)](https://www.docker.com/)
+[![deck.gl](https://img.shields.io/badge/deck.gl-Powered-purple.svg)](https://deck.gl/)
 
-TODO: MORE BANNERS
-TODO: WE NEED TO RECREATE THE PICTURES WITH THE GEOSET LOGO
+</p>
+
+<p align="center">
+  <img src="docs/images/helene-storm-data.png" alt="GeoSet Dashboard - Hurricane Helene Storm Data" width="800" />
+</p>
 
 __GeoSet brings robust geospatial visualization capabilities to [Apache Superset](https://github.com/apache/superset) with native [PostGIS](https://postgis.net/) compatibility.__
 
@@ -14,6 +23,7 @@ __GeoSet brings robust geospatial visualization capabilities to [Apache Superset
 - [Quick Start](#quick-start)
   - [Step 1 - Create a Copy of docker/.env.example](#step-1---create-a-copy-of-dockerenvexample)
   - [Step 2 - Launch Docker Compose](#step-2---launch-docker-compose)
+    - [Alternative Docker Image](#alternative-docker-image)
   - [Step 3 - Open GeoSet and Explore](#step-3---open-geoset-and-explore)
 - [Contributing](#contributing)
   - [Development Guide](#development-guide)
@@ -29,7 +39,28 @@ GeoSet bridges the gap between Superset and GIS tooling. This is accomplished by
 - Collapsible legend with layer toggling and dynamic iconography
 - Native dashboard integration
 
-TODO: PUT PRETTY PICTURES HERE
+<p align="center">
+  <img src="docs/images/geoset-example-dashboard-demo.gif" alt="GeoSet Example Dashboard Demo" width="800" />
+</p>
+
+<table>
+  <tr>
+    <td align="center"><strong>Color by Metric</strong></td>
+    <td align="center"><strong>Dynamic Point Sizing</strong></td>
+  </tr>
+  <tr>
+    <td><img src="docs/images/wind-metrics-chart.png" alt="Wind Metrics Chart" width="400" /></td>
+    <td><img src="docs/images/wildfire-point-size-scaling.png" alt="Wildfire Point Size Scaling" width="400" /></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>Ruler &amp; Tooltip</strong></td>
+    <td align="center"><strong>Point Clustering</strong></td>
+  </tr>
+  <tr>
+    <td><img src="docs/images/ruler-tooltip-in-action.gif" alt="Ruler and Tooltip in Action" width="400" /></td>
+    <td><img src="docs/images/point-clustering-example.gif" alt="Point Clustering Example" width="400" /></td>
+  </tr>
+</table>
 
 ## How GeoSet Differs from Apache Superset
 
@@ -67,9 +98,9 @@ DOCKERFILE=Dockerfile.rhel docker compose up
 
 ### Step 3 - Open GeoSet and Explore
 
-We've created an example dashboard accessible at [http://localhost:9001/superset/dashboard/geoset-example-dashboard](http://localhost:9001/superset/dashboard/geoset-example-dashboard). 
+We've created an example dashboard accessible at [http://localhost:9001/superset/dashboard/geoset-example-dashboard](http://localhost:9001/superset/dashboard/geoset-example-dashboard).
 
-TODO: put pictures here
+![GeoSet Example Dashboard](docs/images/geoset-example-dashboard.png)
 
 ## Contributing
 
