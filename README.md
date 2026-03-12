@@ -17,7 +17,7 @@
 __GeoSet brings robust geospatial visualization capabilities to [Apache Superset](https://github.com/apache/superset) with native [PostGIS](https://postgis.net/) compatibility.__
 
 - [What is GeoSet?](#what-is-geoset)
-  - [Features & Functionality](#features--functionality)
+  - [Features \& Functionality](#features--functionality)
 - [How GeoSet Differs from Apache Superset](#how-geoset-differs-from-apache-superset)
 - [Quick Start](#quick-start)
   - [Step 1 - Create a Copy of docker/.env.example](#step-1---create-a-copy-of-dockerenvexample)
@@ -34,10 +34,11 @@ GeoSet bridges the gap between Superset and GIS tooling. This is accomplished by
 - Single and multilayer maps
 - Visibility toggling by zoom
 - Hover over and additional details pane
-- Color by category or value
+- Color by category or value (either can be used with Point Size Scaling)
 - Point size scaling by value (number or percentile bounds)
 - Collapsible legend with layer toggling and dynamic iconography
 - Native dashboard integration
+- Text Overlay Formatting
 
 <p align="center">
   <img src="docs/images/geoset-example-dashboard-demo.gif" alt="GeoSet Example Dashboard Demo" width="1000" />
