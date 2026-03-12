@@ -145,6 +145,7 @@ export default function JsonEditorControl({
               href={JSON_CONFIG_SPEC_URL}
               target="_blank"
               rel="noopener noreferrer"
+              aria-label={t('View JSON Config Spec wiki')}
             >
               <InfoIcon />
             </a>
