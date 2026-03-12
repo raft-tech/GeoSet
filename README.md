@@ -48,24 +48,24 @@ GeoSet bridges the gap between Superset and GIS tooling. This is accomplished by
     <td align="center"><strong>Dynamic Point Sizing</strong></td>
   </tr>
   <tr>
-    <td><img src="docs/images/wind-metrics-chart.png" alt="Wind Metrics Chart" width="410" /></td>
-    <td><img src="docs/images/wildfire-point-size-scaling.png" alt="Wildfire Point Size Scaling" width="410" /></td>
+    <td><img src="docs/images/wind-metrics-chart.png" alt="Wind Metrics Chart" width="390" /></td>
+    <td><img src="docs/images/wildfire-point-size-scaling.png" alt="Wildfire Point Size Scaling" width="390" /></td>
   </tr>
   <tr>
     <td align="center"><strong>Ruler &amp; Tooltip</strong></td>
     <td align="center"><strong>Point Clustering</strong></td>
   </tr>
   <tr>
-    <td><img src="docs/images/ruler-tooltip-in-action.gif" alt="Ruler and Tooltip in Action" width="410" height="245" /></td>
-    <td><img src="docs/images/point-clustering-example.gif" alt="Point Clustering Example" width="410" height="245" /></td>
+    <td><img src="docs/images/ruler-tooltip-in-action.gif" alt="Ruler and Tooltip in Action" width="390" height="245" /></td>
+    <td><img src="docs/images/point-clustering-example.gif" alt="Point Clustering Example" width="390" height="245" /></td>
   </tr>
   <tr>
     <td align="center"><strong>Color by Category</strong></td>
     <td align="center"><strong>Text Overlay</strong></td>
   </tr>
   <tr>
-    <td><img src="docs/images/geoset-color-by-catergory.png" alt="Color by Category" width="410" /></td>
-    <td><img src="docs/images/geoset-text-overlay.png" alt="Text Overlay" width="410" /></td>
+    <td><img src="docs/images/geoset-color-by-catergory.png" alt="Color by Category" width="390" /></td>
+    <td><img src="docs/images/geoset-text-overlay-2.png" alt="Text Overlay" width="390" /></td>
   </tr>
 </table>
 
