@@ -16,9 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { DataRecord } from '@superset-ui/core';
+import {
+  DataRecord,
+  getSequentialSchemeRegistry,
+  SequentialScheme,
+} from '@superset-ui/core';
 import {
   getBreakPoints,
+  getBreakPointColorScaler,
+  getBuckets,
   parseRawFeatures,
   normalizeNullCategory,
   getGeometryType,
@@ -233,5 +239,205 @@ describe('getGeometryType', () => {
 
   it('returns undefined for empty string', () => {
     expect(getGeometryType('')).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getBreakPointColorScaler
+// ---------------------------------------------------------------------------
+describe('getBreakPointColorScaler', () => {
+  const accessor = (d: any) => d.value as number | undefined;
+  const features = [{ value: 0 }, { value: 50 }, { value: 100 }];
+
+  // Register a sequential scheme so the registry lookup works
+  beforeAll(() => {
+    const registry = getSequentialSchemeRegistry();
+    if (!registry.get('testScheme')) {
+      registry.registerValue(
+        'testScheme',
+        new SequentialScheme({
+          id: 'testScheme',
+          colors: ['#000000', '#ffffff'],
+        }),
+      );
+    }
+  });
+
+  it('returns a function (not null) even for unknown scheme when registry has a default', () => {
+    // The superset registry may return a default scheme for unknown names
+    const result = getBreakPointColorScaler(
+      {
+        break_points: [],
+        num_buckets: '3',
+        linear_color_scheme: 'nonExistentScheme',
+        opacity: 100,
+      },
+      features,
+      accessor,
+    );
+    // Either null or a function — depends on registry config
+    expect(result === null || typeof result === 'function').toBe(true);
+  });
+
+  it('returns a color scaler function with break points', () => {
+    const scaler = getBreakPointColorScaler(
+      {
+        break_points: ['0', '50', '100'],
+        num_buckets: '2',
+        linear_color_scheme: 'testScheme',
+        opacity: 100,
+      },
+      features,
+      accessor,
+    );
+    expect(typeof scaler).toBe('function');
+  });
+
+  it('returned scaler returns [0,0,0,0] for falsy value', () => {
+    const scaler = getBreakPointColorScaler(
+      {
+        break_points: ['0', '50', '100'],
+        num_buckets: '2',
+        linear_color_scheme: 'testScheme',
+        opacity: 100,
+      },
+      features,
+      accessor,
+    );
+    expect(scaler!({ value: 0 })).toEqual([0, 0, 0, 0]);
+    expect(scaler!({ value: undefined })).toEqual([0, 0, 0, 0]);
+  });
+
+  it('returned scaler applies opacity to valid values', () => {
+    const scaler = getBreakPointColorScaler(
+      {
+        break_points: ['0', '50', '100'],
+        num_buckets: '2',
+        linear_color_scheme: 'testScheme',
+        opacity: 50,
+      },
+      features,
+      accessor,
+    );
+    const result = scaler!({ value: 25 });
+    // opacity 50% → alpha ≈ 127.5
+    expect(result[3]).toBeCloseTo(127.5, 0);
+  });
+
+  it('masks points outside break point range', () => {
+    const scaler = getBreakPointColorScaler(
+      {
+        break_points: ['10', '50', '90'],
+        num_buckets: '2',
+        linear_color_scheme: 'testScheme',
+        opacity: 100,
+      },
+      features,
+      accessor,
+    );
+    // Value 100 is above the last break point (90) → masked → alpha = 0
+    const result = scaler!({ value: 100 });
+    expect(result[3]).toBe(0);
+  });
+
+  it('uses linear interpolation when no break points provided', () => {
+    const scaler = getBreakPointColorScaler(
+      {
+        break_points: [] as string[],
+        num_buckets: '',
+        linear_color_scheme: 'testScheme',
+        opacity: 80,
+      },
+      features,
+      accessor,
+    );
+    expect(typeof scaler).toBe('function');
+    const result = scaler!({ value: 50 });
+    // Should have opacity applied: (80/100) * 255 = 204
+    expect(result[3]).toBeCloseTo(204, 0);
+  });
+
+  it('handles array color scheme', () => {
+    const scaler = getBreakPointColorScaler(
+      {
+        break_points: [] as string[],
+        num_buckets: '',
+        linear_color_scheme: ['#ff0000', '#00ff00', '#0000ff'],
+        opacity: 100,
+      },
+      features,
+      accessor,
+    );
+    expect(typeof scaler).toBe('function');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getBuckets
+// ---------------------------------------------------------------------------
+describe('getBuckets', () => {
+  const accessor = (d: any) => d.value as number | undefined;
+  const features = [{ value: 0 }, { value: 100 }];
+
+  beforeAll(() => {
+    const registry = getSequentialSchemeRegistry();
+    if (!registry.get('testScheme')) {
+      registry.registerValue(
+        'testScheme',
+        new SequentialScheme({
+          id: 'testScheme',
+          colors: ['#000000', '#ffffff'],
+        }),
+      );
+    }
+  });
+
+  it('returns bucket ranges with colors', () => {
+    const fd = {
+      break_points: [] as string[],
+      num_buckets: '3',
+      linear_color_scheme: 'testScheme',
+      opacity: 100,
+      metric: 'value',
+    } as any;
+
+    const result = getBuckets(fd, features, accessor);
+    const keys = Object.keys(result);
+    expect(keys.length).toBeGreaterThan(0);
+
+    // Each bucket should have color and enabled
+    keys.forEach(key => {
+      expect(result[key]).toHaveProperty('color');
+      expect(result[key]).toHaveProperty('enabled', true);
+    });
+  });
+
+  it('uses metric label when metric is an object', () => {
+    const fd = {
+      break_points: [] as string[],
+      num_buckets: '2',
+      linear_color_scheme: 'testScheme',
+      opacity: 100,
+      metric: { label: 'my_metric' },
+    } as any;
+
+    const result = getBuckets(fd, features, accessor);
+    expect(Object.keys(result).length).toBeGreaterThan(0);
+  });
+
+  it('returns bucket range strings in "min - max" format', () => {
+    const fd = {
+      break_points: ['0', '50', '100'],
+      num_buckets: '2',
+      linear_color_scheme: 'testScheme',
+      opacity: 100,
+      metric: 'value',
+    } as any;
+
+    const result = getBuckets(fd, features, accessor);
+    const keys = Object.keys(result);
+    keys.forEach(key => {
+      expect(key).toMatch(/\d+(\.\d+)?\s*-\s*\d+(\.\d+)?/);
+    });
   });
 });

@@ -37,6 +37,9 @@ import {
   resolvePercentOrNumber,
   lerpColorCss,
   lerpColorRgba,
+  cssToRgbaArray,
+  normalizeColorInput,
+  addColor,
 } from '../../src/utils/colors';
 import { GeoJsonFeature } from '../../src/types';
 
@@ -858,5 +861,195 @@ describe('getCategories', () => {
     expect(keys).toContain('apple');
     expect(keys).toContain('mango');
     expect(keys).toContain('zebra');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// cssToRgbaArray
+// ---------------------------------------------------------------------------
+describe('cssToRgbaArray', () => {
+  it('returns [0,0,0,255] when canvas context returns unparseable style', () => {
+    // jsdom canvas getContext returns null, so we mock it
+    const mockCtx = { fillStyle: '' };
+    jest
+      .spyOn(document, 'createElement')
+      .mockReturnValueOnce({ getContext: () => mockCtx } as any);
+    mockCtx.fillStyle = 'not-a-color';
+    const result = cssToRgbaArray('red');
+    expect(result).toEqual([0, 0, 0, 255]);
+  });
+
+  it('parses rgba string when canvas normalizes it', () => {
+    const mockCtx = { fillStyle: '' };
+    jest
+      .spyOn(document, 'createElement')
+      .mockReturnValueOnce({ getContext: () => mockCtx } as any);
+    // Simulate what a real canvas does: normalize to rgba()
+    Object.defineProperty(mockCtx, 'fillStyle', {
+      get: () => 'rgba(255, 0, 128, 0.5)',
+      set: () => {},
+    });
+    const result = cssToRgbaArray('rgba(255,0,128,0.5)');
+    expect(result).toEqual([255, 0, 128, 128]);
+  });
+
+  it('parses rgb string (no alpha)', () => {
+    const mockCtx = { fillStyle: '' };
+    jest
+      .spyOn(document, 'createElement')
+      .mockReturnValueOnce({ getContext: () => mockCtx } as any);
+    Object.defineProperty(mockCtx, 'fillStyle', {
+      get: () => 'rgb(100, 200, 50)',
+      set: () => {},
+    });
+    const result = cssToRgbaArray('rgb(100,200,50)');
+    expect(result).toEqual([100, 200, 50, 255]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// normalizeColorInput
+// ---------------------------------------------------------------------------
+describe('normalizeColorInput', () => {
+  it('normalizes an array input via toRGBA', () => {
+    expect(normalizeColorInput([255, 0, 128])).toEqual([255, 0, 128, 255]);
+    expect(normalizeColorInput([10, 20, 30, 100])).toEqual([10, 20, 30, 100]);
+  });
+
+  it('normalizes a hex string', () => {
+    const result = normalizeColorInput('#ff0000');
+    expect(result).toEqual([255, 0, 0, 255]);
+  });
+
+  it('returns DEFAULT_SUPERSET_COLOR for non-string, non-array input', () => {
+    expect(normalizeColorInput(null)).toEqual(DEFAULT_SUPERSET_COLOR);
+    expect(normalizeColorInput(undefined)).toEqual(DEFAULT_SUPERSET_COLOR);
+    expect(normalizeColorInput(42)).toEqual(DEFAULT_SUPERSET_COLOR);
+    expect(normalizeColorInput({})).toEqual(DEFAULT_SUPERSET_COLOR);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// normalizeCategoryColorMapping — object branch (lines 330-345)
+// ---------------------------------------------------------------------------
+describe('normalizeCategoryColorMapping (object input)', () => {
+  it('normalizes an object mapping with fillColor and legend_entry_name', () => {
+    const input = {
+      Apple: { fillColor: [255, 0, 0, 255] as RGBAColor, legend_entry_name: 'Red Apple' },
+      Banana: { fillColor: [255, 255, 0, 255] as RGBAColor },
+    };
+    const result = normalizeCategoryColorMapping(input as any);
+    expect(result.apple).toBeDefined();
+    expect(result.apple.fillColor).toEqual([255, 0, 0, 255]);
+    expect(result.apple.legend_name).toBe('Red Apple');
+    expect(result.banana.legend_name).toBe('Banana');
+  });
+
+  it('handles entries without fillColor', () => {
+    const input = { grape: { legend_entry_name: 'Grape' } };
+    const result = normalizeCategoryColorMapping(input as any);
+    expect(result.grape.fillColor).toBeUndefined();
+    expect(result.grape.legend_name).toBe('Grape');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// addColor
+// ---------------------------------------------------------------------------
+describe('addColor', () => {
+  const mockFd = {
+    datasource: '1__table',
+    viz_type: 'geoset_layer',
+    colorScheme: 'supersetColors',
+  } as unknown as import('@superset-ui/core').QueryFormData;
+
+  const fillColor: RGBAColor = [100, 200, 50, 200];
+
+  const makeFeature = (
+    cat: string | null,
+    extraCat?: string,
+  ): GeoJsonFeature => ({
+    type: 'Feature',
+    geometry: { type: 'Point', coordinates: [0, 0] },
+    properties: { category: cat },
+    color: [0, 0, 0, 255],
+    ...(extraCat ? { extraProps: { category: extraCat } } : {}),
+  });
+
+  it('applies custom mapping array color', () => {
+    const features = [makeFeature('apple')];
+    const mapping = { apple: [255, 0, 0, 255] as RGBAColor };
+    const result = addColor(mockFd, 'category', fillColor, features, mapping);
+    expect(result[0].color).toEqual([255, 0, 0, 255]);
+  });
+
+  it('applies custom mapping object with fillColor', () => {
+    const features = [makeFeature('apple')];
+    const mapping = { apple: { fillColor: [0, 255, 0, 200] as RGBAColor } };
+    const result = addColor(mockFd, 'category', fillColor, features, mapping);
+    expect(result[0].color).toEqual([0, 255, 0, 200]);
+  });
+
+  it('uses fillColor fallback when no mapping match', () => {
+    const features = [makeFeature('unknown')];
+    const result = addColor(mockFd, 'category', fillColor, features, {});
+    // Falls back to superset categorical scale or fillColor
+    expect(result[0].color).toBeDefined();
+    expect(result[0].color.length).toBe(4);
+  });
+
+  it('uses fillColor fallback when category is null', () => {
+    const features = [makeFeature(null)];
+    const result = addColor(mockFd, 'category', fillColor, features, {});
+    expect(result[0].color).toEqual(fillColor);
+  });
+
+  it('prefers extraProps over properties for dimension lookup', () => {
+    const features = [makeFeature('fromProps', 'fromExtra')];
+    const mapping = {
+      fromExtra: [10, 20, 30, 255] as RGBAColor,
+      fromProps: [40, 50, 60, 255] as RGBAColor,
+    };
+    const result = addColor(mockFd, 'category', fillColor, features, mapping);
+    expect(result[0].color).toEqual([10, 20, 30, 255]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// computeMetricColorScaleUnified — breakpoint fallthrough (line 506)
+// ---------------------------------------------------------------------------
+describe('computeMetricColorScaleUnified (breakpoint edge cases)', () => {
+  const startColor: RGBAColor = [0, 0, 0, 255];
+  const endColor: RGBAColor = [200, 200, 200, 255];
+
+  it('returns endColor when value exceeds all breakpoint stops', () => {
+    const spec: ColorByValueConfig = {
+      valueColumn: 'val',
+      startColor,
+      endColor,
+      breakpoints: [25, 50, 75],
+      lowerBound: 0,
+      upperBound: 100,
+    };
+    const scale = computeMetricColorScaleUnified(spec, [0, 100]);
+    // Value at upper bound should use the last segment
+    const result = scale(100);
+    // Each channel should be close to endColor (interpolated at t=1 of last segment)
+    expect(result[0]).toBeGreaterThan(150);
+  });
+
+  it('handles breakpoint with zero-width segment', () => {
+    const spec: ColorByValueConfig = {
+      valueColumn: 'val',
+      startColor,
+      endColor,
+      breakpoints: [50, 50], // duplicate breakpoint creates zero-width segment
+      lowerBound: 0,
+      upperBound: 100,
+    };
+    const scale = computeMetricColorScaleUnified(spec, [0, 100]);
+    // Should not crash on zero division
+    expect(scale(50)).toBeDefined();
+    expect(scale(50).length).toBe(4);
   });
 });
