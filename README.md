@@ -72,11 +72,11 @@ GeoSet bridges the gap between Superset and GIS tooling. This is accomplished by
   </tr>
   <tr>
     <td align="center"><strong>Conditional Zoom Visibility</strong></td>
-    <td></td>
+    <td align="center"><strong>Layer Toggling</strong></td>
   </tr>
   <tr>
     <td><img src="docs/images/conditional-zooming-layer-visibility.gif" alt="Conditional Zoom Visibility" width="390" /></td>
-    <td></td>
+    <td><img src="docs/images/layer-toggling-multi-chart.gif" alt="Layer Toggling" width="390" /></td>
   </tr>
 </table>
 
