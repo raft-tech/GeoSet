@@ -11,10 +11,10 @@ If a merge request already exists for source branch, update the merge request ti
 ## Reviewers
 
 Always add the following reviewers to every PR using the `--reviewer` flag. **Do not** add the PR author as a reviewer - GitHub will reject it.
+
 - ethanbienstock
 - lhawkman27
 - jmeegan2
-
 
 ## Structure
 
