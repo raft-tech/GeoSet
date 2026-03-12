@@ -17,9 +17,9 @@ The demo stack loads three datasets from public APIs:
 | Active Wildfire Locations | NIFC ArcGIS API | `nifc_wildfire_locations` |
 | Hurricane Best Track | NHC/NOAA API | `nhc_best_track` |
 
-These datasets power two pre-built dashboards:
+These datasets power two multi-layer map charts inside the **GeoSet Example Dashboard**:
 
-### Hurricane Tracker
+### Hurricane Tracker (2024 and 2025 Hurricanes and Tropical Storms)
 
 A multi-layer map combining:
 - **Storm Track Points** — NHC best track observation points colored by max wind speed (yellow → red gradient)
@@ -28,7 +28,7 @@ A multi-layer map combining:
 
 Includes native dashboard filters for **Hurricane Season** (year) and **Hurricane Name** (cascades from Season).
 
-### Wildfire Tracker
+### Wildfire Tracker (NIFC Wildfire Locations)
 
 A multi-layer map combining:
 - **NIFC Wildfire Locations** — active wildfire points colored by fire cause (Human, Natural, Undetermined)
@@ -38,20 +38,20 @@ Includes a native dashboard filter for **Fire Cause**.
 
 ## Running the Demo Stack
 
-The demo uses a separate Docker Compose file (`docker-compose-geoset.yml`) that is fully independent from the main `docker-compose.yml`. It runs on different ports and separate volumes so the two stacks don't interfere.
+The demo stack uses the `docker-compose.yml` at the project root. It includes PostGIS and a one-shot data ingest container that loads the sample datasets automatically.
 
 ```bash
 # Start the demo stack
-docker compose -f docker-compose-geoset.yml up
+docker compose up
 
 # Start with a full rebuild
-docker compose -f docker-compose-geoset.yml up --build
+docker compose up --build
 
 # Stop
-docker compose -f docker-compose-geoset.yml down
+docker compose down
 
 # Stop and wipe all data (full reset)
-docker compose -f docker-compose-geoset.yml down -v
+docker compose down -v
 ```
 
 Access the demo at **http://localhost:9001** with credentials `admin` / `admin`.
@@ -64,16 +64,16 @@ Access the demo at **http://localhost:9001** with credentials `admin` / `admin`.
 Browser (:9001)
     │
     ▼
-superset-node-geoset       ← Webpack dev server (hot reload)
+superset-node              ← Webpack dev server (hot reload)
     │
     ▼ API calls
-superset-geoset (:8088)    ← Flask backend
+superset (:8088)           ← Flask backend
     │
-    ├──▶ db-geoset          ← PostgreSQL (Superset metadata)
+    ├──▶ db                 ← PostgreSQL (Superset metadata)
     └──▶ postgis (:5433)    ← PostGIS (geospatial data)
               │
               ▼
-    geoset-sample-data-ingest  ← One-shot data loader
+    sample-data-ingest         ← One-shot data loader
 ```
 
 ## Adding a New Example Dataset or Dashboard
@@ -106,7 +106,7 @@ Multi Map charts reference sub-layer charts by integer ID in `deck_slices`. Sinc
 ### 4. Rebuild
 
 ```bash
-docker compose -f docker-compose-geoset.yml up --build
+docker compose up --build
 ```
 
 The importer walks the entire `geoset_configs/` directory — all dashboards, charts, and datasets are picked up automatically.

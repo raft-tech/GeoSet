@@ -38,41 +38,29 @@ On first run, the `superset-init` container automatically:
 - Creates an admin user (`admin` / `admin`)
 - Sets up default roles and permissions
 
-Once all containers are healthy, open **http://localhost** in your browser and log in with `admin` / `admin`.
+Once all containers are healthy, open **http://localhost:9001** in your browser and log in with `admin` / `admin`.
 
 ## Services
 
-| Base Service | Port | Description |
+GeoSet runs in light mode (no Redis or Celery). The stack includes:
+
+| Service | Port | Description |
 |---|---|---|
-| nginx | 80 | Reverse proxy (main entry point) |
-| superset | 8088 | Flask backend API |
-| superset-node | 9000 | Webpack frontend dev server |
-| superset-websocket | 8080 | WebSocket server |
-| db | 5432 | PostgreSQL (Superset metadata) |
-| redis | 6379 | Cache and Celery broker |
-
-
-|GeoSet Service | Port | Description |
-|---|---|---|
-| nginx | 80 | Reverse proxy (main entry point) |
-| superset | 8088 | Flask backend API |
-| superset-node-geoset-1 | 9001 | Webpack frontend dev server (GeoSet) |
-| superset-websocket | 8080 | WebSocket server |
-| superset_postgis | 5433 | PostgreSQL (Geospatial data) |
-| redis | 6379 | Cache and Celery broker |
-
+| superset-node | 9001 | Webpack frontend dev server (main entry point) |
+| superset | 8088 | Flask backend API (internal) |
+| db | — | PostgreSQL (Superset metadata, internal only) |
+| postgis | 5433 | PostGIS (geospatial data) |
+| superset-init | — | One-shot: runs migrations, creates admin user |
+| sample-data-ingest | — | One-shot: loads demo datasets into PostGIS |
 
 ## Common Commands
 
 ```bash
-# Start all services (Base Superset)
+# Start all services (detached)
 docker compose up -d
 
-# Start all services (GeoSet Stack)
-docker compose -f docker-compose-geoset.yml up
-
-# Rebuild after Dockerfile changes (GeoSet stack)
-docker compose -f docker-compose-geoset.yml up --build
+# Rebuild after Dockerfile changes
+docker compose up --build
 
 # View logs for a specific service
 docker compose logs -f superset
@@ -85,9 +73,6 @@ docker compose down
 
 # Stop and remove all data (full reset)
 docker compose down -v
-
-# Rebuild after Dockerfile changes
-docker compose up -d --build
 ```
 
 ## Next Steps

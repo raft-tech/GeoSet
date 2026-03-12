@@ -22,12 +22,13 @@ Select the column in your dataset that contains GeoJSON geometry. This can be a 
 
 ### Layer Type
 
-| Type | Description |
-|---|---|
-| **Polygon** | Filled polygons with configurable stroke. Best for boundary/area data. |
-| **Point** | Individual points or icons at coordinate locations. Supports clustering. |
-| **Line** | Polylines and paths. Supports dashed/dotted styles. |
-| **GeoJSON** | Raw GeoJSON — auto-detects geometry type from the data. |
+| Type             | Description                                                              |
+| ---------------- | ------------------------------------------------------------------------ |
+| **Polygon**      | Filled polygons with configurable stroke. Best for boundary/area data.   |
+| **Point**        | Individual points or icons at coordinate locations. Supports clustering. |
+| **Line**         | Polylines and paths. Supports dashed/dotted styles.                      |
+| **Text Overlay** | Text labels rendered at feature locations. Requires a Text Label Column. |
+| **GeoJSON**      | Raw GeoJSON — auto-detects geometry type from the data.                  |
 
 ### Row Limit
 
@@ -58,12 +59,12 @@ Sets the zoom range at which this layer is visible. Useful for multi-layer maps 
 
 Only available for the **Point** layer type.
 
-| Control | Description |
-|---|---|
-| Enable Clustering | Groups nearby points into cluster circles |
-| Cluster Radius | Pixel radius for grouping points into a cluster |
-| Min Zoom | Zoom level at which clustering stops and individual points appear |
-| Min Points | Minimum number of points required to form a cluster |
+| Control                | Description                                                       |
+| ---------------------- | ----------------------------------------------------------------- |
+| Enable Clustering      | Groups nearby points into cluster circles                         |
+| Cluster Radius         | Pixel radius for grouping points into a cluster                   |
+| Cluster Max Zoom       | Zoom level at which clustering stops and individual points appear |
+| Min Points per Cluster | Minimum number of points required to form a cluster               |
 
 ### Hover Data Columns
 
@@ -87,17 +88,23 @@ Applies a single style to all features. Used when you don't need per-category or
     "fillColor": [40, 147, 179, 255],
     "strokeColor": [0, 0, 0, 255],
     "strokeWidth": 2,
-    "fillPattern": "solid"
+    "lineStyle": "solid",
+    "fillPattern": "solid",
+    "pointType": "circle",
+    "pointSize": 10
   }
 }
 ```
 
-| Field | Type | Description |
-|---|---|---|
-| `fillColor` | `[R, G, B, A]` | Fill color as RGBA (0–255) |
-| `strokeColor` | `[R, G, B, A]` | Stroke/outline color as RGBA |
-| `strokeWidth` | number | Stroke width in pixels |
-| `fillPattern` | string | `"solid"` or an icon name for point layers |
+| Field         | Type           | Description                                                                                                                  |
+| ------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `fillColor`   | `[R, G, B, A]` | Fill color as RGBA (0–255)                                                                                                   |
+| `strokeColor` | `[R, G, B, A]` | Stroke/outline color as RGBA                                                                                                 |
+| `strokeWidth` | number         | Stroke width in pixels                                                                                                       |
+| `lineStyle`   | string         | Line rendering style: `"solid"`, `"dashed"`, or `"dotted"`. Optional, defaults to `null`.                                    |
+| `fillPattern` | string         | `"solid"` (required)                                                                                                         |
+| `pointType`   | string         | Icon name for point layers (e.g., `"circle"`, `"point"`, or any registered SVG icon). Optional, defaults to `null` (circle). |
+| `pointSize`   | integer        | Static size of point icons in pixels (1–50). Optional, defaults to `null`.                                                   |
 
 ### `colorByCategory`
 
@@ -126,11 +133,11 @@ Colors features by a categorical column. Each category maps to a color and an op
 }
 ```
 
-| Field | Description |
-|---|---|
-| `dimension` | The dataset column name to color by |
+| Field               | Description                                                             |
+| ------------------- | ----------------------------------------------------------------------- |
+| `dimension`         | The dataset column name to color by                                     |
 | `categoricalColors` | Array of `{ category_value: { fillColor, legend_entry_name } }` objects |
-| `defaultLegendName` | Label shown in the legend for values not in `categoricalColors` |
+| `defaultLegendName` | Label shown in the legend for values not in `categoricalColors`         |
 
 ### `colorByValue`
 
@@ -149,14 +156,14 @@ Colors features using a gradient based on a numeric column value.
 }
 ```
 
-| Field | Description |
-|---|---|
-| `valueColumn` | The numeric column to map to color |
-| `upperBound` | Value that maps to `endColor`. Set to `null` to use the data maximum. |
-| `lowerBound` | Value that maps to `startColor`. Set to `null` to use the data minimum. |
-| `startColor` | RGBA color for the lowest value |
-| `endColor` | RGBA color for the highest value |
-| `breakpoints` | Optional array of intermediate `{ value, color }` stops |
+| Field         | Description                                                             |
+| ------------- | ----------------------------------------------------------------------- |
+| `valueColumn` | The numeric column to map to color                                      |
+| `upperBound`  | Value that maps to `endColor`. Set to `null` to use the data maximum.   |
+| `lowerBound`  | Value that maps to `startColor`. Set to `null` to use the data minimum. |
+| `startColor`  | RGBA color for the lowest value                                         |
+| `endColor`    | RGBA color for the highest value                                        |
+| `breakpoints` | Optional array of intermediate numeric value stops                      |
 
 ### `legend`
 
@@ -171,7 +178,33 @@ Controls how this chart's layer appears in a multi-layer legend.
 }
 ```
 
-| Field | Description |
-|---|---|
-| `title` | Group heading in the multi-layer legend |
-| `name` | Label for this specific layer within the group |
+| Field   | Description                                    |
+| ------- | ---------------------------------------------- |
+| `title` | Group heading in the multi-layer legend        |
+| `name`  | Label for this specific layer within the group |
+
+### `textOverlayStyle`
+
+Controls the appearance of text annotations rendered on the map. Only applies when a Text Label Column is selected in the chart controls. Color is inherited from `globalColoring.fillColor`.
+
+```json
+{
+  "textOverlayStyle": {
+    "fontFamily": "Arial, sans-serif",
+    "fontSize": 14,
+    "bold": false,
+    "offset": [0, 0]
+  }
+}
+```
+
+| Field        | Type     | Default               | Description                                  |
+| ------------ | -------- | --------------------- | -------------------------------------------- |
+| `fontFamily` | string   | `"Arial, sans-serif"` | CSS font family for text labels              |
+| `fontSize`   | integer  | `14`                  | Font size in pixels (1–128)                  |
+| `bold`       | boolean  | `false`               | Whether to render text in bold               |
+| `offset`     | `[x, y]` | `[0, 0]`              | Pixel offset from the feature's anchor point |
+
+## Schema Versioning
+
+The GeoJSON Config is validated on the backend through versioned Marshmallow schemas (V1, V2, V3, etc.). When you save a chart, the frontend includes a `schema_version` number. If a chart was saved with an older schema version, the backend can automatically upgrade it to the latest version via the `/geoset_map/schema/<from>/<to>` conversion endpoint. This means older chart configurations continue to work as new fields are added in later schema versions.

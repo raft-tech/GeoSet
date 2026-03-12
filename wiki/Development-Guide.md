@@ -10,15 +10,8 @@
 
 ### Start the Full Stack
 
-For GeoSet Stack
 ```bash
-docker compose -f docker-compose-geoset.yml up
-```
-**OR**
-
-For standard superset build
-```bash
-docker compose up -d
+docker compose up
 ```
 
 ### Frontend with Hot Reload
@@ -84,9 +77,8 @@ GeoSet/
 │               └── transformProps.ts  # Data transformation pipeline
 ├── sample-data/                       # Demo data ingestion pipeline
 ├── docker/                            # Docker configuration and init scripts
-├── docker-compose.yml                 # Main stack
-├── docker-compose-geoset.yml          # Demo stack (see Sample Data)
-└── GEOSET/                            # GeoSet-specific versioning docs
+├── docker-compose.yml                 # Main stack (includes GeoSet demo data)
+└── VERSIONING.md                      # GeoSet version policy and changelog
 ```
 
 ## Plugin Architecture
@@ -107,7 +99,7 @@ The GeoSet map plugin is a Superset chart plugin built on [deck.gl](https://deck
 | File | Purpose |
 |---|---|
 | `utils/colors.ts` | Color scale computation, category color mapping, metric gradient logic |
-| `utils/buildPolygonLayers.ts` | Constructs SolidPolygonLayer + LineLayer pairs for polygon rendering |
+| `utils/layerBuilders/buildPolygonLayers.ts` | Constructs SolidPolygonLayer + LineLayer pairs for polygon rendering |
 | `utils/fitViewport.ts` | Autozoom calculation to fit features in the viewport |
 | `utils/liveViewportStore.ts` | Module-level store for live viewport state (bypasses Redux to avoid "Altered" chart state) |
 | `components/MultiLegend.tsx` | Drag-and-drop multi-layer legend with toggle/isolate |

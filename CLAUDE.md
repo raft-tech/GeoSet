@@ -22,6 +22,10 @@ This is a fork of Apache Superset. When using `gh` CLI commands (PRs, issues, et
 
 When pulling in upstream Apache Superset changes, update the **"Based on"** field in `VERSIONING.md` to reflect the upstream version that was synced (e.g., `Apache Superset 6.1.0`).
 
+## Documentation
+
+Wiki pages live in `wiki/` and are synced to the GitHub Wiki on merge to main via `.github/workflows/sync-wiki.yml`. Documentation sync runs automatically as a background process during `/commit-and-push` and `/merge-request` — it audits wiki pages, README.md, and inline documentation against code changes. See `.claude/skills/sync-documentation.md` for details.
+
 ## Important Notes
 
 - Always use context7 when I need code generation, setup or configuration steps, or

@@ -23,7 +23,6 @@ GeoSet is a geospatial data monitoring and visualization platform built on [Apac
 - [[GeoSet Multi Map Chart]] — Composing multiple layers into a single map
 - [[Sample Data and Demo Dashboards]] — Loading the example Hurricane and Wildfire dashboards
 - [[Development Guide]] — Local dev setup, plugin architecture, contributing
-- [[Versioning and Changelog]] — Version policy and release history
 
 ## Repository
 
