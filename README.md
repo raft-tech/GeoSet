@@ -17,6 +17,7 @@
 __GeoSet brings robust geospatial visualization capabilities to [Apache Superset](https://github.com/apache/superset) with native [PostGIS](https://postgis.net/) compatibility.__
 
 - [What is GeoSet?](#what-is-geoset)
+  - [Features & Functionality](#features--functionality)
 - [How GeoSet Differs from Apache Superset](#how-geoset-differs-from-apache-superset)
 - [Quick Start](#quick-start)
   - [Step 1 - Create a Copy of docker/.env.example](#step-1---create-a-copy-of-dockerenvexample)
@@ -39,8 +40,10 @@ GeoSet bridges the gap between Superset and GIS tooling. This is accomplished by
 - Native dashboard integration
 
 <p align="center">
-  <img src="docs/images/geoset-example-dashboard-demo.gif" alt="GeoSet Example Dashboard Demo" width="850" />
+  <video src="docs/images/geoset-example-dashboard-demo.mp4" autoplay loop muted playsinline width="850"></video>
 </p>
+
+### Features & Functionality
 
 <table>
   <tr>
@@ -66,6 +69,14 @@ GeoSet bridges the gap between Superset and GIS tooling. This is accomplished by
   <tr>
     <td><img src="docs/images/geoset-color-by-category.png" alt="Color by Category" width="390" /></td>
     <td><img src="docs/images/geoset-text-overlay-2.png" alt="Text Overlay" width="390" /></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>Conditional Zoom Visibility</strong></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td><img src="docs/images/conditional-zooming-layer-visibility.gif" alt="Conditional Zoom Visibility" width="390" /></td>
+    <td></td>
   </tr>
 </table>
 
