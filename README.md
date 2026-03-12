@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="docs/images/geoset-logo.png" alt="GeoSet" width="500" />
-</p>
+<img src="docs/images/geoset-logo.png" alt="GeoSet" width="300" />
 
 <p align="center">
 
@@ -36,6 +34,7 @@ GeoSet bridges the gap between Superset and GIS tooling. This is accomplished by
 - Visibility toggling by zoom
 - Hover over and additional details pane
 - Color by category or value
+- Point size scaling by value (number or percentile bounds)
 - Collapsible legend with layer toggling and dynamic iconography
 - Native dashboard integration
 
@@ -49,16 +48,24 @@ GeoSet bridges the gap between Superset and GIS tooling. This is accomplished by
     <td align="center"><strong>Dynamic Point Sizing</strong></td>
   </tr>
   <tr>
-    <td><img src="docs/images/wind-metrics-chart.png" alt="Wind Metrics Chart" width="400" /></td>
-    <td><img src="docs/images/wildfire-point-size-scaling.png" alt="Wildfire Point Size Scaling" width="400" /></td>
+    <td><img src="docs/images/wind-metrics-chart.png" alt="Wind Metrics Chart" width="380" /></td>
+    <td><img src="docs/images/wildfire-point-size-scaling.png" alt="Wildfire Point Size Scaling" width="380" /></td>
   </tr>
   <tr>
     <td align="center"><strong>Ruler &amp; Tooltip</strong></td>
     <td align="center"><strong>Point Clustering</strong></td>
   </tr>
   <tr>
-    <td><img src="docs/images/ruler-tooltip-in-action.gif" alt="Ruler and Tooltip in Action" width="400" height="260" /></td>
-    <td><img src="docs/images/point-clustering-example.gif" alt="Point Clustering Example" width="400" height="260" /></td>
+    <td><img src="docs/images/ruler-tooltip-in-action.gif" alt="Ruler and Tooltip in Action" width="380" height="245" /></td>
+    <td><img src="docs/images/point-clustering-example.gif" alt="Point Clustering Example" width="380" height="245" /></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>Color by Category</strong></td>
+    <td align="center"><strong>Text Overlay</strong></td>
+  </tr>
+  <tr>
+    <td><img src="docs/images/geoset-color-by-catergory.png" alt="Color by Category" width="380" /></td>
+    <td><img src="docs/images/geoset-text-overlay.png" alt="Text Overlay" width="380" /></td>
   </tr>
 </table>
 
