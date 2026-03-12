@@ -64,7 +64,7 @@ GeoSet bridges the gap between Superset and GIS tooling. This is accomplished by
     <td align="center"><strong>Text Overlay</strong></td>
   </tr>
   <tr>
-    <td><img src="docs/images/geoset-color-by-catergory.png" alt="Color by Category" width="390" /></td>
+    <td><img src="docs/images/geoset-color-by-category.png" alt="Color by Category" width="390" /></td>
     <td><img src="docs/images/geoset-text-overlay-2.png" alt="Text Overlay" width="390" /></td>
   </tr>
 </table>
