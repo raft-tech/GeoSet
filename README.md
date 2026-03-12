@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="superset/static/assets/images/geoset-logo.svg" alt="GeoSet" width="500" />
+  <img src="docs/images/geoset-logo.png" alt="GeoSet" width="500" />
 </p>
 
 <p align="center">
@@ -57,8 +57,8 @@ GeoSet bridges the gap between Superset and GIS tooling. This is accomplished by
     <td align="center"><strong>Point Clustering</strong></td>
   </tr>
   <tr>
-    <td><img src="docs/images/ruler-tooltip-in-action.gif" alt="Ruler and Tooltip in Action" width="400" /></td>
-    <td><img src="docs/images/point-clustering-example.gif" alt="Point Clustering Example" width="400" /></td>
+    <td><img src="docs/images/ruler-tooltip-in-action.gif" alt="Ruler and Tooltip in Action" width="400" height="260" /></td>
+    <td><img src="docs/images/point-clustering-example.gif" alt="Point Clustering Example" width="400" height="260" /></td>
   </tr>
 </table>
 
