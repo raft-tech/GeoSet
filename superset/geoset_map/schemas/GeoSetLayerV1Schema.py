@@ -230,7 +230,7 @@ class GeoSetLayerV1Schema(BaseGeoSetLayerSchema):
                 "strokeWidth": 2,
                 "lineStyle": "solid",
                 "fillPattern": "solid",
-                "pointType": "fema",
+                "pointType": "marker",
                 "pointSize": 15
             },
             "colorByValue": {
