@@ -39,7 +39,7 @@ GeoSet bridges the gap between Superset and GIS tooling. This is accomplished by
 - Native dashboard integration
 
 <p align="center">
-  <img src="docs/images/geoset-example-dashboard-demo.gif" alt="GeoSet Example Dashboard Demo" width="800" />
+  <img src="docs/images/geoset-example-dashboard-demo.gif" alt="GeoSet Example Dashboard Demo" width="850" />
 </p>
 
 <table>
