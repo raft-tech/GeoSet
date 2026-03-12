@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Editor from 'react-simple-code-editor';
 import { styled, SupersetTheme, t } from '@superset-ui/core';
+import { Tooltip } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-json';
@@ -137,13 +138,17 @@ export default function JsonEditorControl({
       {label && (
         <LabelRow>
           <Label id={`${label}-label`}>{label}</Label>
-          <a
-            href={JSON_CONFIG_SPEC_URL}
-            target="_blank"
-            rel="noopener noreferrer"
+          <Tooltip
+            title={t('Click to view JSON Config Spec wiki for full schema')}
           >
-            <InfoIcon title={t('View JSON Config Spec wiki for full schema')} />
-          </a>
+            <a
+              href={JSON_CONFIG_SPEC_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <InfoIcon />
+            </a>
+          </Tooltip>
         </LabelRow>
       )}
       <EditorWrapper onBlur={handleBlur}>
