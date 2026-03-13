@@ -3,8 +3,6 @@
 import { useState, useEffect } from 'react';
 import Editor from 'react-simple-code-editor';
 import { styled, SupersetTheme, t } from '@superset-ui/core';
-import { Tooltip } from 'antd';
-import { InfoCircleOutlined } from '@ant-design/icons';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-json';
 import { prettyStringify } from '../utils/safeStringify';
@@ -47,14 +45,17 @@ const Label = styled.span(
 `,
 );
 
-const InfoIcon = styled(InfoCircleOutlined)(
+const DocsLink = styled.a(
   ({ theme }) => `
-  color: ${theme.colorTextSecondary};
+  color: ${theme.colorPrimary};
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
   cursor: pointer;
-  font-size: 14px;
 
   &:hover {
-    color: ${theme.colorPrimary};
+    text-decoration: underline;
+    color: ${theme.colorPrimaryHover};
   }
 `,
 );
@@ -138,18 +139,14 @@ export default function JsonEditorControl({
       {label && (
         <LabelRow>
           <Label id={`${label}-label`}>{label}</Label>
-          <Tooltip
-            title={t('Click to view JSON Config Spec wiki for full schema')}
+          <DocsLink
+            href={JSON_CONFIG_SPEC_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={t('View JSON Config Spec wiki')}
           >
-            <a
-              href={JSON_CONFIG_SPEC_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={t('View JSON Config Spec wiki')}
-            >
-              <InfoIcon />
-            </a>
-          </Tooltip>
+            {t('[see docs]')}
+          </DocsLink>
         </LabelRow>
       )}
       <EditorWrapper onBlur={handleBlur}>
