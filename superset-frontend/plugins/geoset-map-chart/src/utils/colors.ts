@@ -19,7 +19,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { CategoricalColorNamespace, QueryFormData } from '@superset-ui/core';
+import {
+  CategoricalColorNamespace,
+  DataRecord,
+  QueryFormData,
+} from '@superset-ui/core';
 import { rgb } from 'd3-color';
 import { GeoJsonFeature } from '../types';
 import { normalizeRGBA, hasValidFill } from './colorsFallback';
@@ -607,6 +611,59 @@ export function resolvePercentOrNumber(
     return percentile(sortedValues, pct);
   }
   return fallback;
+}
+
+export type ResolvedBounds = {
+  sortedValues: number[];
+  lower: number;
+  upper: number;
+  usesPercentBounds: boolean;
+};
+
+/**
+ * Extract numeric values from rawData for a column, sort them, and resolve
+ * percentage-or-number bounds. Shared by metric coloring and point sizing.
+ */
+export function resolveNumericBounds(
+  rawData: DataRecord[],
+  valueColumn: string,
+  lowerBound: number | string | null | undefined,
+  upperBound: number | string | null | undefined,
+  warnLabel: string,
+): ResolvedBounds | null {
+  const values = rawData
+    .map(d => {
+      const value = d[valueColumn];
+      return value != null && !Number.isNaN(Number(value))
+        ? Number(value)
+        : null;
+    })
+    .filter((v): v is number => v !== null);
+
+  if (values.length === 0) return null;
+
+  const sortedValues = [...values].sort((a, b) => a - b);
+  const lower = resolvePercentOrNumber(
+    lowerBound,
+    sortedValues,
+    sortedValues[0],
+  );
+  const upper = resolvePercentOrNumber(
+    upperBound,
+    sortedValues,
+    sortedValues[sortedValues.length - 1],
+  );
+  if (lower > upper) {
+    console.warn(
+      `[GeoSet] Resolved ${warnLabel} lowerBound (%s) is greater than upperBound (%s). Scaling may behave unexpectedly.`,
+      lower,
+      upper,
+    );
+  }
+  const usesPercentBounds =
+    isPercentString(lowerBound) || isPercentString(upperBound);
+
+  return { sortedValues, lower, upper, usesPercentBounds };
 }
 
 export function lerpColorCss(c1: RGBAColor, c2: RGBAColor, t: number): string {

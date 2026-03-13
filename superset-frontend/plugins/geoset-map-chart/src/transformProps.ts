@@ -36,7 +36,7 @@ import {
   RGBAColor,
   toRGBA,
   resolvePercentOrNumber,
-  isPercentString,
+  resolveNumericBounds,
 } from './utils/colors';
 import type { GeoJsonFeature } from './types';
 import type { SizeLegend } from './components/Legend';
@@ -180,39 +180,19 @@ export default function transformProps(chartProps: ChartProps) {
     } = colorByValue;
 
     if (valueColumn) {
-      const values = rawData
-        .map(d => {
-          const value = d[valueColumn];
-          return value !== null &&
-            value !== undefined &&
-            !Number.isNaN(Number(value))
-            ? Number(value)
-            : null;
-        })
-        .filter((v): v is number => v !== null);
+      const bounds = resolveNumericBounds(
+        rawData,
+        valueColumn,
+        lowerBound,
+        upperBound,
+        'colorByValue',
+      );
 
-      if (values.length > 0) {
-        const sortedValues = [...values].sort((a, b) => a - b);
-        const lower = resolvePercentOrNumber(
-          lowerBound,
-          sortedValues,
-          sortedValues[0],
-        );
-        const upper = resolvePercentOrNumber(
-          upperBound,
-          sortedValues,
-          sortedValues[sortedValues.length - 1],
-        );
+      if (bounds) {
+        const { sortedValues, lower, upper, usesPercentBounds } = bounds;
         const resolvedBreakpoints = (breakpoints ?? []).map(
           (bp: number | string) => resolvePercentOrNumber(bp, sortedValues, 0),
         );
-        if (lower > upper) {
-          console.warn(
-            '[GeoSet] Resolved colorByValue lowerBound (%s) is greater than upperBound (%s). All features will receive startColor.',
-            lower,
-            upper,
-          );
-        }
         metricDomain = [lower, upper];
 
         const start: RGBAColor = hasValidFill(startColor)
@@ -239,16 +219,13 @@ export default function transformProps(chartProps: ChartProps) {
         // to display — use the same color for both ends of the legend.
         const noGradient = lower === upper;
 
-        const hasMetricPctBound =
-          isPercentString(lowerBound) || isPercentString(upperBound);
-
         metricLegend = {
           min: lower,
           max: upper,
           startColor: start,
           endColor: noGradient ? start : end,
           legendName: legend?.title || valueColumn,
-          usesPercentBounds: hasMetricPctBound,
+          usesPercentBounds,
         };
       }
     } else {
@@ -269,51 +246,34 @@ export default function transformProps(chartProps: ChartProps) {
       upperBound,
     } = pointSizeConfigDynamic;
 
-    const sizeValues = rawData
-      .map(d =>
-        d[sizeValueColumn] != null ? Number(d[sizeValueColumn]) : null,
-      )
-      .filter((v): v is number => v !== null && !Number.isNaN(v));
+    const bounds = resolveNumericBounds(
+      rawData,
+      sizeValueColumn,
+      lowerBound,
+      upperBound,
+      'pointSize',
+    );
 
-    if (sizeValues.length > 0) {
-      const sortedSizeValues = [...sizeValues].sort((a, b) => a - b);
-      const sizeLower = resolvePercentOrNumber(
-        lowerBound,
-        sortedSizeValues,
-        sortedSizeValues[0],
-      );
-      const sizeUpper = resolvePercentOrNumber(
-        upperBound,
-        sortedSizeValues,
-        sortedSizeValues[sortedSizeValues.length - 1],
-      );
-      if (sizeLower > sizeUpper) {
-        console.warn(
-          '[GeoSet] Resolved pointSize lowerBound (%s) is greater than upperBound (%s). Size scaling may behave unexpectedly.',
-          sizeLower,
-          sizeUpper,
-        );
-      }
+    if (bounds) {
+      const { lower, upper, usesPercentBounds } = bounds;
       sizeScale = computeSizeScale(
         {
           valueColumn: sizeValueColumn,
           startSize,
           endSize,
-          lowerBound: sizeLower,
-          upperBound: sizeUpper,
+          lowerBound: lower,
+          upperBound: upper,
         },
-        [sizeLower, sizeUpper],
+        [lower, upper],
       );
-      const hasPctBound =
-        isPercentString(lowerBound) || isPercentString(upperBound);
       sizeLegend = {
-        lower: sizeLower,
-        upper: sizeUpper,
+        lower,
+        upper,
         startSize,
         endSize,
         valueColumn: sizeValueColumn,
         legendTitle: legend?.title,
-        usesPercentBounds: hasPctBound,
+        usesPercentBounds,
       };
     }
   }
