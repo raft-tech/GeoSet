@@ -4,7 +4,7 @@ import MapIcon from '@material-ui/icons/MapTwoTone';
 import { RGBAColor } from '../utils/colors';
 import type { LegendEntry, LegendGroup } from '../types';
 import { Swatch } from '../utils/legendSwatch';
-import { formatLegendNumber } from '../utils/formatNumber';
+import { formatBoundLabel } from '../utils/formatNumber';
 import GraduatedIcons from './GraduatedIcons';
 import CategorySizeGrid, { CategorySizeGridItem } from './CategorySizeGrid';
 
@@ -392,8 +392,22 @@ const LegendEntryContent: React.FC<{
               )`}
             />
             <Bounds>
-              <div>{formatLegendNumber(legendEntry.metric.lower)}</div>
-              <div>{`${formatLegendNumber(legendEntry.metric.upper)}${legendEntry.metric.lower !== legendEntry.metric.upper ? '+' : ''}`}</div>
+              <div>
+                {formatBoundLabel(
+                  legendEntry.metric.lower,
+                  'lower',
+                  legendEntry.metric.lower !== legendEntry.metric.upper,
+                  !!legendEntry.metric.usesPercentBounds,
+                )}
+              </div>
+              <div>
+                {formatBoundLabel(
+                  legendEntry.metric.upper,
+                  'upper',
+                  legendEntry.metric.lower !== legendEntry.metric.upper,
+                  !!legendEntry.metric.usesPercentBounds,
+                )}
+              </div>
             </Bounds>
           </MetricScale>
         </MetricBlock>

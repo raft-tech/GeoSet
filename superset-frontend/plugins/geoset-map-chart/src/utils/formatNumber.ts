@@ -50,6 +50,29 @@ export function formatLegendNumber(value: number): string {
 }
 
 /**
+ * Formats a bound value for legend display, adding the appropriate
+ * prefix/suffix based on whether percentile bounds are used.
+ *
+ * - Lower bound with percentile: "≤ 1.2K"
+ * - Upper bound with percentile: "> 5K"
+ * - Upper bound without percentile: "5K+"
+ * - No range (lower === upper): plain number
+ */
+export function formatBoundLabel(
+  value: number,
+  position: 'lower' | 'upper',
+  hasRange: boolean,
+  usesPercentBounds = false,
+): string {
+  const formatted = formatLegendNumber(value);
+  if (!hasRange) return formatted;
+  if (position === 'lower') {
+    return usesPercentBounds ? `≤\u2009${formatted}` : formatted;
+  }
+  return usesPercentBounds ? `>\u2009${formatted}` : `${formatted}+`;
+}
+
+/**
  * Formats a number to up to 1 decimal place, removing trailing zeros.
  */
 function trimDecimals(value: number): string {

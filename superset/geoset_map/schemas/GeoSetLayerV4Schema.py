@@ -57,6 +57,28 @@ class NumberOrPercent(fields.Field):
         return value
 
 
+def is_pct(val) -> bool:
+    """Check if a value is a percentage string (e.g. ``"25%"``)."""
+    return isinstance(val, str) and val.endswith("%")
+
+
+def to_float(val) -> float:
+    """Extract the numeric value from a number or percentage string."""
+    return float(val.rstrip("%")) if is_pct(val) else float(val)
+
+
+def validate_bound_ordering(lower, upper) -> None:
+    """Raise ``ValidationError`` if lower >= upper when both are the same type.
+
+    Mixed types (number vs percentage) are skipped since percentages are
+    resolved on the frontend against actual data.
+    """
+    if lower is None or upper is None:
+        return
+    if is_pct(lower) == is_pct(upper) and to_float(lower) >= to_float(upper):
+        raise ValidationError("upperBound must be greater than lowerBound.")
+
+
 class GlobalColoringSchemaV4(GlobalColoringSchema):
     """Schema for global/default layer styling (V4).
 
@@ -130,20 +152,7 @@ class DynamicPointSizeSchema(Schema):
         if start is not None and end is not None and end <= start:
             raise ValidationError("endSize must be greater than startSize.")
 
-        lower = data.get("lower_bound")
-        upper = data.get("upper_bound")
-        if lower is None or upper is None:
-            return
-
-        lower_is_pct = isinstance(lower, str) and lower.endswith("%")
-        upper_is_pct = isinstance(upper, str) and upper.endswith("%")
-
-        # Only compare when both are the same type
-        if lower_is_pct == upper_is_pct:
-            lower_val = float(lower.rstrip("%")) if lower_is_pct else float(lower)
-            upper_val = float(upper.rstrip("%")) if upper_is_pct else float(upper)
-            if lower_val >= upper_val:
-                raise ValidationError("upperBound must be greater than lowerBound.")
+        validate_bound_ordering(data.get("lower_bound"), data.get("upper_bound"))
 
 
 class StaticOrDynamicPointSizeField(fields.Field):

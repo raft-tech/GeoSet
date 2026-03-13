@@ -411,9 +411,7 @@ export function getLayer(
           let iconName = pointType.replace('-icon', '');
           if (!iconName) iconName = 'circle';
 
-          const hasDynamicSize = sortedFeatures.some(
-            f => (f as any).sizeValue != null,
-          );
+          const hasDynamicSize = sortedFeatures.some(f => f.sizeValue != null);
 
           return new IconLayer({
             id: `icon-layer-${fd.slice_id}-${sortedFeatures.length}`,
@@ -431,7 +429,7 @@ export function getLayer(
               };
             },
             getSize: hasDynamicSize
-              ? (f: any) => (f as any).sizeValue ?? iconSize
+              ? (f: any) => f.sizeValue ?? iconSize
               : () => iconSize,
             sizeScale: 2,
             sizeUnits: 'pixels',
@@ -451,9 +449,7 @@ export function getLayer(
           });
         }
 
-        const hasDynamicRadius = sortedFeatures.some(
-          f => (f as any).sizeValue != null,
-        );
+        const hasDynamicRadius = sortedFeatures.some(f => f.sizeValue != null);
 
         return new ScatterplotLayer({
           id: `point-layer-${fd.slice_id}`,
@@ -466,7 +462,7 @@ export function getLayer(
           getLineColor: () => strokeColorArray,
           getLineWidth: lineWidth ?? (fd.lineWidth || 1),
           getRadius: hasDynamicRadius
-            ? (f: any) => (f as any).sizeValue ?? iconSize
+            ? (f: any) => f.sizeValue ?? iconSize
             : () => iconSize,
           radiusUnits: 'pixels',
           radiusMinPixels: 1,
@@ -1153,6 +1149,7 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
         propVisualConfig?.metric?.valueColumn ||
         payload.data.metricLabels?.[0] ||
         'Value',
+      usesPercentBounds: metricLegendObject.usesPercentBounds,
     };
   }
 

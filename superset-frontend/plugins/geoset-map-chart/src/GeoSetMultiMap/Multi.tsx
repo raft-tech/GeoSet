@@ -413,6 +413,7 @@ const DeckMulti = (props: DeckMultiProps) => {
                       upper: ml.max,
                       startColor: ml.startColor,
                       endColor: ml.endColor,
+                      usesPercentBounds: ml.usesPercentBounds,
                     },
                     sizeEntry: isCombined ? buildSizeEntry() : undefined,
                     isCombinedMetricSize: isCombined,

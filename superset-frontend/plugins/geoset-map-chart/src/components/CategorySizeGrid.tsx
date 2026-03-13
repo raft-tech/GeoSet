@@ -1,7 +1,8 @@
-import React, { Fragment } from 'react';
+import type { FC, ReactNode } from 'react';
+import { Fragment } from 'react';
 import { RGBAColor } from '../utils/colors';
 import { getColoredSvgUrl } from '../utils/svgIcons';
-import { formatLegendNumber } from '../utils/formatNumber';
+import { formatBoundLabel, formatLegendNumber } from '../utils/formatNumber';
 
 export type CategorySizeGridItem = {
   key: string;
@@ -16,14 +17,14 @@ export type CategorySizeGridProps = {
   upper: number;
   icon?: string;
   usesPercentBounds?: boolean;
-  renderLabel: (item: CategorySizeGridItem) => React.ReactNode;
+  renderLabel: (item: CategorySizeGridItem) => ReactNode;
 };
 
 const T_VALUES = [0, 0.5, 1];
 const MIN_R = 3;
 const MAX_R = 13;
 
-const CategorySizeGrid: React.FC<CategorySizeGridProps> = ({
+const CategorySizeGrid: FC<CategorySizeGridProps> = ({
   categories,
   lower,
   upper,
@@ -88,19 +89,17 @@ const CategorySizeGrid: React.FC<CategorySizeGridProps> = ({
       {/* Size value labels */}
       <span />
       {values.map((val, i) => {
-        let text = formatLegendNumber(val);
-        if (hasRange && i === 0 && usesPercentBounds) {
-          text = `≤\u2009${text}`;
-        }
-        if (hasRange && i === 2) {
-          text = usesPercentBounds ? `>\u2009${text}` : `${text}+`;
-        }
+        const position = i === 0 ? 'lower' : i === 2 ? 'upper' : undefined;
+        const text = position
+          ? formatBoundLabel(val, position, hasRange, usesPercentBounds)
+          : formatLegendNumber(val);
         return (
           <span
             key={i}
             style={{
               textAlign: 'center',
               fontSize: 11,
+              // eslint-disable-next-line theme-colors/no-literal-colors
               color: 'var(--ant-color-text-secondary, #888)',
             }}
           >
