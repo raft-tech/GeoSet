@@ -21,6 +21,15 @@ from superset.geoset_map.schemas.GeoSetLayerV4Schema import (
 )
 
 
+def _is_pct(val):
+    return isinstance(val, str) and val.endswith("%")
+
+
+def _to_float(val):
+    """Extract the numeric value from a number or percentage string."""
+    return float(val.rstrip("%")) if _is_pct(val) else float(val)
+
+
 class ColorByValueSchemaV5(Schema):
     """Schema for value-based coloring configuration (V5).
 
@@ -53,72 +62,41 @@ class ColorByValueSchemaV5(Schema):
 
     @validates_schema
     def validate_bounds_and_breakpoints(self, data, **kwargs):
-        """Validate bounds and breakpoints relationships.
-
-        Ensures:
-        - upper_bound > lower_bound (when both provided and comparable)
-        - breakpoints are in ascending order (when all same type)
-        - all breakpoints fall within bounds (when all numeric)
-        """
         upper = data.get("upper_bound")
         lower = data.get("lower_bound")
         breakpoints = data.get("breakpoints", [])
 
-        def is_pct(val):
-            return isinstance(val, str) and val.endswith("%")
-
-        def pct_val(val):
-            return float(val.rstrip("%"))
-
-        any_pct = (
-            is_pct(upper) or is_pct(lower) or any(is_pct(bp) for bp in breakpoints)
-        )
-
-        if not any_pct:
-            # All numeric — full validation (backward compatible)
-            if upper is not None and lower is not None and upper <= lower:
+        # Bounds: validate ordering when both present and same type
+        if lower is not None and upper is not None:
+            if _is_pct(lower) == _is_pct(upper) and (
+                _to_float(lower) >= _to_float(upper)
+            ):
                 raise ValidationError("upperBound must be greater than lowerBound.")
 
-            if breakpoints != sorted(breakpoints):
+        # Breakpoints: validate ascending order when all are same type
+        all_same_type = all(_is_pct(bp) for bp in breakpoints) or all(
+            isinstance(bp, (int, float)) for bp in breakpoints
+        )
+        if len(breakpoints) > 1 and all_same_type:
+            vals = [_to_float(bp) for bp in breakpoints]
+            if vals != sorted(vals):
                 raise ValidationError("breakpoints must be listed lowest to highest.")
 
-            if upper is not None and lower is not None and breakpoints:
-                for bp in breakpoints:
-                    if bp < lower or bp > upper:
-                        raise ValidationError(
-                            "All breakpoints must be between lowerBound "
-                            "and upperBound."
-                        )
-        else:
-            # Some values are percentages — validate what we can.
-            # Note: breakpoint-within-bounds validation is skipped when types
-            # are mixed (numbers + percentages) because percentages are
-            # resolved to actual values on the frontend at render time.
-            if (
-                upper is not None
-                and lower is not None
-                and is_pct(upper) == is_pct(lower)
-            ):
-                u = pct_val(upper) if is_pct(upper) else upper
-                l = pct_val(lower) if is_pct(lower) else lower
-                if u <= l:
+        # Breakpoints in range: only when everything is numeric (percentages
+        # are resolved against actual data on the frontend)
+        all_numeric = (
+            lower is not None
+            and upper is not None
+            and not _is_pct(lower)
+            and not _is_pct(upper)
+            and all(isinstance(bp, (int, float)) for bp in breakpoints)
+        )
+        if all_numeric:
+            for bp in breakpoints:
+                if bp < lower or bp > upper:
                     raise ValidationError(
-                        "upperBound must be greater than lowerBound."
+                        "All breakpoints must be between lowerBound and upperBound."
                     )
-
-            # Validate breakpoint ordering when all are the same type
-            if breakpoints:
-                if all(is_pct(bp) for bp in breakpoints):
-                    pcts = [pct_val(bp) for bp in breakpoints]
-                    if pcts != sorted(pcts):
-                        raise ValidationError(
-                            "breakpoints must be listed lowest to highest."
-                        )
-                elif all(isinstance(bp, (int, float)) for bp in breakpoints):
-                    if breakpoints != sorted(breakpoints):
-                        raise ValidationError(
-                            "breakpoints must be listed lowest to highest."
-                        )
 
 
 class GeoSetLayerV5Schema(GeoSetLayerV4Schema):
