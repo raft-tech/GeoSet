@@ -21,7 +21,7 @@ params:
     \    \"fillPattern\": \"solid\",\n    \"lineStyle\": \"solid\",\n    \"strokeColor\"\
     : [77, 74, 57, 255],\n    \"strokeWidth\": 1\n  },\n  \"legend\": {\n    \"name\"\
     : \"Storm Tracks\",\n    \"title\": \"Storm Tracks\"\n  }\n}"
-  schema_version: 4
+  schema_version: 5
   annotation_layers: []
 cache_timeout: null
 uuid: a1a862f1-2907-4ff5-a261-0d8e5199f63f

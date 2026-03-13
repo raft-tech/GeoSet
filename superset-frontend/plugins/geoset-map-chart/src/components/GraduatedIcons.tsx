@@ -1,7 +1,7 @@
-import React from 'react';
+import type { FC } from 'react';
 import { RGBAColor, lerpColorCss, lerpColorRgba } from '../utils/colors';
 import { getColoredSvgUrl } from '../utils/svgIcons';
-import { formatLegendNumber } from '../utils/formatNumber';
+import { formatBoundLabel } from '../utils/formatNumber';
 
 export interface GraduatedIconsProps {
   lower: number;
@@ -16,7 +16,7 @@ export interface GraduatedIconsProps {
 
 const T_VALUES = [0, 0.33, 0.67, 1];
 
-const GraduatedIcons: React.FC<GraduatedIconsProps> = ({
+const GraduatedIcons: FC<GraduatedIconsProps> = ({
   lower,
   upper,
   startColor,
@@ -48,15 +48,18 @@ const GraduatedIcons: React.FC<GraduatedIconsProps> = ({
 
   const iconName = icon?.replace('-icon', '') || 'circle';
   const hasRange = lower !== upper;
-  const lowerLabel =
-    hasRange && usesPercentBounds
-      ? `≤\u2009${formatLegendNumber(lower)}`
-      : formatLegendNumber(lower);
-  const upperLabel = hasRange
-    ? usesPercentBounds
-      ? `>\u2009${formatLegendNumber(upper)}`
-      : `${formatLegendNumber(upper)}+`
-    : formatLegendNumber(upper);
+  const lowerLabel = formatBoundLabel(
+    lower,
+    'lower',
+    hasRange,
+    usesPercentBounds,
+  );
+  const upperLabel = formatBoundLabel(
+    upper,
+    'upper',
+    hasRange,
+    usesPercentBounds,
+  );
 
   if (responsive) {
     const vw = 180;
@@ -99,6 +102,7 @@ const GraduatedIcons: React.FC<GraduatedIconsProps> = ({
             display: 'block',
             maxWidth: 180,
             fontSize: 11,
+            // eslint-disable-next-line theme-colors/no-literal-colors
             fill: 'var(--ant-color-text-secondary, #888)',
           }}
         >

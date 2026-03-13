@@ -34,7 +34,7 @@ GeoSet bridges the gap between Superset and GIS tooling. This is accomplished by
 - Single and multilayer maps
 - Visibility toggling by zoom
 - Hover over and additional details pane
-- Color by category or value (either can be used with Point Size Scaling)
+- Color by category or value (number or percentile bounds; either can be used with Point Size Scaling)
 - Point size scaling by value (number or percentile bounds)
 - Collapsible legend with layer toggling and dynamic iconography
 - Native dashboard integration
@@ -87,7 +87,7 @@ GeoSet is an extension of Superset. Everything that can be done within Superset 
 
 ## Quick Start
 
-There is a Docker Compose file at the root of the repository. This file is based off [docker-compose-light.yml](https://github.com/apache/superset/blob/master/docker-compose-light.yml) in the upstream Apache Superset repository. We add a PostGIS database service to the stack and preload it with example data. 
+There is a Docker Compose file at the root of the repository. This file is based off [docker-compose-light.yml](https://github.com/apache/superset/blob/master/docker-compose-light.yml) in the upstream Apache Superset repository. We add a PostGIS database service to the stack and preload it with example data.
 
 ### Step 1 - Create a Copy of docker/.env.example
 

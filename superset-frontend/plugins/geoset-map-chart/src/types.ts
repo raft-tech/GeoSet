@@ -87,6 +87,7 @@ export type MetricEntry = {
   upper: number;
   startColor: RGBAColor;
   endColor: RGBAColor;
+  usesPercentBounds?: boolean;
 };
 
 export type LegendEntry = {

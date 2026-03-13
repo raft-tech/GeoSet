@@ -12,6 +12,7 @@ from superset.geoset_map.schemas import (
     GeoSetLayerV2Schema,
     GeoSetLayerV3Schema,
     GeoSetLayerV4Schema,
+    GeoSetLayerV5Schema,
     MapboxApiKeySchema,
 )
 from superset.extensions import event_logger
@@ -39,6 +40,7 @@ class GeoSetMapRestApi(BaseSupersetApi):
         "v2": GeoSetLayerV2Schema(),
         "v3": GeoSetLayerV3Schema(),
         "v4": GeoSetLayerV4Schema(),
+        "v5": GeoSetLayerV5Schema(),
     }
     # single-step upgrade functions: each handles vN → vN+1
     # multi-version jumps (e.g. v1→v3) are auto-chained by convert_schema
@@ -46,6 +48,7 @@ class GeoSetMapRestApi(BaseSupersetApi):
         ("v1", "v2"): GeoSetLayerV2Schema.upgrade_from_previous_version,
         ("v2", "v3"): GeoSetLayerV3Schema.upgrade_from_previous_version,
         ("v3", "v4"): GeoSetLayerV4Schema.upgrade_from_previous_version,
+        ("v4", "v5"): GeoSetLayerV5Schema.upgrade_from_previous_version,
     }
 
     method_permission_name = MODEL_API_RW_METHOD_PERMISSION_MAP
@@ -58,6 +61,7 @@ class GeoSetMapRestApi(BaseSupersetApi):
         GeoSetLayerV2Schema,
         GeoSetLayerV3Schema,
         GeoSetLayerV4Schema,
+        GeoSetLayerV5Schema,
         MapboxApiKeySchema,
     )
 

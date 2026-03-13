@@ -2,15 +2,20 @@
 
 Reference for the GeoSet Map Layer JSON configuration object. This is the schema that controls how geographic features are styled, colored, and labeled.
 
-- [Overview of Schema Fields](#overview-of-schema-fields)
-  - [Constraints](#constraints)
-- [Field Specifications](#field-specifications)
-  - [globalColoring](#globalcoloring)
-  - [colorByCategory](#colorbycategory)
-  - [colorByValue](#colorbyvalue)
-  - [pointSize](#pointsize)
-  - [textOverlayStyle](#textoverlaystyle)
-  - [legend](#legend)
+- [JSON Config Spec](#json-config-spec)
+  - [Overview of Schema Fields](#overview-of-schema-fields)
+    - [Constraints](#constraints)
+  - [Field Specifications](#field-specifications)
+    - [globalColoring](#globalcoloring)
+    - [colorByCategory](#colorbycategory)
+    - [colorByValue](#colorbyvalue)
+      - [Constraints](#constraints-1)
+    - [pointSize](#pointsize)
+      - [Static](#static)
+      - [Dynamic (data-driven)](#dynamic-data-driven)
+      - [Constraints](#constraints-2)
+    - [textOverlayStyle](#textoverlaystyle)
+    - [legend](#legend)
 
 ## Overview of Schema Fields
 
@@ -105,9 +110,7 @@ Each entry in `categoricalColors` is an object with a single key (the category v
 
 ### colorByValue
 
-> **Note:** Percentile-based bounds (e.g. `"25%"`) for `colorByValue` are in progress in PR [#319](https://github.com/raft-tech/GeoSet/pull/319), matching the existing support in dynamic `pointSize`. The `lowerBound`, `upperBound`, and `breakpoints` fields will accept percentage strings once that PR is merged.
-
-Colors features using a gradient with values corresponding to a numerical column.
+Colors features using a gradient with values corresponding to a numerical column. Bounds and breakpoints accept both numeric values and percentile strings (e.g. `"25%"`), matching the existing support in dynamic `pointSize`.
 
 Given a hurricane dataset with a `max_wind_speed` column (in mph), this config colors storms on a yellow-to-red gradient. Storms with 0 mph wind are yellow, 150 mph storms are red, and values in between are interpolated with breakpoints at 50 and 100 mph:
 
@@ -124,20 +127,23 @@ Given a hurricane dataset with a `max_wind_speed` column (in mph), this config c
 }
 ```
 
-| Field         | Type             | Required | Description                                                 |
-| ------------- | ---------------- | -------- | ----------------------------------------------------------- |
-| `valueColumn` | string           | **yes**  | Numeric column to map to color.                             |
-| `startColor`  | `[R, G, B, A]`   | **yes**  | Color at the low end of the gradient.                       |
-| `endColor`    | `[R, G, B, A]`   | **yes**  | Color at the high end of the gradient.                      |
-| `lowerBound`  | number or `null` | no       | Value mapped to `startColor`. `null` uses the data minimum. |
-| `upperBound`  | number or `null` | no       | Value mapped to `endColor`. `null` uses the data maximum.   |
-| `breakpoints` | array of numbers | **yes**  | Intermediate stops for the gradient. Can be empty (`[]`).   |
+| Field         | Type                                   | Required | Description                                                 |
+| ------------- | -------------------------------------- | -------- | ----------------------------------------------------------- |
+| `valueColumn` | string                                 | **yes**  | Numeric column to map to color.                             |
+| `startColor`  | `[R, G, B, A]`                         | **yes**  | Color at the low end of the gradient.                       |
+| `endColor`    | `[R, G, B, A]`                         | **yes**  | Color at the high end of the gradient.                      |
+| `lowerBound`  | number, percentage string, or `null`   | no       | Value mapped to `startColor`. `null` uses the data minimum. |
+| `upperBound`  | number, percentage string, or `null`   | no       | Value mapped to `endColor`. `null` uses the data maximum.   |
+| `breakpoints` | array of numbers or percentage strings | **yes**  | Intermediate stops for the gradient. Can be empty (`[]`).   |
+
+**Percentage bounds:** You can use strings like `"10%"` or `"90%"` for bounds and breakpoints. These are resolved against the actual data distribution on the frontend (e.g. `"10%"` means the 10th percentile of the data). This is useful when the data is skewed or contains outliers.
 
 #### Constraints
 
-- `upperBound` must be greater than `lowerBound` (when both are provided).
-- `breakpoints` must be in ascending order.
-- All breakpoints must fall between `lowerBound` and `upperBound` (when both bounds are provided).
+- `upperBound` must be greater than `lowerBound` (when both are the same type -- both numbers or both percentages).
+- `breakpoints` must be in ascending order (when all are the same type).
+- All breakpoints must fall between `lowerBound` and `upperBound` (when all values are numeric).
+- Mixed types (numbers and percentages) skip cross-type validation since percentages are resolved at render time.
 
 ### pointSize
 
@@ -145,7 +151,7 @@ Controls the size of point features. Accepts either a static number or a dynamic
 
 #### Static
 
-With static sizing, the same point size is applied to all points. 
+With static sizing, the same point size is applied to all points.
 
 ```json
 {

@@ -29,14 +29,17 @@ import {
   computeMetricColorScaleUnified,
   computeSizeScale,
   ColorByValueConfig,
+  ColorByValueConfigRaw,
   MetricLegend,
   PointSizeConfigRaw,
   DEFAULT_SUPERSET_COLOR,
   RGBAColor,
   toRGBA,
   resolvePercentOrNumber,
+  resolveNumericBounds,
 } from './utils/colors';
-import { GeoJsonFeature } from './types';
+import type { GeoJsonFeature } from './types';
+import type { SizeLegend } from './components/Legend';
 import {
   normalizeNullCategory,
   parseRawFeatures,
@@ -106,10 +109,11 @@ export default function transformProps(chartProps: ChartProps) {
   const {
     globalColoring,
     colorByCategory,
-    colorByValue,
+    colorByValue: colorByValueRaw,
     legend,
     textOverlayStyle,
   } = geojsonConfig;
+  const colorByValue = colorByValueRaw as ColorByValueConfigRaw | undefined;
 
   const fillColor = globalColoring?.fillColor;
   const strokeColor = globalColoring?.strokeColor;
@@ -163,6 +167,7 @@ export default function transformProps(chartProps: ChartProps) {
   let metricDomain: [number, number] | null = null;
   let metricColorScale: ((v: number) => number[]) | null = null;
   let metricLegend: MetricLegend | null = null;
+  let resolvedMetric: ColorByValueConfig | undefined;
 
   if (colorByValue && rawData.length > 0) {
     const {
@@ -175,21 +180,19 @@ export default function transformProps(chartProps: ChartProps) {
     } = colorByValue;
 
     if (valueColumn) {
-      const values = rawData
-        .map(d => {
-          const value = d[valueColumn];
-          return value !== null &&
-            value !== undefined &&
-            !Number.isNaN(Number(value))
-            ? Number(value)
-            : null;
-        })
-        .filter((v): v is number => v !== null);
+      const bounds = resolveNumericBounds(
+        rawData,
+        valueColumn,
+        lowerBound,
+        upperBound,
+        'colorByValue',
+      );
 
-      if (values.length > 0) {
-        const sortedValues = [...values].sort((a, b) => a - b);
-        const lower = lowerBound ?? sortedValues[0];
-        const upper = upperBound ?? sortedValues[sortedValues.length - 1];
+      if (bounds) {
+        const { sortedValues, lower, upper, usesPercentBounds } = bounds;
+        const resolvedBreakpoints = (breakpoints ?? []).map(
+          (bp: number | string) => resolvePercentOrNumber(bp, sortedValues, 0),
+        );
         metricDomain = [lower, upper];
 
         const start: RGBAColor = hasValidFill(startColor)
@@ -204,10 +207,11 @@ export default function transformProps(chartProps: ChartProps) {
           valueColumn,
           startColor: start,
           endColor: end,
-          breakpoints,
+          breakpoints: resolvedBreakpoints,
           lowerBound: lower,
           upperBound: upper,
         };
+        resolvedMetric = spec;
 
         metricColorScale = computeMetricColorScaleUnified(spec, [lower, upper]);
 
@@ -221,6 +225,7 @@ export default function transformProps(chartProps: ChartProps) {
           startColor: start,
           endColor: noGradient ? start : end,
           legendName: legend?.title || valueColumn,
+          usesPercentBounds,
         };
       }
     } else {
@@ -230,15 +235,7 @@ export default function transformProps(chartProps: ChartProps) {
 
   // --- Size scale & legend (for dynamic pointSize) ---
   let sizeScale: ((val: number) => number) | null = null;
-  let sizeLegend: {
-    lower: number;
-    upper: number;
-    startSize: number;
-    endSize: number;
-    valueColumn: string;
-    legendTitle?: string;
-    usesPercentBounds?: boolean;
-  } | null = null;
+  let sizeLegend: SizeLegend | null = null;
 
   if (pointSizeConfigDynamic?.valueColumn && rawData.length > 0) {
     const {
@@ -249,63 +246,50 @@ export default function transformProps(chartProps: ChartProps) {
       upperBound,
     } = pointSizeConfigDynamic;
 
-    const sizeValues = rawData
-      .map(d =>
-        d[sizeValueColumn] != null ? Number(d[sizeValueColumn]) : null,
-      )
-      .filter((v): v is number => v !== null && !Number.isNaN(v));
+    const bounds = resolveNumericBounds(
+      rawData,
+      sizeValueColumn,
+      lowerBound,
+      upperBound,
+      'pointSize',
+    );
 
-    if (sizeValues.length > 0) {
-      const sortedSizeValues = [...sizeValues].sort((a, b) => a - b);
-      const sizeLower = resolvePercentOrNumber(
-        lowerBound,
-        sortedSizeValues,
-        sortedSizeValues[0],
-      );
-      const sizeUpper = resolvePercentOrNumber(
-        upperBound,
-        sortedSizeValues,
-        sortedSizeValues[sortedSizeValues.length - 1],
-      );
+    if (bounds) {
+      const { lower, upper, usesPercentBounds } = bounds;
       sizeScale = computeSizeScale(
         {
           valueColumn: sizeValueColumn,
           startSize,
           endSize,
-          lowerBound: sizeLower,
-          upperBound: sizeUpper,
+          lowerBound: lower,
+          upperBound: upper,
         },
-        [sizeLower, sizeUpper],
+        [lower, upper],
       );
-      const hasPctBound =
-        (typeof lowerBound === 'string' && lowerBound.endsWith('%')) ||
-        (typeof upperBound === 'string' && upperBound.endsWith('%'));
       sizeLegend = {
-        lower: sizeLower,
-        upper: sizeUpper,
+        lower,
+        upper,
         startSize,
         endSize,
         valueColumn: sizeValueColumn,
         legendTitle: legend?.title,
-        usesPercentBounds: hasPctBound,
+        usesPercentBounds,
       };
     }
   }
 
   // --- Combined metric+size validation ---
-  const isCombinedMetricSize: boolean = (() => {
-    if (!metricLegend || !sizeLegend) return false;
-    const metricCol = colorByValue?.valueColumn;
-    const sizeCol = pointSizeConfigDynamic?.valueColumn;
-    if (metricCol !== sizeCol) {
-      console.warn(
-        `[GeoSet Legend] colorByValue.valueColumn ("${metricCol}") != ` +
-          `pointSize.valueColumn ("${sizeCol}"). Rendering legends separately.`,
-      );
-      return false;
-    }
-    return true;
-  })();
+  const isCombinedMetricSize: boolean =
+    !!metricLegend &&
+    !!sizeLegend &&
+    colorByValue?.valueColumn === pointSizeConfigDynamic?.valueColumn;
+
+  if (metricLegend && sizeLegend && !isCombinedMetricSize) {
+    console.warn(
+      `[GeoSet Legend] colorByValue.valueColumn ("${colorByValue?.valueColumn}") != ` +
+        `pointSize.valueColumn ("${pointSizeConfigDynamic?.valueColumn}"). Rendering legends separately.`,
+    );
+  }
 
   // --- Parse raw features with caching ---
   const rawFeatures = parseRawFeatures(rawData, dimension, filterNulls);
@@ -434,7 +418,7 @@ export default function transformProps(chartProps: ChartProps) {
 
   // METRIC COLORING MODE (overrides category)
   if (useMetricColoring && features.length > 0) {
-    const { valueColumn } = colorByValue;
+    const { valueColumn } = colorByValue!;
 
     features = features.map(feature => {
       const featureProperties = { ...feature.properties };
@@ -506,7 +490,7 @@ export default function transformProps(chartProps: ChartProps) {
     features = features.map(f => {
       const val = f.properties?.[sizeValueColumn];
       if (val == null) return f;
-      return { ...f, sizeValue: sizeScale!(Number(val)) };
+      return { ...f, sizeValue: sizeScale(Number(val)) };
     });
   }
 
@@ -548,7 +532,7 @@ export default function transformProps(chartProps: ChartProps) {
     limitReached,
     visualConfig: {
       dimension,
-      metric: colorByValue,
+      metric: resolvedMetric,
       filled,
       stroked,
       extruded,
