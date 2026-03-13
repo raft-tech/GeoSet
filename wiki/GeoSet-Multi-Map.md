@@ -1,8 +1,8 @@
 # GeoSet Multi Map Chart
 
-The **GeoSet Multi Map** (`deck_geoset_multi_map`) chart type composes multiple [[GeoSet Map Layer Chart|GeoSet Map Layer]] charts into a single interactive map. Each sub-layer retains its own styling, data source, and legend configuration.
+The **GeoSet Multi Map** (`deck_geoset_multi_map`) chart type composes multiple [[GeoSet Map Layer|GeoSet Map Layer]] charts into a single interactive map. Each sub-layer retains its own styling, data source, and legend configuration.
 
-<img width="1617" height="450" alt="Screenshot 2026-02-23 at 4 08 10 PM" src="https://github.com/user-attachments/assets/1004e75e-5050-4455-8c72-66d5d5ca3e50" />
+<img width="1617" height="525" alt="Screenshot 2026-02-23 at 4 08 10 PM" src="https://github.com/user-attachments/assets/1004e75e-5050-4455-8c72-66d5d5ca3e50" />
 
 ## Creating a Multi Map Chart
 
@@ -11,10 +11,8 @@ The **GeoSet Multi Map** (`deck_geoset_multi_map`) chart type composes multiple 
 3. Select your dataset (used only for dashboard filters) and choose **GeoSet Multi Map** as the chart type
 4. In the **Map** panel, add your layer charts via **GeoSet Layer Charts**
 
-<p>
-  <img width="49%" height="350" alt="geoset-chart-selection" src="https://github.com/user-attachments/assets/7285be19-92e5-43ea-beec-4cd6e17b9243" />
-  <img width="49%" height="350" alt="geoset-multi-chart-builder" src="https://github.com/user-attachments/assets/add345f5-fc9a-456f-95cd-fae80c29cdcf" />
-</p>
+<img width="1912" height="500" alt="geoset-chart-selection" src="https://github.com/user-attachments/assets/25878fcd-a972-47e0-9ae6-da94f7fa1c8d" />
+<img width="1912" height="530" alt="geoset-mult-chart-builder" src="https://github.com/user-attachments/assets/b681929a-5bed-4942-94e6-e7ea88d27b6d" />
 
 ## Map Controls
 
@@ -28,17 +26,17 @@ When checked, shows the **Viewport** control for setting a fixed map position. T
 
 ### Viewport
 
-Sets the map center, zoom, pitch, and bearing for the static viewport. See [[GeoSet Map Layer Chart#Viewport|Viewport]] for details on how the controls work.
+Sets the map center, zoom, pitch, and bearing for the static viewport. See [[GeoSet Map Layer#Viewport|Viewport]] for details on how the controls work.
 
 ### GeoSet Layer Charts
 
-Select the [[GeoSet Map Layer Chart|GeoSet Map Layer]] charts to include. Only charts of type `deck_geoset_map_layer` appear in the list.
+Select the [[GeoSet Map Layer|GeoSet Map Layer]] charts to include. Only charts of type `deck_geoset_map_layer` appear in the list.
 
 > **Note:** If Enable Static Viewport is off, the viewport selection control is hidden — the map will use the default viewport.
 
 ## Multi-Layer Legend
 
-When a Multi Map chart is rendered on a dashboard, a unified legend is shown covering all active layers. Each layer's legend entries come from the `legend` field in its [[GeoSet Map Layer Chart#legend|GeoJSON Config]].
+When a Multi Map chart is rendered on a dashboard, a unified legend is shown covering all active layers. Each layer's legend entries come from the `legend` field in its [[GeoSet Map Layer#legend|GeoJSON Config]].
 
 ### Legend Features
 

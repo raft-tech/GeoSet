@@ -810,13 +810,13 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
     propVisualConfig?.fillColor || formData.fillColorPicker,
   );
 
-  // Extract defaultLegendNames from geojsonConfig for null category substitution
+  // Extract defaultLegendName from geojsonConfig for null category substitution
   const getDefaultLegendNames = (config: any): string[] => {
     try {
       const parsed =
         typeof config === 'string' ? JSON.parse(config) : (config ?? {});
-      return Array.isArray(parsed?.colorByCategory?.defaultLegendNames)
-        ? parsed.colorByCategory.defaultLegendNames
+      return Array.isArray(parsed?.colorByCategory?.defaultLegendName)
+        ? parsed.colorByCategory.defaultLegendName
         : ['Other'];
     } catch {
       return ['Other'];
@@ -871,11 +871,11 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
       console.warn('🚨 Failed to parse categoryColorMapping', err);
     }
 
-    // Extract defaultLegendNames from parsed config
+    // Extract defaultLegendName from parsed config
     const defaultLegendNames = Array.isArray(
-      (parsedGeojsonConfig as any)?.colorByCategory?.defaultLegendNames,
+      (parsedGeojsonConfig as any)?.colorByCategory?.defaultLegendName,
     )
-      ? (parsedGeojsonConfig as any).colorByCategory.defaultLegendNames
+      ? (parsedGeojsonConfig as any).colorByCategory.defaultLegendName
       : ['Other'];
 
     setCategories(

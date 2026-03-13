@@ -340,8 +340,8 @@ export default function transformProps(chartProps: ChartProps) {
     : categoryColorMapping || {};
 
   // Extract default legend names, fallback to ['Other']
-  const defaultLegendNames = Array.isArray(colorByCategory?.defaultLegendNames)
-    ? colorByCategory.defaultLegendNames
+  const defaultLegendNames = Array.isArray(colorByCategory?.defaultLegendName)
+    ? colorByCategory.defaultLegendName
     : ['Other'];
 
   // For Line/LineString geometries, use strokeColor as the fallback for category coloring

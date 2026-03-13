@@ -2,20 +2,20 @@
 
 GeoSet ships with a self-contained demo stack that loads real geospatial data and pre-built dashboards so you can explore the platform without setting up your own data sources.
 
-<img width="1909" height="500" alt="Screenshot 2026-02-23 at 3 40 56 PM" src="https://github.com/user-attachments/assets/801bd439-a865-45ba-b5d8-a5353c7b11dd" />
+<img width="1912" height="580" alt="geoset-example-dashboard" src="https://github.com/user-attachments/assets/2c47ffff-ce7d-4a6d-b56b-c6d8b524df77" />
 
-<img width="1020" height="500" alt="helene-storm-data" src="https://github.com/user-attachments/assets/b1848a34-e12d-4829-97f7-b6ba6d0c3eb4" />
+<img width="1912" height="825" alt="helene-storm-data" src="https://github.com/user-attachments/assets/b1848a34-e12d-4829-97f7-b6ba6d0c3eb4" />
 
 
 ## What's Included
 
 The demo stack loads three datasets from public APIs:
 
-| Dataset | Source | Table |
-|---|---|---|
-| US State Boundaries | Census Bureau API | `census_state_boundaries` |
-| Active Wildfire Locations | NIFC ArcGIS API | `nifc_wildfire_locations` |
-| Hurricane Best Track | NHC/NOAA API | `nhc_best_track` |
+| Dataset                   | Source            | Table                     |
+| ------------------------- | ----------------- | ------------------------- |
+| US State Boundaries       | Census Bureau API | `census_state_boundaries` |
+| Active Wildfire Locations | NIFC ArcGIS API   | `nifc_wildfire_locations` |
+| Hurricane Best Track      | NHC/NOAA API      | `nhc_best_track`          |
 
 These datasets power two multi-layer map charts inside the **GeoSet Example Dashboard**:
 

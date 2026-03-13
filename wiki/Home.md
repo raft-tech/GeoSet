@@ -2,7 +2,7 @@
 
 GeoSet is a geospatial data monitoring and visualization platform built on [Apache Superset](https://github.com/apache/superset). It extends Superset with custom deck.gl-based map visualization plugins purpose-built for exploring geographic data at scale.
 
-<img width="1912" height="450" alt="Screenshot 2026-02-23 at 4 46 31 PM" src="https://github.com/user-attachments/assets/17b9b7a2-4507-40a8-94c2-ba142bcd2c60" />
+<img width="1912" height="525" alt="geoset-example-dashboard" src="https://github.com/user-attachments/assets/7dc2e194-f4e7-495c-b4b5-33828752063f" />
 
 ## What GeoSet Adds
 
@@ -19,9 +19,9 @@ GeoSet is a geospatial data monitoring and visualization platform built on [Apac
 ## Pages
 
 - [[Getting Started]] — Install and run GeoSet with Docker
-- [[GeoSet Map Layer Chart]] — Creating and configuring individual map layer charts
-- [[GeoSet Multi Map Chart]] — Composing multiple layers into a single map
-- [[Sample Data and Demo Dashboards]] — Loading the example Hurricane and Wildfire dashboards
+- [[GeoSet Map Layer]] — Creating and configuring individual map layer charts
+- [[GeoSet Multi Map]] — Composing multiple layers into a single map
+- [[Sample Dashboards]] — Loading the example Hurricane and Wildfire dashboards
 - [[Development Guide]] — Local dev setup, plugin architecture, contributing
 - [[JSON Config Spec]] — Reference for the GeoSet Map Layer JSON configuration schema
 

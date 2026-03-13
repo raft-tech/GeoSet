@@ -77,6 +77,6 @@ docker compose down -v
 
 ## Next Steps
 
-- Load the [[Sample Data and Demo Dashboards]] to see GeoSet in action
-- Create your first map chart: [[GeoSet Map Layer Chart]]
-- Combine multiple layers: [[GeoSet Multi Map Chart]]
+- Load the [[Sample Dashboards]] to see GeoSet in action
+- Create your first map chart: [[GeoSet Map Layer]]
+- Combine multiple layers: [[GeoSet Multi Map]]

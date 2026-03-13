@@ -105,7 +105,7 @@ Each entry in `categoricalColors` is an object with a single key (the category v
 
 ### colorByValue
 
-> **Note:** PR [#319](https://github.com/raft-tech/GeoSet/pull/319) adds percentile-based bounds (e.g. `"25%"`) to `colorByValue`, matching the existing support in dynamic `pointSize`. Update this section once that PR is merged.
+> **Note:** Percentile-based bounds (e.g. `"25%"`) for `colorByValue` are in progress in PR [#319](https://github.com/raft-tech/GeoSet/pull/319), matching the existing support in dynamic `pointSize`. The `lowerBound`, `upperBound`, and `breakpoints` fields will accept percentage strings once that PR is merged.
 
 Colors features using a gradient with values corresponding to a numerical column.
 

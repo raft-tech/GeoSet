@@ -1,18 +1,16 @@
 # GeoSet Map Layer Chart
 
-The **GeoSet Map Layer** (`deck_geoset_map_layer`) is the core chart type for rendering geospatial data. It renders a single layer of geographic features on an interactive map and is the building block for [[GeoSet Multi Map Chart|multi-layer maps]].
+The **GeoSet Map Layer** (`deck_geoset_map_layer`) is the core chart type for rendering geospatial data. It renders a single layer of geographic features on an interactive map and is the building block for [[GeoSet Multi Map|multi-layer maps]].
 
-<img width="1615" height="450" alt="Screenshot 2026-02-23 at 4 07 24 PM" src="https://github.com/user-attachments/assets/f30a0684-cac2-4106-bd96-6bd614e1d24e" />
+<img width="1615" height="500" alt="Screenshot 2026-02-23 at 4 07 24 PM" src="https://github.com/user-attachments/assets/f30a0684-cac2-4106-bd96-6bd614e1d24e" />
 
 ## Creating a Chart
 1. In Superset, go to **Charts → + Chart**
 2. Select your dataset and choose **GeoSet Map Layer** as the chart type
 3. In the **Map Configuration** panel, configure your layer
 
-<p>
-  <img width="49%" height="400" alt="geoset-chart-selection" src="https://github.com/user-attachments/assets/7285be19-92e5-43ea-beec-4cd6e17b9243" />
-  <img width="49%" height="400" alt="geojson-config-control-chart-builder" src="https://github.com/user-attachments/assets/6d4aceef-c572-4e87-8898-cec13b70bafc" />
-</p>
+<img width="1912" height="500" alt="geoset-chart-selection" src="https://github.com/user-attachments/assets/25878fcd-a972-47e0-9ae6-da94f7fa1c8d" />
+<img width="1912" height="535" alt="geoset-layer-chart-builder" src="https://github.com/user-attachments/assets/cf825d8b-ff2f-4d95-8a5c-b9f4da347066" />
 
 ## Map Configuration Controls
 
@@ -90,21 +88,53 @@ Applies a single style to all features. Used when you don't need per-category or
     "strokeWidth": 2,
     "lineStyle": "solid",
     "fillPattern": "solid",
-    "pointType": "circle",
-    "pointSize": 10
+    "pointType": "circle"
   }
 }
 ```
 
-| Field         | Type           | Description                                                                                                                  |
-| ------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `fillColor`   | `[R, G, B, A]` | Fill color as RGBA (0–255)                                                                                                   |
-| `strokeColor` | `[R, G, B, A]` | Stroke/outline color as RGBA                                                                                                 |
-| `strokeWidth` | number         | Stroke width in pixels                                                                                                       |
-| `lineStyle`   | string         | Line rendering style: `"solid"`, `"dashed"`, or `"dotted"`. Optional, defaults to `null`.                                    |
-| `fillPattern` | string         | `"solid"` (required)                                                                                                         |
-| `pointType`   | string         | Icon name for point layers (e.g., `"circle"`, `"point"`, or any registered SVG icon). Optional, defaults to `null` (circle). |
-| `pointSize`   | integer        | Static size of point icons in pixels (1–50). Optional, defaults to `null`.                                                   |
+| Field         | Type           | Description                                                                                                                        |
+| ------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `fillColor`   | `[R, G, B, A]` | Fill color as RGBA (0–255)                                                                                                         |
+| `strokeColor` | `[R, G, B, A]` | Stroke/outline color as RGBA                                                                                                       |
+| `strokeWidth` | number         | Stroke width in pixels                                                                                                             |
+| `lineStyle`   | string         | Line rendering style: `"solid"`, `"dashed"`, or `"dotted"`. Optional, defaults to `null`.                                          |
+| `fillPattern` | string         | `"solid"` (required)                                                                                                               |
+| `pointType`   | string         | Icon name for point layers: `"circle"`, `"point"`, `"marker"`, `"square"`, or `"triangle"`. Optional, defaults to `null` (circle). |
+
+### `pointSize`
+
+Controls the size of point icons. This is a **top-level** key (not inside `globalColoring`). It accepts either a static number or a dynamic data-driven configuration object.
+
+**Static** — a single pixel size applied to all points (1–200):
+
+```json
+{
+  "pointSize": 10
+}
+```
+
+**Dynamic** — sizes points based on a numeric column value:
+
+```json
+{
+  "pointSize": {
+    "valueColumn": "incident_size",
+    "startSize": 4,
+    "endSize": 30,
+    "lowerBound": null,
+    "upperBound": null
+  }
+}
+```
+
+| Field         | Type                      | Description                                                                                                                                                    |
+| ------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `valueColumn` | string                    | The numeric column to map to point size                                                                                                                        |
+| `startSize`   | number                    | Pixel size at the lower bound (1–200)                                                                                                                          |
+| `endSize`     | number                    | Pixel size at the upper bound (1–200, must be greater than `startSize`)                                                                                        |
+| `lowerBound`  | number, string, or `null` | Value that maps to `startSize`. A number sets an absolute value, a string like `"25%"` uses the 25th percentile of the data, and `null` uses the data minimum. |
+| `upperBound`  | number, string, or `null` | Value that maps to `endSize`. A number sets an absolute value, a string like `"75%"` uses the 75th percentile of the data, and `null` uses the data maximum.   |
 
 ### `colorByCategory`
 
