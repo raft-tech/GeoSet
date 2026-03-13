@@ -18,16 +18,10 @@ from superset.geoset_map.schemas.GeoSetLayerV1Schema import ColorField
 from superset.geoset_map.schemas.GeoSetLayerV4Schema import (
     GeoSetLayerV4Schema,
     NumberOrPercent,
+    _is_pct,
+    _to_float,
+    validate_bound_ordering,
 )
-
-
-def _is_pct(val):
-    return isinstance(val, str) and val.endswith("%")
-
-
-def _to_float(val):
-    """Extract the numeric value from a number or percentage string."""
-    return float(val.rstrip("%")) if _is_pct(val) else float(val)
 
 
 class ColorByValueSchemaV5(Schema):
@@ -67,11 +61,7 @@ class ColorByValueSchemaV5(Schema):
         breakpoints = data.get("breakpoints", [])
 
         # Bounds: validate ordering when both present and same type
-        if lower is not None and upper is not None:
-            if _is_pct(lower) == _is_pct(upper) and (
-                _to_float(lower) >= _to_float(upper)
-            ):
-                raise ValidationError("upperBound must be greater than lowerBound.")
+        validate_bound_ordering(lower, upper)
 
         # Breakpoints: validate ascending order when all are same type
         all_same_type = all(_is_pct(bp) for bp in breakpoints) or all(
