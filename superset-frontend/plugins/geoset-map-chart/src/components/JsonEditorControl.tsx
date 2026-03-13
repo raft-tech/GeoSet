@@ -3,17 +3,9 @@
 import { useState, useEffect } from 'react';
 import Editor from 'react-simple-code-editor';
 import { styled, SupersetTheme, t } from '@superset-ui/core';
-import { Popover, Button, Typography } from 'antd';
-import {
-  InfoCircleOutlined,
-  CopyOutlined,
-  CheckOutlined,
-} from '@ant-design/icons';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-json';
 import { prettyStringify } from '../utils/safeStringify';
-
-const { Text } = Typography;
 
 const Container = styled.div(
   ({ theme }: { theme: SupersetTheme }) => `
@@ -53,50 +45,17 @@ const Label = styled.span(
 `,
 );
 
-const InfoIcon = styled(InfoCircleOutlined)(
+const DocsLink = styled.a(
   ({ theme }) => `
-  color: ${theme.colorTextSecondary};
+  color: ${theme.colorPrimary};
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
   cursor: pointer;
-  font-size: 14px;
 
   &:hover {
-    color: ${theme.colorPrimary};
-  }
-`,
-);
-
-const PopoverContentWrapper = styled.div`
-  width: 380px;
-  max-height: 450px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-`;
-
-const PopoverHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-`;
-
-const TemplateCode = styled.pre(
-  ({ theme }) => `
-  font-family: ${theme.fontFamilyCode};
-  font-size: 11px;
-  background: ${theme.colorBgContainer};
-  border: 1px solid ${theme.colorBorder};
-  border-radius: 4px;
-  padding: 12px;
-  margin: 0;
-  overflow: auto;
-  white-space: pre;
-  color: ${theme.colorText};
-  max-height: 380px;
-
-  .optional-comment {
-    color: ${theme.colorTextSecondary};
-    font-style: italic;
+    text-decoration: underline;
+    color: ${theme.colorPrimaryHover};
   }
 `,
 );
@@ -121,108 +80,8 @@ const EditorWrapper = styled.div`
   }
 `;
 
-// Template JSON with optional fields marked
-const templateJson = `{
-  "globalColoring": {
-    "fillColor": [40, 147, 179, 255],
-    "strokeColor": [0, 0, 0, 255],
-    "strokeWidth": 2,
-    "pointType": "circle",       // optional
-    "lineStyle": "solid",
-    "fillPattern": "solid"
-  },
-  "pointSize": 6,                // static size (number), OR use the object form below:
-  // "pointSize": {              // dynamic — scales point size by a data column value
-  //   "valueColumn": "your_numeric_column",
-  //   "startSize": 4,           // pixel size at lowerBound
-  //   "endSize": 30,            // pixel size at upperBound
-  //   "lowerBound": null,       // optional — defaults to data min
-  //   "upperBound": null        // optional — defaults to data max
-  // },
-  "colorByCategory": {
-    "dimension": "category_field",
-    "categoricalColors": [
-      {
-        "example_category_1": {
-          "fillColor": [0, 0, 255, 255],
-          "legend_entry_name": "category_1"
-        }
-      },
-      {
-        "example_category_2": {
-          "fillColor": [255, 0, 0, 255],
-          "legend_entry_name": "category_2"
-        }
-      }
-    ],
-    "defaultLegendName": ["Other", "Unknown"]
-  },
-  "colorByValue": {
-    "valueColumn": "column_metrics_will_be_applied_to",
-    "upperBound": null,          // optional
-    "lowerBound": null,          // optional
-    "startColor": [0, 255, 0, 255],
-    "endColor": [255, 0, 0, 255],
-    "breakpoints": []
-  },
-  "textOverlayStyle": {
-    "fontFamily": "Arial, sans-serif", // Web Safe Fonts: Arial, Verdana, Georgia, Times New Roman, Courier New
-    "fontSize": 14,
-    "bold": false,
-    "offset": [0, 0]           // pixel offset (x, y) from point
-  },
-  "legend": {
-    "name": "human_readable_legend_chart_title",
-    "title": "title_for_legend_section"
-  }
-}`;
-
-// Clean template (without comments) for copying
-const cleanTemplateJson = JSON.stringify(
-  {
-    globalColoring: {
-      fillColor: [40, 147, 179, 255],
-      strokeColor: [0, 0, 0, 255],
-      strokeWidth: 2,
-      pointType: 'circle',
-      lineStyle: 'solid',
-      fillPattern: 'solid',
-    },
-    pointSize: 6,
-    colorByCategory: {
-      dimension: 'category_field',
-      categoricalColors: [
-        {
-          example_category_1: {
-            fillColor: [0, 0, 255, 255],
-            legend_entry_name: 'category_1',
-          },
-        },
-        {
-          example_category_2: {
-            fillColor: [255, 0, 0, 255],
-            legend_entry_name: 'category_2',
-          },
-        },
-      ],
-      defaultLegendName: ['Other', 'Unknown'],
-    },
-    colorByValue: {
-      valueColumn: 'column_metrics_will_be_applied_to',
-      upperBound: null,
-      lowerBound: null,
-      startColor: [0, 255, 0, 255],
-      endColor: [255, 0, 0, 255],
-      breakpoints: [],
-    },
-    legend: {
-      name: 'human_readable_legend_chart_title',
-      title: 'title_for_legend_section',
-    },
-  },
-  null,
-  2,
-);
+const JSON_CONFIG_SPEC_URL =
+  'https://github.com/raft-tech/GeoSet/wiki/JSON-Config-Spec';
 
 type JsonEditorControlProps = {
   label?: string;
@@ -256,8 +115,6 @@ export default function JsonEditorControl({
     if (defaultValue != null) return defaultValue;
     return '';
   });
-  const [copied, setCopied] = useState(false);
-
   useEffect(() => {
     if (value != null && value !== '' && value !== localValue) {
       setLocalValue(normalizeJson(value));
@@ -277,66 +134,19 @@ export default function JsonEditorControl({
     }
   };
 
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(cleanTemplateJson);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      // Fallback for older browsers
-      const textArea = document.createElement('textarea');
-      textArea.value = cleanTemplateJson;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textArea);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
-  // Highlight optional comments in the template
-  const highlightTemplate = (code: string) => {
-    const highlighted = Prism.highlight(code, Prism.languages.json, 'json');
-    return highlighted.replace(
-      /(\/\/ optional)/g,
-      '<span class="optional-comment">$1</span>',
-    );
-  };
-
-  const popoverContent = (
-    <PopoverContentWrapper>
-      <PopoverHeader>
-        <Text strong>{t('Example Configuration')}</Text>
-        <Button
-          size="small"
-          icon={copied ? <CheckOutlined /> : <CopyOutlined />}
-          onClick={handleCopy}
-        >
-          {copied ? t('Copied!') : t('Copy')}
-        </Button>
-      </PopoverHeader>
-      <TemplateCode
-        dangerouslySetInnerHTML={{
-          __html: highlightTemplate(templateJson),
-        }}
-      />
-    </PopoverContentWrapper>
-  );
-
   return (
     <Container>
       {label && (
         <LabelRow>
           <Label id={`${label}-label`}>{label}</Label>
-          <Popover
-            content={popoverContent}
-            trigger="click"
-            placement="rightTop"
-            overlayStyle={{ maxWidth: 420 }}
+          <DocsLink
+            href={JSON_CONFIG_SPEC_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={t('View JSON Config Spec wiki')}
           >
-            <InfoIcon title={t('View template configuration')} />
-          </Popover>
+            {t('[see docs]')}
+          </DocsLink>
         </LabelRow>
       )}
       <EditorWrapper onBlur={handleBlur}>

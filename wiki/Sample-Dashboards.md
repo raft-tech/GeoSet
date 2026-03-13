@@ -23,6 +23,7 @@ These datasets power two multi-layer map charts inside the **GeoSet Example Dash
 
 A multi-layer map combining:
 - **Storm Track Points** — NHC best track observation points colored by max wind speed (yellow → red gradient)
+- **Storm Track Points Text Overlay** — max gust wind speed labels at each observation point
 - **Storm Track Lines** — aggregated best track lines per storm per year
 - **Census State Boundaries** — US state boundary polygons
 

@@ -61,7 +61,7 @@ params:
     : \"incident_size\",\n    \"startSize\": 3,\n    \"endSize\": 16,\n    \"lowerBound\"\
     : 3,\n    \"upperBound\": 500\n  },\n  \"legend\": {\n    \"title\": \"NIFC Wildfires\
     \ Intensity By Acres\",\n    \"name\": null\n  }\n}"
-  schema_version: 4
+  schema_version: 5
   extra_form_data: {}
   dashboards: []
 cache_timeout: null

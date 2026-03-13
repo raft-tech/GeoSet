@@ -141,7 +141,7 @@ Colors features by a categorical column. Each category maps to a color and an op
 
 ### `colorByValue`
 
-Colors features using a gradient based on a numeric column value.
+Colors features using a gradient based on a numeric column value. Bounds and breakpoints accept both numeric values and percentile strings (e.g. `"10%"`, `"90%"`), which are resolved against the actual data distribution on the frontend.
 
 ```json
 {
@@ -156,14 +156,14 @@ Colors features using a gradient based on a numeric column value.
 }
 ```
 
-| Field         | Description                                                             |
-| ------------- | ----------------------------------------------------------------------- |
-| `valueColumn` | The numeric column to map to color                                      |
-| `upperBound`  | Value that maps to `endColor`. Set to `null` to use the data maximum.   |
-| `lowerBound`  | Value that maps to `startColor`. Set to `null` to use the data minimum. |
-| `startColor`  | RGBA color for the lowest value                                         |
-| `endColor`    | RGBA color for the highest value                                        |
-| `breakpoints` | Optional array of intermediate numeric value stops                      |
+| Field         | Description                                                                                          |
+| ------------- | ---------------------------------------------------------------------------------------------------- |
+| `valueColumn` | The numeric column to map to color                                                                   |
+| `upperBound`  | Value that maps to `endColor`. Number, percentage string (e.g. `"90%"`), or `null` for data maximum. |
+| `lowerBound`  | Value that maps to `startColor`. Number, percentage string (e.g. `"10%"`), or `null` for data minimum. |
+| `startColor`  | RGBA color for the lowest value                                                                      |
+| `endColor`    | RGBA color for the highest value                                                                     |
+| `breakpoints` | Optional array of intermediate stops (numbers or percentage strings)                                 |
 
 ### `legend`
 
