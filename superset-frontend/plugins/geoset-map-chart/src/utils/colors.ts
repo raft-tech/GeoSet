@@ -516,7 +516,7 @@ export function computeMetricColorScaleUnified(
         if (clamped <= stops[i + 1]) {
           const segRange = stops[i + 1] - stops[i];
           const t = segRange === 0 ? 0 : (clamped - stops[i]) / segRange;
-          return interp(t);
+          return interp((i + t) / numSegments);
         }
       }
       return [...endColor];
