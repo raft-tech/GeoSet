@@ -57,14 +57,14 @@ class NumberOrPercent(fields.Field):
         return value
 
 
-def _is_pct(val) -> bool:
+def is_pct(val) -> bool:
     """Check if a value is a percentage string (e.g. ``"25%"``)."""
     return isinstance(val, str) and val.endswith("%")
 
 
-def _to_float(val) -> float:
+def to_float(val) -> float:
     """Extract the numeric value from a number or percentage string."""
-    return float(val.rstrip("%")) if _is_pct(val) else float(val)
+    return float(val.rstrip("%")) if is_pct(val) else float(val)
 
 
 def validate_bound_ordering(lower, upper) -> None:
@@ -75,7 +75,7 @@ def validate_bound_ordering(lower, upper) -> None:
     """
     if lower is None or upper is None:
         return
-    if _is_pct(lower) == _is_pct(upper) and _to_float(lower) >= _to_float(upper):
+    if is_pct(lower) == is_pct(upper) and to_float(lower) >= to_float(upper):
         raise ValidationError("upperBound must be greater than lowerBound.")
 
 

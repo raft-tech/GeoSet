@@ -653,6 +653,8 @@ export function resolveNumericBounds(
     sortedValues,
     sortedValues[sortedValues.length - 1],
   );
+  // Inverted bounds (lower > upper) can occur when percentage bounds resolve
+  // to unexpected values. The scale will clamp everything to startColor.
   if (lower > upper) {
     console.warn(
       `[GeoSet] Resolved ${warnLabel} lowerBound (%s) is greater than upperBound (%s). Scaling may behave unexpectedly.`,

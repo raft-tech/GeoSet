@@ -18,8 +18,8 @@ from superset.geoset_map.schemas.GeoSetLayerV1Schema import ColorField
 from superset.geoset_map.schemas.GeoSetLayerV4Schema import (
     GeoSetLayerV4Schema,
     NumberOrPercent,
-    _is_pct,
-    _to_float,
+    is_pct,
+    to_float,
     validate_bound_ordering,
 )
 
@@ -64,11 +64,11 @@ class ColorByValueSchemaV5(Schema):
         validate_bound_ordering(lower, upper)
 
         # Breakpoints: validate ascending order when all are same type
-        all_same_type = all(_is_pct(bp) for bp in breakpoints) or all(
+        all_same_type = all(is_pct(bp) for bp in breakpoints) or all(
             isinstance(bp, (int, float)) for bp in breakpoints
         )
         if len(breakpoints) > 1 and all_same_type:
-            vals = [_to_float(bp) for bp in breakpoints]
+            vals = [to_float(bp) for bp in breakpoints]
             if vals != sorted(vals):
                 raise ValidationError("breakpoints must be listed lowest to highest.")
 
@@ -77,8 +77,8 @@ class ColorByValueSchemaV5(Schema):
         all_numeric = (
             lower is not None
             and upper is not None
-            and not _is_pct(lower)
-            and not _is_pct(upper)
+            and not is_pct(lower)
+            and not is_pct(upper)
             and all(isinstance(bp, (int, float)) for bp in breakpoints)
         )
         if all_numeric:

@@ -62,7 +62,7 @@ export function formatBoundLabel(
   value: number,
   position: 'lower' | 'upper',
   hasRange: boolean,
-  usesPercentBounds: boolean,
+  usesPercentBounds = false,
 ): string {
   const formatted = formatLegendNumber(value);
   if (!hasRange) return formatted;
