@@ -2,6 +2,8 @@
 
 Stage and commit all changes. Create a meaningful and concise commit message that summarizes the changes.
 
+Always push to `origin` (the contributor's fork), never directly to `upstream` (raft-tech/GeoSet).
+
 If there is an outstanding merge request associated with the active branch, update the merge request title and description appropriately. Refer to the /merge-request command for further instructions.
 
 ## Documentation Sync (Automatic, Background)

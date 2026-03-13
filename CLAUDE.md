@@ -16,7 +16,15 @@ Details related to the frontend and plugin development can be found within the `
 
 ## Git/GitHub
 
-This is a fork of Apache Superset. When using `gh` CLI commands (PRs, issues, etc.), always target the fork repo explicitly with `--repo raft-tech/GeoSet`.
+This is a fork of GeoSet. Contributors use a **fork-based workflow**:
+
+- `origin` points to the contributor's personal fork (e.g., `lhawkman27/GeoSet`).
+- `upstream` points to the shared repo (`raft-tech/GeoSet`).
+- Feature branches are created and pushed to `origin` (the fork).
+- PRs are opened from the fork against `upstream/main` (`raft-tech/GeoSet:main`).
+- Never push branches directly to `upstream`.
+
+When using `gh` CLI commands (PRs, issues, etc.), always target the upstream repo explicitly with `--repo raft-tech/GeoSet`.
 
 ## Versioning
 
