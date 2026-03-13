@@ -1,6 +1,6 @@
 # GeoSet Versioning
 
-**Current Version:** 6.0.40
+**Current Version:** 6.0.41
 **Based on:** Apache Superset 6.0.0
 
 > GeoSet aligns with Apache Superset's major and minor version. For example, when Superset releases version 6.1.0, GeoSet will sync with Superset, and GeoSet's version will be set to 6.1.0. However, the GeoSet and Superset patch version numbers (the third value) increment independently. Our patch version is simply a counter of how many merge requests GeoSet has merged since the last sync with upstream Superset.
@@ -19,6 +19,7 @@ Version incrementing is handled automatically by the `Version Bump` GitHub Actio
 
 | Version | PR                                                   | Description                                                             |
 | ------- | ---------------------------------------------------- | ----------------------------------------------------------------------- |
+| 6.0.41 | [#325](https://github.com/raft-tech/GeoSet/pull/325) | Replace inline JSON template popover with wiki link |
 | 6.0.40 | [#326](https://github.com/raft-tech/GeoSet/pull/326) | Fix up README with logo, badges, and visual assets |
 | 6.0.39 | [#322](https://github.com/raft-tech/GeoSet/pull/322) | docs: add JSON Config Spec wiki page |
 | 6.0.38 | [#317](https://github.com/raft-tech/GeoSet/pull/317) | feat: Automated documentation sync for wiki, README, and inline docs |
