@@ -7,6 +7,7 @@ import { Swatch } from '../utils/legendSwatch';
 import { formatBoundLabel } from '../utils/formatNumber';
 import GraduatedIcons from './GraduatedIcons';
 import CategorySizeGrid, { CategorySizeGridItem } from './CategorySizeGrid';
+import { getDefaultColors } from '../utils/legendHelpers';
 
 export type MultiLegendProps = {
   legendGroups: LegendGroup[];
