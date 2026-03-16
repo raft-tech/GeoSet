@@ -1,5 +1,5 @@
 import type { RGBAColor } from '../src/utils/colors';
-import type { LegendEntry, LegendGroup, CategoryEntry, MetricEntry } from '../src/types';
+import type { LegendEntry, LegendGroup, CategoryEntry } from '../src/types';
 import type { SizeLegend } from '../src/components/Legend';
 
 // Color constants

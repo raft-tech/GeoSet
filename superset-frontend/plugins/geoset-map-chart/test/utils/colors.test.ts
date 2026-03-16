@@ -995,7 +995,7 @@ describe('addColor', () => {
     const result = addColor(mockFd, 'category', fillColor, features, {});
     // Falls back to superset categorical scale or fillColor
     expect(result[0].color).toBeDefined();
-    expect(result[0].color.length).toBe(4);
+    expect(result[0].color!.length).toBe(4);
   });
 
   it('uses fillColor fallback when category is null', () => {
