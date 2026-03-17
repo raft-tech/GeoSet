@@ -23,7 +23,7 @@ import transformProps from '../../transformProps';
 import controlPanel from './controlPanel';
 
 const metadata = new ChartMetadata({
-  category: t('Map'),
+  category: t('Legacy'),
   credits: ['https://uber.github.io/deck.gl'],
   description: t(
     'The GeoJsonLayer takes in GeoJSON formatted data and renders it as interactive polygons, lines and points (circles, icons and/or texts).',

@@ -34,7 +34,7 @@ export default class CartodiagramPlugin extends ChartPlugin {
       name: t('Cartodiagram'),
       thumbnail,
       tags: [t('Geo'), t('2D'), t('Spatial'), t('Experimental')],
-      category: t('Map'),
+      category: t('Legacy'),
       exampleGallery: [
         { url: example1, caption: t('Pie charts on a map') },
         { url: example2, caption: t('Line charts on a map') },

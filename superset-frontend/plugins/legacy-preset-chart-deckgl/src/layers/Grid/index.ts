@@ -23,7 +23,7 @@ import transformProps from '../../transformProps';
 import controlPanel from './controlPanel';
 
 const metadata = new ChartMetadata({
-  category: t('Map'),
+  category: t('Legacy'),
   credits: ['https://uber.github.io/deck.gl'],
   description: t(
     'Visualize geospatial data like 3D buildings, landscapes, or objects in grid view.',

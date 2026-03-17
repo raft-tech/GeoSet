@@ -23,7 +23,7 @@ import transformProps from '../../transformProps';
 import controlPanel from './controlPanel';
 
 const metadata = new ChartMetadata({
-  category: t('Map'),
+  category: t('Legacy'),
   credits: ['https://uber.github.io/deck.gl'],
   description: t(
     'Visualizes geographic areas from your data as polygons on a Mapbox rendered map. Polygons can be colored using a metric.',
