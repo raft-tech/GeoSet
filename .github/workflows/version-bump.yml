@@ -5,10 +5,6 @@ on:
     branches:
       - main
 
-permissions:
-  contents: write
-  pull-requests: write
-
 concurrency:
   group: version-bump
   cancel-in-progress: false
@@ -20,15 +16,22 @@ jobs:
     if: "!startsWith(github.event.head_commit.message, 'chore: bump version to')"
 
     steps:
+      - name: Generate GeoSetBot token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Get PR info
         id: pr
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           PR_JSON=$(gh pr list --search "${{ github.sha }}" --state merged --json title,number --jq '.[0]')
           PR_TITLE=$(echo "$PR_JSON" | jq -r '.title // empty')
@@ -51,10 +54,10 @@ jobs:
 
       - name: Create or update Pull Request
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "geoset-bot[bot]"
+          git config user.email "geoset-bot[bot]@users.noreply.github.com"
 
           # Check for an existing open version bump PR
           EXISTING_PR=$(gh pr list --search "chore: bump version to" --state open \
@@ -104,8 +107,17 @@ jobs:
       new_version: ${{ steps.version.outputs.new_version }}
 
     steps:
+      - name: Generate GeoSetBot token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Extract version
         id: version
@@ -115,8 +127,8 @@ jobs:
 
       - name: Create tag
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "geoset-bot[bot]"
+          git config user.email "geoset-bot[bot]@users.noreply.github.com"
           git tag "v${{ steps.version.outputs.new_version }}"
           git push origin "v${{ steps.version.outputs.new_version }}"
 
