@@ -23,7 +23,7 @@ import example2 from './images/MapBox2.jpg';
 import controlPanel from './controlPanel';
 
 const metadata = new ChartMetadata({
-  category: t('Map'),
+  category: t('Legacy'),
   credits: ['https://www.mapbox.com/mapbox-gl-js/api/'],
   description: '',
   exampleGallery: [
