@@ -3,6 +3,7 @@
 Reference for the GeoSet Map Layer JSON configuration object. This is the schema that controls how geographic features are styled, colored, and labeled.
 
 - [JSON Config Spec](#json-config-spec)
+  - [Complete Example](#complete-example)
   - [Overview of Schema Fields](#overview-of-schema-fields)
     - [Constraints](#constraints)
   - [Field Specifications](#field-specifications)
@@ -16,6 +17,44 @@ Reference for the GeoSet Map Layer JSON configuration object. This is the schema
       - [Constraints](#constraints-2)
     - [textOverlayStyle](#textoverlaystyle)
     - [legend](#legend)
+
+## Complete Example
+
+A full configuration showing all fields together. This example renders wind station points colored by `max_wind_speed` on a yellow-to-red gradient (using percentile bounds), with data-driven point sizing on the same column:
+
+```json
+{
+  "globalColoring": {
+    "fillColor": [40, 147, 179, 255],
+    "strokeColor": [0, 0, 0, 255],
+    "strokeWidth": 2,
+    "lineStyle": "solid",
+    "fillPattern": "solid",
+    "pointType": "circle"
+  },
+  "colorByValue": {
+    "valueColumn": "max_wind_speed",
+    "startColor": [255, 255, 0, 255],
+    "endColor": [255, 0, 0, 255],
+    "lowerBound": "10%",
+    "upperBound": "90%",
+    "breakpoints": ["25%", "50%", "75%"]
+  },
+  "pointSize": {
+    "valueColumn": "max_wind_speed",
+    "startSize": 4,
+    "endSize": 30,
+    "lowerBound": null,
+    "upperBound": null
+  },
+  "legend": {
+    "title": "Wind Stations",
+    "name": null
+  }
+}
+```
+
+> **Note:** `colorByCategory` and `colorByValue` are mutually exclusive — use one or the other, not both. When either is present, `legend.name` must be `null`.
 
 ## Overview of Schema Fields
 

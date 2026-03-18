@@ -1,4 +1,4 @@
-# GeoSet Multi Map Chart
+# GeoSet Multi Map
 
 The **GeoSet Multi Map** (`deck_geoset_multi_map`) chart type composes multiple [[GeoSet Map Layer|GeoSet Map Layer]] charts into a single interactive map. Each sub-layer retains its own styling, data source, and legend configuration.
 

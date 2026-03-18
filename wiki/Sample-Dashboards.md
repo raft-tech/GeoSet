@@ -1,4 +1,4 @@
-# Sample Data and Demo Dashboards
+# Sample Dashboards
 
 GeoSet ships with a self-contained demo stack that loads real geospatial data and pre-built dashboards so you can explore the platform without setting up your own data sources.
 

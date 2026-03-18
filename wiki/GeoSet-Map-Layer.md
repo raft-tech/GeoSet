@@ -1,4 +1,4 @@
-# GeoSet Map Layer Chart
+# GeoSet Map Layer
 
 The **GeoSet Map Layer** (`deck_geoset_map_layer`) is the core chart type for rendering geospatial data. It renders a single layer of geographic features on an interactive map and is the building block for [[GeoSet Multi Map|multi-layer maps]].
 
