@@ -193,6 +193,7 @@ const SelectedSliceRow = ({
       setDraftLegendCollapsed(legendCollapsed);
       setDraftInitiallyHidden(initiallyHidden);
       setDraftLazyLoading(lazyLoading);
+      autozoomBeforeLazyRef.current = autozoom;
     }
     setSettingsOpen(open);
   };

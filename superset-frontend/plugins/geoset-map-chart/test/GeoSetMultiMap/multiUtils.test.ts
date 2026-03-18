@@ -271,31 +271,45 @@ describe('loadLayersOrchestrated', () => {
     expect(onEagerComplete).not.toHaveBeenCalled();
   });
 
-  it('aborts lazy chain mid-way when isStale becomes true', async () => {
+  it('aborts lazy chain mid-way when isStale becomes true across batch boundaries', async () => {
     let stale = false;
+    let lazyAppendCount = 0;
     const loadFn = jest.fn((subslice: { slice_id: number }) =>
       Promise.resolve(`layer-${subslice.slice_id}`),
     );
     const onEagerComplete = jest.fn();
     const onLazyAppend = jest.fn(() => {
-      // Mark stale after the first lazy layer appends
-      stale = true;
+      lazyAppendCount += 1;
+      // Mark stale after the second lazy layer appends (end of first batch)
+      if (lazyAppendCount === 2) {
+        stale = true;
+      }
     });
 
+    // 1 eager + 4 lazy = 2 lazy batches of size 2
     await loadLayersOrchestrated(
-      [{ slice_id: 1 }, { slice_id: 2 }, { slice_id: 3 }],
+      [
+        { slice_id: 1 },
+        { slice_id: 2 },
+        { slice_id: 3 },
+        { slice_id: 4 },
+        { slice_id: 5 },
+      ],
       [
         makeConfig(1),
         makeConfig(2, { lazyLoading: true }),
         makeConfig(3, { lazyLoading: true }),
+        makeConfig(4, { lazyLoading: true }),
+        makeConfig(5, { lazyLoading: true }),
       ],
       { loadFn, onEagerComplete, onLazyAppend, isStale: () => stale },
     );
 
     expect(onEagerComplete).toHaveBeenCalledWith(['layer-1']);
-    // Only the first lazy layer should append; the second is skipped
-    expect(onLazyAppend).toHaveBeenCalledTimes(1);
-    expect(onLazyAppend).toHaveBeenCalledWith('layer-2');
+    // First batch (slices 2 & 3) completes, then staleness aborts before second batch
+    expect(onLazyAppend).toHaveBeenCalledTimes(2);
+    expect(onLazyAppend).toHaveBeenNthCalledWith(1, 'layer-2');
+    expect(onLazyAppend).toHaveBeenNthCalledWith(2, 'layer-3');
   });
 
   it('skips null results from loadFn without aborting', async () => {
