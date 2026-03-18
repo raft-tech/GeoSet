@@ -109,7 +109,7 @@ type SubsliceLayerEntry = {
   };
   zoomSliderOptions: { minZoom: number; maxZoom: number };
   initiallyHidden: boolean; // Whether this layer starts hidden
-  lazyLoading: boolean; // Whether this layer was lazy-loaded
+  lazyLoading: boolean; // Whether this layer is configured for lazy loading
 };
 
 interface ClickedFeatureWithColumns extends ClickedFeatureInfo {
