@@ -254,220 +254,226 @@ const DeckMulti = (props: DeckMultiProps) => {
         };
       }
 
-      return multiChartMigration(copyFormData)
-        .then(migratedFormData => {
-          const subsliceCopy = {
-            ...subslice,
-            form_data: migratedFormData as QueryFormData,
-          };
+      return (
+        multiChartMigration(copyFormData)
+          .then(migratedFormData => {
+            const subsliceCopy = {
+              ...subslice,
+              form_data: migratedFormData as QueryFormData,
+            };
 
-          const queryContext = buildGeoSetMapLayerQuery(subsliceCopy.form_data);
-
-          return SupersetClient.post({
-            endpoint: '/api/v1/chart/data',
-            jsonPayload: { ...queryContext },
-          }).then(({ json }: { json: JsonObject }) => {
-            const result = json?.result?.[0] || {};
-            const payload = { data: result.data || [] };
-
-            const chartProps = {
-              height: 400,
-              width: 600,
-              formData: subsliceCopy.form_data,
-              queriesData: [{ data: payload?.data || [] }],
-              hooks: {
-                onAddFilter: props.onAddFilter,
-                setControlValue: () => {},
-              },
-            } as any;
-
-            const transformedProps = transformGeoSetMapLayerProps(chartProps);
-
-            const sliceHoverColumnNames = transformedProps.hoverColumnNames;
-            const sliceFeatureInfoColumnNames =
-              transformedProps.featureInfoColumnNames;
-            const newLayer = getGeoSetMapLayer(
-              transformedProps.formData as any,
-              transformedProps.payload,
-              props.onAddFilter,
-              setTooltip,
-              transformedProps.categories || {},
-              transformedProps.visualConfig,
-              sliceHoverColumnNames,
-              (info: any) =>
-                handleFeatureClick(info, sliceFeatureInfoColumnNames),
+            const queryContext = buildGeoSetMapLayerQuery(
+              subsliceCopy.form_data,
             );
 
-            if (!newLayer) {
-              return null;
-            }
+            return SupersetClient.post({
+              endpoint: '/api/v1/chart/data',
+              jsonPayload: { ...queryContext },
+            }).then(({ json }: { json: JsonObject }) => {
+              const result = json?.result?.[0] || {};
+              const payload = { data: result.data || [] };
 
-            const payloadData = payload?.data || [];
-            const geometryType = getGeometryType(payloadData[0]?.geojson);
-            let transformPropsGeojsonLayer =
-              transformedProps.formData.geoJsonLayer;
+              const chartProps = {
+                height: 400,
+                width: 600,
+                formData: subsliceCopy.form_data,
+                queriesData: [{ data: payload?.data || [] }],
+                hooks: {
+                  onAddFilter: props.onAddFilter,
+                  setControlValue: () => {},
+                },
+              } as any;
 
-            if (
-              transformPropsGeojsonLayer !== 'TextOverlay' &&
-              transformPropsGeojsonLayer !== geometryType
-            ) {
-              transformPropsGeojsonLayer = geometryType;
-            }
-            const transformedPropsConfig =
-              transformedProps.formData.geojsonConfig;
-            let icon;
-            let params;
-            const legendName = (() => {
-              try {
-                params = JSON.parse(transformedPropsConfig || '{}');
-                icon = params.globalColoring.pointType;
-                if (params.legend) {
-                  const formattedLegendName = toTitleCase(params.legend?.name);
-                  return formattedLegendName || subslice.slice_name;
-                }
-                return subslice.slice_name;
-              } catch (e) {
-                return subslice.slice_name;
+              const transformedProps = transformGeoSetMapLayerProps(chartProps);
+
+              const sliceHoverColumnNames = transformedProps.hoverColumnNames;
+              const sliceFeatureInfoColumnNames =
+                transformedProps.featureInfoColumnNames;
+              const newLayer = getGeoSetMapLayer(
+                transformedProps.formData as any,
+                transformedProps.payload,
+                props.onAddFilter,
+                setTooltip,
+                transformedProps.categories || {},
+                transformedProps.visualConfig,
+                sliceHoverColumnNames,
+                (info: any) =>
+                  handleFeatureClick(info, sliceFeatureInfoColumnNames),
+              );
+
+              if (!newLayer) {
+                return null;
               }
-            })();
 
-            const { categories, visualConfig } = transformedProps;
-            const {
-              dimension,
-              metricLegend,
-              sizeLegend,
-              isCombinedMetricSize,
-            } = visualConfig;
-            const hasCategories =
-              dimension && categories && Object.keys(categories).length > 0;
-            const hasMetric =
-              metricLegend !== null && metricLegend !== undefined;
+              const payloadData = payload?.data || [];
+              const geometryType = getGeometryType(payloadData[0]?.geojson);
+              let transformPropsGeojsonLayer =
+                transformedProps.formData.geoJsonLayer;
 
-            const legendTitle = params?.legend?.title
-              ? toTitleCase(params.legend.title)
-              : null;
-            const legendNameFromJson = params?.legend?.name
-              ? toTitleCase(params.legend.name)
-              : null;
+              if (
+                transformPropsGeojsonLayer !== 'TextOverlay' &&
+                transformPropsGeojsonLayer !== geometryType
+              ) {
+                transformPropsGeojsonLayer = geometryType;
+              }
+              const transformedPropsConfig =
+                transformedProps.formData.geojsonConfig;
+              let icon;
+              let params;
+              const legendName = (() => {
+                try {
+                  params = JSON.parse(transformedPropsConfig || '{}');
+                  icon = params.globalColoring.pointType;
+                  if (params.legend) {
+                    const formattedLegendName = toTitleCase(
+                      params.legend?.name,
+                    );
+                    return formattedLegendName || subslice.slice_name;
+                  }
+                  return subslice.slice_name;
+                } catch (e) {
+                  return subslice.slice_name;
+                }
+              })();
 
-            const buildSizeEntry = () =>
-              sizeLegend ? { ...sizeLegend } : undefined;
+              const { categories, visualConfig } = transformedProps;
+              const {
+                dimension,
+                metricLegend,
+                sizeLegend,
+                isCombinedMetricSize,
+              } = visualConfig;
+              const hasCategories =
+                dimension && categories && Object.keys(categories).length > 0;
+              const hasMetric =
+                metricLegend !== null && metricLegend !== undefined;
 
-            let legendEntry: LegendEntry;
+              const legendTitle = params?.legend?.title
+                ? toTitleCase(params.legend.title)
+                : null;
+              const legendNameFromJson = params?.legend?.name
+                ? toTitleCase(params.legend.name)
+                : null;
 
-            if (hasMetric) {
-              const ml = metricLegend as MetricLegend;
-              const isCombined = isCombinedMetricSize === true;
-              legendEntry = {
-                legendName: legendTitle || legendName,
-                sliceName: subslice.slice_name,
-                icon,
-                geometryType: transformPropsGeojsonLayer,
-                type: 'metric',
-                metric: {
-                  lower: ml.min,
-                  upper: ml.max,
-                  startColor: ml.startColor,
-                  endColor: ml.endColor,
-                  usesPercentBounds: ml.usesPercentBounds,
+              const buildSizeEntry = () =>
+                sizeLegend ? { ...sizeLegend } : undefined;
+
+              let legendEntry: LegendEntry;
+
+              if (hasMetric) {
+                const ml = metricLegend as MetricLegend;
+                const isCombined = isCombinedMetricSize === true;
+                legendEntry = {
+                  legendName: legendTitle || legendName,
+                  sliceName: subslice.slice_name,
+                  icon,
+                  geometryType: transformPropsGeojsonLayer,
+                  type: 'metric',
+                  metric: {
+                    lower: ml.min,
+                    upper: ml.max,
+                    startColor: ml.startColor,
+                    endColor: ml.endColor,
+                    usesPercentBounds: ml.usesPercentBounds,
+                  },
+                  sizeEntry: isCombined ? buildSizeEntry() : undefined,
+                  isCombinedMetricSize: isCombined,
+                  initialCollapsed: sliceLegendCollapsed,
+                };
+              } else if (hasCategories) {
+                const categoryEntries = Object.entries(
+                  categories as Record<string, CategoryState>,
+                )
+                  .filter(([_, catState]) => catState.enabled !== false)
+                  .map(([label, catState]) => ({
+                    label: catState.legend_name || label,
+                    fillColor: catState.color,
+                    strokeColor: visualConfig.strokeColor as RGBAColor,
+                  }));
+
+                legendEntry = {
+                  legendName: legendTitle || legendName,
+                  sliceName: subslice.slice_name,
+                  icon,
+                  geometryType: transformPropsGeojsonLayer,
+                  type: 'categorical',
+                  categories: categoryEntries,
+                  sizeEntry: buildSizeEntry(),
+                  initialCollapsed: sliceLegendCollapsed,
+                };
+              } else {
+                const fillColor = visualConfig.fillColor as RGBAColor;
+                const strokeColor = visualConfig.strokeColor as RGBAColor;
+
+                legendEntry = {
+                  legendName: legendNameFromJson || legendName,
+                  legendParentTitle: legendTitle || subslice.slice_name,
+                  sliceName: subslice.slice_name,
+                  icon,
+                  geometryType: transformPropsGeojsonLayer,
+                  type: 'simple',
+                  simpleStyle: {
+                    fillColor,
+                    strokeColor,
+                  },
+                  sizeEntry: buildSizeEntry(),
+                  initialCollapsed: sliceLegendCollapsed,
+                };
+              }
+
+              const zoomSlider = subsliceCopy.form_data.minMaxZoomSlider || [
+                0, 22,
+              ];
+              const newLayerStateOptions = {
+                minZoom: zoomSlider[0],
+                maxZoom: zoomSlider[1],
+              };
+
+              const newLayerStates = layerStatesGenerator(
+                newLayer,
+                newLayerStateOptions,
+              );
+
+              if (!newLayerStates.length) {
+                return null;
+              }
+
+              const layerFeatures: JsonObject[] =
+                transformedProps.payload?.data?.features || [];
+
+              return {
+                sliceId: subslice.slice_id as number,
+                layerStates: newLayerStates,
+                legendEntry,
+                features: layerFeatures,
+                autozoom: sliceAutozoom,
+                transformedProps: {
+                  formData: transformedProps.formData,
+                  payload: transformedProps.payload,
+                  categories: transformedProps.categories || {},
+                  visualConfig: transformedProps.visualConfig,
+                  hoverColumnNames: transformedProps.hoverColumnNames,
+                  featureInfoColumnNames:
+                    transformedProps.featureInfoColumnNames || [],
                 },
-                sizeEntry: isCombined ? buildSizeEntry() : undefined,
-                isCombinedMetricSize: isCombined,
-                initialCollapsed: sliceLegendCollapsed,
+                zoomSliderOptions: newLayerStateOptions,
+                initiallyHidden: sliceInitiallyHidden,
+                lazyLoading: sliceLazyLoading,
               };
-            } else if (hasCategories) {
-              const categoryEntries = Object.entries(
-                categories as Record<string, CategoryState>,
-              )
-                .filter(([_, catState]) => catState.enabled !== false)
-                .map(([label, catState]) => ({
-                  label: catState.legend_name || label,
-                  fillColor: catState.color,
-                  strokeColor: visualConfig.strokeColor as RGBAColor,
-                }));
-
-              legendEntry = {
-                legendName: legendTitle || legendName,
-                sliceName: subslice.slice_name,
-                icon,
-                geometryType: transformPropsGeojsonLayer,
-                type: 'categorical',
-                categories: categoryEntries,
-                sizeEntry: buildSizeEntry(),
-                initialCollapsed: sliceLegendCollapsed,
-              };
-            } else {
-              const fillColor = visualConfig.fillColor as RGBAColor;
-              const strokeColor = visualConfig.strokeColor as RGBAColor;
-
-              legendEntry = {
-                legendName: legendNameFromJson || legendName,
-                legendParentTitle: legendTitle || subslice.slice_name,
-                sliceName: subslice.slice_name,
-                icon,
-                geometryType: transformPropsGeojsonLayer,
-                type: 'simple',
-                simpleStyle: {
-                  fillColor,
-                  strokeColor,
-                },
-                sizeEntry: buildSizeEntry(),
-                initialCollapsed: sliceLegendCollapsed,
-              };
-            }
-
-            const zoomSlider = subsliceCopy.form_data.minMaxZoomSlider || [
-              0, 22,
-            ];
-            const newLayerStateOptions = {
-              minZoom: zoomSlider[0],
-              maxZoom: zoomSlider[1],
-            };
-
-            const newLayerStates = layerStatesGenerator(
-              newLayer,
-              newLayerStateOptions,
+            });
+          })
+          // IMPORTANT: This .catch is load-bearing. It ensures a single layer
+          // failure resolves to null instead of rejecting, which would abort the
+          // entire lazy-loading reduce chain or the eager Promise.all batch.
+          .catch(err => {
+            // eslint-disable-next-line no-console
+            console.error(
+              `[GeoSet] Failed to load layer for slice ${subslice.slice_id}:`,
+              err,
             );
-
-            if (!newLayerStates.length) {
-              return null;
-            }
-
-            const layerFeatures: JsonObject[] =
-              transformedProps.payload?.data?.features || [];
-
-            return {
-              sliceId: subslice.slice_id as number,
-              layerStates: newLayerStates,
-              legendEntry,
-              features: layerFeatures,
-              autozoom: sliceAutozoom,
-              transformedProps: {
-                formData: transformedProps.formData,
-                payload: transformedProps.payload,
-                categories: transformedProps.categories || {},
-                visualConfig: transformedProps.visualConfig,
-                hoverColumnNames: transformedProps.hoverColumnNames,
-                featureInfoColumnNames:
-                  transformedProps.featureInfoColumnNames || [],
-              },
-              zoomSliderOptions: newLayerStateOptions,
-              initiallyHidden: sliceInitiallyHidden,
-              lazyLoading: sliceLazyLoading,
-            };
-          });
-        })
-        // IMPORTANT: This .catch is load-bearing. It ensures a single layer
-        // failure resolves to null instead of rejecting, which would abort the
-        // entire lazy-loading reduce chain or the eager Promise.all batch.
-        .catch(err => {
-          // eslint-disable-next-line no-console
-          console.error(
-            `[GeoSet] Failed to load layer for slice ${subslice.slice_id}:`,
-            err,
-          );
-          return null;
-        });
+            return null;
+          })
+      );
     },
     [props.onAddFilter, setTooltip, handleFeatureClick],
   );
@@ -490,11 +496,13 @@ const DeckMulti = (props: DeckMultiProps) => {
           loadFn: (subslice, config) =>
             loadSingleLayer(formData, subslice, config),
           onEagerComplete: eagerLayers => setSubSlicesLayers(eagerLayers),
-          onLazyAppend: layer =>
-            setSubSlicesLayers(prev => [...prev, layer]),
+          onLazyAppend: layer => setSubSlicesLayers(prev => [...prev, layer]),
           isStale: () => loadGenerationRef.current !== generation,
         },
-      );
+      ).catch(err => {
+        // eslint-disable-next-line no-console
+        console.error('[GeoSet] Layer orchestration failed:', err);
+      });
     },
     [loadSingleLayer],
   );
@@ -542,33 +550,42 @@ const DeckMulti = (props: DeckMultiProps) => {
     });
   }, [normalizedDeckSlices]);
 
-  // Initialize layer visibility based on initiallyHidden setting
-  // Runs once when layers are first loaded
-  const prevSubSlicesLayersLength = usePrevious(subSlicesLayers.length);
+  // Initialize layer visibility based on initiallyHidden setting.
+  // Detects newly-added layers (including lazy-loaded ones) by comparing
+  // current slice IDs against the previous set, so layers arriving after
+  // the initial eager batch are also handled.
+  const currentSubSliceIds = useMemo(
+    () => new Set(subSlicesLayers.map(e => e.sliceId)),
+    [subSlicesLayers],
+  );
+  const prevSubSliceIds = usePrevious(currentSubSliceIds);
   useEffect(() => {
-    if (prevSubSlicesLayersLength === 0 && subSlicesLayers.length > 0) {
-      const hiddenLayers = subSlicesLayers.filter(e => e.initiallyHidden);
-      if (hiddenLayers.length > 0) {
-        // Hide the layers
-        setLayerVisibility(
-          Object.fromEntries(hiddenLayers.map(e => [String(e.sliceId), false])),
-        );
-        // Also turn off all categories for hidden categorical layers
-        setCategoryVisibility(
-          Object.fromEntries(
-            hiddenLayers
-              .filter(e => e.legendEntry.categories?.length)
-              .map(e => [
-                String(e.sliceId),
-                Object.fromEntries(
-                  e.legendEntry.categories!.map(c => [c.label, false]),
-                ),
-              ]),
-          ),
-        );
-      }
+    const prevIds = prevSubSliceIds ?? new Set<number>();
+    const newLayers = subSlicesLayers.filter(e => !prevIds.has(e.sliceId));
+    const hiddenNewLayers = newLayers.filter(e => e.initiallyHidden);
+
+    if (hiddenNewLayers.length > 0) {
+      setLayerVisibility(prev => ({
+        ...prev,
+        ...Object.fromEntries(
+          hiddenNewLayers.map(e => [String(e.sliceId), false]),
+        ),
+      }));
+      setCategoryVisibility(prev => ({
+        ...prev,
+        ...Object.fromEntries(
+          hiddenNewLayers
+            .filter(e => e.legendEntry.categories?.length)
+            .map(e => [
+              String(e.sliceId),
+              Object.fromEntries(
+                e.legendEntry.categories!.map(c => [c.label, false]),
+              ),
+            ]),
+        ),
+      }));
     }
-  }, [subSlicesLayers, prevSubSlicesLayersLength]);
+  }, [subSlicesLayers, prevSubSliceIds]);
 
   const { height, width } = props;
 

@@ -92,6 +92,7 @@ The GeoSet map plugin is a Superset chart plugin built on [deck.gl](https://deck
 | `GeoSetLayer/GeoSetLayer.tsx` | Main React component for the single-layer chart. Manages deck.gl layers, viewport, clustering, tooltips, and popups. |
 | `GeoSetLayer/controlPanel.ts` | Defines all chart controls visible in the explore panel. |
 | `GeoSetMultiMap/Multi.tsx` | React component for the multi-layer chart. Fetches and renders each sub-layer chart's data. |
+| `GeoSetMultiMap/multiUtils.ts` | Shared utilities: slice config normalization, autozoom resolution, and two-phase (eager/lazy) layer loading orchestration. |
 | `GeoSetMultiMap/controlPanel.ts` | Control panel for the multi-layer chart. |
 
 ### Key Utilities

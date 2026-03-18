@@ -215,11 +215,12 @@ describe('loadLayersOrchestrated', () => {
     const onEagerComplete = jest.fn();
     const onLazyAppend = jest.fn();
 
-    await loadLayersOrchestrated(
-      [{ slice_id: 1 }],
-      [makeConfig(1)],
-      { loadFn, onEagerComplete, onLazyAppend, isStale: () => stale },
-    );
+    await loadLayersOrchestrated([{ slice_id: 1 }], [makeConfig(1)], {
+      loadFn,
+      onEagerComplete,
+      onLazyAppend,
+      isStale: () => stale,
+    });
 
     expect(loadFn).toHaveBeenCalledTimes(1);
     expect(onEagerComplete).not.toHaveBeenCalled();
@@ -312,6 +313,61 @@ describe('loadLayersOrchestrated', () => {
     });
 
     expect(loadFn).not.toHaveBeenCalled();
+    expect(onEagerComplete).not.toHaveBeenCalled();
+  });
+
+  it('rejects when an eager loadFn returns a rejected promise', async () => {
+    const loadFn = jest.fn(() => Promise.reject(new Error('network failure')));
+    const onEagerComplete = jest.fn();
+
+    await expect(
+      loadLayersOrchestrated([{ slice_id: 1 }], [makeConfig(1)], {
+        loadFn,
+        onEagerComplete,
+        onLazyAppend: jest.fn(),
+        isStale: () => false,
+      }),
+    ).rejects.toThrow('network failure');
+
+    expect(onEagerComplete).not.toHaveBeenCalled();
+  });
+
+  it('rejects when a lazy loadFn returns a rejected promise', async () => {
+    const loadFn = jest.fn((subslice: { slice_id: number }) =>
+      subslice.slice_id === 2
+        ? Promise.reject(new Error('lazy failure'))
+        : Promise.resolve(`layer-${subslice.slice_id}`),
+    );
+    const onEagerComplete = jest.fn();
+    const onLazyAppend = jest.fn();
+
+    await expect(
+      loadLayersOrchestrated(
+        [{ slice_id: 1 }, { slice_id: 2 }],
+        [makeConfig(1), makeConfig(2, { lazyLoading: true })],
+        { loadFn, onEagerComplete, onLazyAppend, isStale: () => false },
+      ),
+    ).rejects.toThrow('lazy failure');
+
+    expect(onEagerComplete).toHaveBeenCalledWith(['layer-1']);
+    expect(onLazyAppend).not.toHaveBeenCalled();
+  });
+
+  it('rejects when loadFn throws synchronously', async () => {
+    const loadFn = jest.fn(() => {
+      throw new Error('sync throw');
+    });
+    const onEagerComplete = jest.fn();
+
+    await expect(
+      loadLayersOrchestrated([{ slice_id: 1 }], [makeConfig(1)], {
+        loadFn,
+        onEagerComplete,
+        onLazyAppend: jest.fn(),
+        isStale: () => false,
+      }),
+    ).rejects.toThrow('sync throw');
+
     expect(onEagerComplete).not.toHaveBeenCalled();
   });
 });

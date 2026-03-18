@@ -101,35 +101,39 @@ export function loadLayersOrchestrated<TLayer>(
     eagerSlices.length > 0
       ? Promise.all(
           eagerSlices.map(subslice =>
-            callbacks.loadFn(subslice, configById.get(subslice.slice_id)),
+            Promise.resolve().then(() =>
+              callbacks.loadFn(subslice, configById.get(subslice.slice_id)),
+            ),
           ),
         ).then(results => results.filter((e): e is TLayer => e !== null))
       : Promise.resolve([] as TLayer[]);
 
   return eagerPromise.then(eagerLayers => {
-    if (callbacks.isStale()) return;
+    // Early abort if a newer load generation has started
+    if (callbacks.isStale()) return undefined;
 
     callbacks.onEagerComplete(eagerLayers);
 
+    // eslint-disable-next-line consistent-return
     if (lazySlices.length === 0) return;
 
     // Phase 2: Load lazy layers sequentially, appending each as it completes
-    return lazySlices
-      .reduce(
-        (chain, subslice) =>
-          chain.then(() => {
-            if (callbacks.isStale()) return Promise.resolve();
+    return lazySlices.reduce(
+      (chain, subslice) =>
+        chain.then(() => {
+          if (callbacks.isStale()) return Promise.resolve();
 
-            return callbacks
-              .loadFn(subslice, configById.get(subslice.slice_id))
-              .then(layerEntry => {
-                if (layerEntry && !callbacks.isStale()) {
-                  callbacks.onLazyAppend(layerEntry);
-                }
-              });
-          }),
-        Promise.resolve(),
-      )
-      .then(() => {});
+          return Promise.resolve()
+            .then(() =>
+              callbacks.loadFn(subslice, configById.get(subslice.slice_id)),
+            )
+            .then(layerEntry => {
+              if (layerEntry && !callbacks.isStale()) {
+                callbacks.onLazyAppend(layerEntry);
+              }
+            });
+        }),
+      Promise.resolve(),
+    );
   });
 }

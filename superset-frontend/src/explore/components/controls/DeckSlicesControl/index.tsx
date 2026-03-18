@@ -29,7 +29,7 @@ import ControlHeader from 'src/explore/components/ControlHeader';
 import {
   normalizeDeckSlices,
   type DeckSliceConfig,
-} from '@superset-ui/geoset-map-chart/src/GeoSetMultiMap/multiUtils';
+} from '@superset-ui/geoset-map-chart';
 import {
   DragContainer,
   OptionControlContainer,
@@ -197,12 +197,15 @@ const SelectedSliceRow = ({
     setSettingsOpen(open);
   };
 
-  // When lazy loading is toggled on, auto-disable autozoom
+  // When lazy loading is toggled on, auto-disable autozoom;
+  // when toggled off, restore autozoom to its saved value.
   const handleToggleLazyLoading = () => {
     const newLazyLoading = !draftLazyLoading;
     setDraftLazyLoading(newLazyLoading);
     if (newLazyLoading) {
       setDraftAutozoom(false);
+    } else {
+      setDraftAutozoom(autozoom);
     }
   };
 

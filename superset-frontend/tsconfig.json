@@ -14,6 +14,7 @@
       "@superset-ui/legacy-preset-chart-*": [
         "./plugins/legacy-preset-chart-*/src"
       ],
+      "@superset-ui/geoset-map-chart": ["./plugins/geoset-map-chart/src"],
       "@superset-ui/plugin-chart-*": ["./plugins/plugin-chart-*/src"],
       "@superset-ui/preset-chart-*": ["./plugins/preset-chart-*/src"],
       "@superset-ui/switchboard": ["./packages/superset-ui-switchboard/src"]
