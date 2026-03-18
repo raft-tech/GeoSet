@@ -2,11 +2,16 @@
 
 Use the gh CLI tool to create a merge request for the current branch. Each merge request should have a concise title and a description of what was changed within the body.
 
+This project uses a **fork-based workflow**. PRs are created from the contributor's fork against the upstream repo. When creating or updating PRs:
+
+- Always use `--repo raft-tech/GeoSet` to target the upstream repository.
+- Use `--head <fork-owner>:<branch-name>` to specify the source branch from the fork.
+
 Additionally, each merge request should be given a score indicating how focused the changes are. The score should range between 1 (unfocused) and 10 (focused). A merge request that changes many different, unrelated parts of the code is a 1. A merge request that focuses on one change is a 10.
 
 All merge requests should set the target branch to `main`.
 
-If a merge request already exists for source branch, update the merge request title and body if necessary.
+If a merge request already exists for the source branch, update the merge request title and body if necessary.
 
 ## Reviewers
 
@@ -18,7 +23,7 @@ Always add the following reviewers to every PR using the `--reviewer` flag. **Do
 
 ## Structure
 
-Merge requests should comform to the following template.
+Merge requests should conform to the following template.
 
 ```markdown
 ## Summary

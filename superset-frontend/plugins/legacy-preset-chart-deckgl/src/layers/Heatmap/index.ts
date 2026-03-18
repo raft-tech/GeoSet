@@ -23,7 +23,7 @@ import thumbnail from './images/thumbnail.png';
 import example from './images/example.png';
 
 const metadata = new ChartMetadata({
-  category: t('Map'),
+  category: t('Legacy'),
   credits: ['https://uber.github.io/deck.gl'],
   description: t(
     'Uses Gaussian Kernel Density Estimation to visualize spatial distribution of data',

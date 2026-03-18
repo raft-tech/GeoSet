@@ -23,7 +23,7 @@ import transformProps from '../transformProps';
 import controlPanel from './controlPanel';
 
 const metadata = new ChartMetadata({
-  category: t('Map'),
+  category: t('Legacy'),
   credits: ['https://uber.github.io/deck.gl'],
   description: t('Compose multiple layers together to form complex visuals.'),
   exampleGallery: [{ url: example }],

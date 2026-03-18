@@ -41,22 +41,34 @@ describe('formatLegendNumber', () => {
   it('formats thousands with K suffix', () => {
     expect(formatLegendNumber(1000)).toBe('1K');
     expect(formatLegendNumber(1500)).toBe('1.5K');
-    expect(formatLegendNumber(45000)).toBe('45K');
+    expect(formatLegendNumber(999999)).toBe('1000K');
   });
 
   it('formats millions with M suffix', () => {
     expect(formatLegendNumber(1000000)).toBe('1M');
-    expect(formatLegendNumber(2500000)).toBe('2.5M');
+    expect(formatLegendNumber(1_000_000)).toBe('1M');
+    expect(formatLegendNumber(2_500_000)).toBe('2.5M');
   });
 
   it('formats billions with B suffix', () => {
     expect(formatLegendNumber(1000000000)).toBe('1B');
-    expect(formatLegendNumber(7500000000)).toBe('7.5B');
+    expect(formatLegendNumber(1_000_000_000)).toBe('1B');
+    expect(formatLegendNumber(7_500_000_000)).toBe('7.5B');
   });
 
   it('handles negative numbers', () => {
+    expect(formatLegendNumber(-42)).toBe('-42');
     expect(formatLegendNumber(-500)).toBe('-500');
-    expect(formatLegendNumber(-2500)).toBe('-2.5K');
+    expect(formatLegendNumber(-1500)).toBe('-1.5K');
+    expect(formatLegendNumber(-2_500_000)).toBe('-2.5M');
+    expect(formatLegendNumber(-1_000_000_000)).toBe('-1B');
+  });
+
+  it('removes trailing zeros from decimals', () => {
+    expect(formatLegendNumber(1000)).toBe('1K');
+    // 1000 / 1000 = 1.0 → trimmed to "1"
+    expect(formatLegendNumber(1_000_000)).toBe('1M');
+    expect(formatLegendNumber(45000)).toBe('45K');
   });
 });
 

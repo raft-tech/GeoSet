@@ -112,14 +112,7 @@ The GeoSet map plugin is a Superset chart plugin built on [deck.gl](https://deck
 
 ## Contributing
 
-1. Create a feature branch from `main`:
-
-   ```bash
-   git checkout -b your-feature-name main
-   ```
-
-2. Make your changes and test locally
-3. Submit a PR against `main` on [raft-tech/GeoSet](https://github.com/raft-tech/GeoSet)
+This project uses a **fork-based workflow**. Fork the repo, create a feature branch from `main`, and open a PR against `main` on [raft-tech/GeoSet](https://github.com/raft-tech/GeoSet).
 
 ### PR Guidelines
 

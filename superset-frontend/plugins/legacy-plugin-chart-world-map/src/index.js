@@ -24,7 +24,7 @@ import example2 from './images/WorldMap2.jpg';
 import controlPanel from './controlPanel';
 
 const metadata = new ChartMetadata({
-  category: t('Map'),
+  category: t('Legacy'),
   credits: ['http://datamaps.github.io/'],
   description: t(
     'A map of the world, that can indicate values in different countries.',

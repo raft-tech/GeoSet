@@ -4,10 +4,16 @@
     "strokeColor": [0, 0, 0, 255],
     "strokeWidth": 2,
     "pointType": "circle",
-    "pointSize": 6,
     "lineStyle": "solid", 
     "fillPattern": "solid"
   },  
+  "pointSize": {
+    "valueColumn": "your_numeric_column",
+    "startSize": 4,
+    "endSize": 30,
+    "lowerBound": null,
+    "upperBound": null
+  },
   "colorByCategory": {
     "dimension": "category_field",
     "categoricalColors": [
@@ -33,6 +39,12 @@
     "startColor": [0, 255, 0, 255],
     "endColor": [255, 0, 0, 255],
     "breakpoints": []
+  },
+  "textOverlayStyle": {
+    "fontFamily": "Arial, sans-serif",
+    "fontSize": 14,
+    "bold": false,
+    "offset": [0, 0]
   },
   "legend": {
     "name": "human_readable_legend_chart_title",
