@@ -24,7 +24,7 @@ import thumbnail from './images/thumbnail.png';
 import controlPanel from './controlPanel';
 
 const metadata = new ChartMetadata({
-  category: t('Map'),
+  category: t('Legacy'),
   credits: ['https://bl.ocks.org/john-guerra'],
   description: t(
     "Visualizes how a single metric varies across a country's principal subdivisions (states, provinces, etc) on a choropleth map. Each subdivision's value is elevated when you hover over the corresponding geographic boundary.",

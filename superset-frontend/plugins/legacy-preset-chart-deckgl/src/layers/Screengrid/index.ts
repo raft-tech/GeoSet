@@ -23,7 +23,7 @@ import transformProps from '../../transformProps';
 import controlPanel from './controlPanel';
 
 const metadata = new ChartMetadata({
-  category: t('Map'),
+  category: t('Legacy'),
   credits: ['https://uber.github.io/deck.gl'],
   description: t(
     'Aggregates data within the boundary of grid cells and maps the aggregated values to a dynamic color scale',

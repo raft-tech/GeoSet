@@ -30,7 +30,7 @@ params:
     ,\n    \"fontSize\": 18,\n    \"bold\": true,\n    \"offset\": [-25, 25]\n  },\n\
     \  \"legend\": {\n    \"title\": \"Wind Speed (mph)\",\n    \"name\": \"Max Gust\
     \ Labels\"\n  }\n}"
-  schema_version: 4
+  schema_version: 5
   extra_form_data: {}
   dashboards: []
 cache_timeout: null
