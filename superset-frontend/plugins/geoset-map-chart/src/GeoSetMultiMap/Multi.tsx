@@ -77,6 +77,41 @@ const toTitleCase = (str: string) =>
     .replace(/_/g, ' ')
     .replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1));
 
+/** Build a placeholder legend entry from slice metadata (before layer data is fetched). */
+const buildStubLegendEntry = (
+  subslice: JsonObject,
+  sliceConfig: DeckSliceConfig | undefined,
+): LegendEntry => {
+  const geojsonConfig = subslice.form_data?.geojsonConfig;
+  let icon: string | undefined;
+  let legendName: string = subslice.slice_name as string;
+  let legendTitle: string | null = null;
+
+  try {
+    const params = JSON.parse(geojsonConfig || '{}');
+    icon = params.globalColoring?.pointType;
+    if (params.legend?.name) {
+      legendName = toTitleCase(params.legend.name);
+    }
+    if (params.legend?.title) {
+      legendTitle = toTitleCase(params.legend.title);
+    }
+  } catch {
+    // Fall back to slice_name
+  }
+
+  return {
+    legendName: legendTitle || legendName,
+    legendParentTitle: legendTitle || (subslice.slice_name as string),
+    sliceName: subslice.slice_name as string,
+    icon,
+    geometryType: subslice.form_data?.geoJsonLayer,
+    type: 'simple',
+    initialCollapsed: sliceConfig?.legendCollapsed ?? false,
+    loading: true,
+  };
+};
+
 export type DeckMultiProps = {
   formData: QueryFormData;
   payload: JsonObject;
@@ -191,6 +226,21 @@ const DeckMulti = (props: DeckMultiProps) => {
     () => normalizeDeckSlices(props.formData.deckSlices),
     [props.formData.deckSlices],
   );
+
+  // Build stub legend entries from slice metadata (shown while layer data loads)
+  const pendingLegends: Record<string, LegendEntry> = useMemo(() => {
+    if (!slicesData?.length) return {};
+    const configById = new Map(normalizedDeckSlices.map(c => [c.sliceId, c]));
+    return Object.fromEntries(
+      slicesData.map((subslice: JsonObject) => [
+        String(subslice.slice_id),
+        buildStubLegendEntry(
+          subslice,
+          configById.get(subslice.slice_id as number),
+        ),
+      ]),
+    );
+  }, [slicesData, normalizedDeckSlices]);
 
   // Fetch slice metadata when deckSlices changes and payload doesn't have slices
   useEffect(() => {
@@ -823,36 +873,43 @@ const DeckMulti = (props: DeckMultiProps) => {
     }));
   });
 
-  // Build legendsBySlice for MultiLegend component, with category enabled state applied
-  const legendsBySlice: Record<string, LegendEntry> = useMemo(
-    () =>
-      Object.fromEntries(
-        sortedLayers.map(entry => {
-          const sliceId = String(entry.sliceId);
-          const { legendEntry } = entry;
-
-          // If no categories, return as-is
-          if (!legendEntry.categories) {
-            return [sliceId, legendEntry];
-          }
-
-          // Apply category visibility state
-          const sliceCatVisibility = categoryVisibility[sliceId] || {};
-          const updatedCategories = applyCategoryEnabledState(
+  // Build legendsBySlice for MultiLegend component, with category enabled state applied.
+  // Merges loaded entries with stub entries so the legend shows all layers immediately.
+  const legendsBySlice: Record<string, LegendEntry> = useMemo(() => {
+    const loadedById = new Map<string, LegendEntry>();
+    sortedLayers.forEach(entry => {
+      const sliceId = String(entry.sliceId);
+      const { legendEntry } = entry;
+      if (!legendEntry.categories) {
+        loadedById.set(sliceId, legendEntry);
+      } else {
+        const sliceCatVisibility = categoryVisibility[sliceId] || {};
+        loadedById.set(sliceId, {
+          ...legendEntry,
+          categories: applyCategoryEnabledState(
             legendEntry.categories,
             sliceCatVisibility,
-          )!;
+          )!,
+        });
+      }
+    });
 
-          return [
-            sliceId,
-            {
-              ...legendEntry,
-              categories: updatedCategories,
-            },
-          ];
-        }),
-      ),
-    [sortedLayers, categoryVisibility],
+    // Iterate in config order (reversed to match sortedLayers convention).
+    // Loaded entries replace stubs; unloaded layers keep showing stubs.
+    const result: Record<string, LegendEntry> = {};
+    const configOrder = [...normalizedDeckSlices].reverse();
+    for (const config of configOrder) {
+      const sliceId = String(config.sliceId);
+      const loaded = loadedById.get(sliceId);
+      if (loaded) {
+        result[sliceId] = loaded;
+      } else if (pendingLegends[sliceId]) {
+        result[sliceId] = pendingLegends[sliceId];
+      }
+    }
+
+    return result;
+  }, [pendingLegends, sortedLayers, categoryVisibility, normalizedDeckSlices],
   );
 
   // Group legend entries that share the same display title
