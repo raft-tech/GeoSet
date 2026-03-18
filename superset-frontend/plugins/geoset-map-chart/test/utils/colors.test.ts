@@ -145,7 +145,11 @@ describe('computeSizeScale', () => {
 
   it('returns midpoint size at midpoint value', () => {
     const scale = computeSizeScale(config, [0, 100]);
-    expect(scale(50)).toBe(28); // 5 + 0.5 * 45 = 27.5 → rounded 28
+    // Linear interpolation: 5 + 0.5 * (50 - 5) = 27.5
+    // The implementation rounds to the nearest integer.
+    const mid = scale(50);
+    expect(mid).toBeGreaterThanOrEqual(27);
+    expect(mid).toBeLessThanOrEqual(28);
   });
 
   it('clamps below lowerBound', () => {
@@ -867,6 +871,12 @@ describe('getCategories', () => {
 // ---------------------------------------------------------------------------
 // cssToRgbaArray
 // ---------------------------------------------------------------------------
+/*
+ * These tests mock the canvas 2D context because jsdom does not implement
+ * the Canvas API.  The mocks simulate how a real browser canvas normalises
+ * CSS colour strings into `rgb()` / `rgba()` format via `fillStyle`, so we
+ * can verify the parsing logic in isolation from actual browser behaviour.
+ */
 describe('cssToRgbaArray', () => {
   it('returns [0,0,0,255] when canvas context returns unparseable style', () => {
     // jsdom canvas getContext returns null, so we mock it

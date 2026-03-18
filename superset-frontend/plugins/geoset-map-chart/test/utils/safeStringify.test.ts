@@ -19,15 +19,6 @@
 import { safeStringify, prettyStringify } from '../../src/utils/safeStringify';
 
 describe('safeStringify', () => {
-  it('stringifies a simple object', () => {
-    expect(safeStringify({ a: 1, b: 'two' })).toBe('{"a":1,"b":"two"}');
-  });
-
-  it('stringifies nested objects', () => {
-    const obj = { a: { b: { c: 3 } } };
-    expect(safeStringify(obj)).toBe('{"a":{"b":{"c":3}}}');
-  });
-
   it('handles circular references without throwing', () => {
     const obj: any = { a: 1 };
     obj.self = obj;

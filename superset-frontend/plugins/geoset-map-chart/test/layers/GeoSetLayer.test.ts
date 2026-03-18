@@ -82,15 +82,8 @@ jest.mock('../../src/utils/sandbox', () => ({
   default: (code: string) => () => code,
 }));
 
-jest.mock('../../src/utils/svgIcons', () => ({
-  getColoredSvgUrl: (name: string) => `mock-${name}.svg`,
-}));
-
-jest.mock('../../src/utils/svgIcons/index', () => ({
-  getColoredSvgUrl: (name: string) => `mock-${name}.svg`,
-  loadSvgTemplate: () => '<svg></svg>',
-  svgTemplates: {},
-}));
+// Shared SVG icon mocks — see test/mocks/svgIcons.ts
+import '../mocks/svgIcons';
 
 jest.mock('../../src/utils/layerBuilders/buildTextOverlayLayer', () => ({
   buildTextOverlayLayer: (opts: any) => ({
@@ -435,6 +428,23 @@ describe('getLayer', () => {
     });
   });
 
+  describe('unrecognized layer type (default branch)', () => {
+    it('falls back to GeoJsonLayer for an unrecognized geoJsonLayer value', () => {
+      // Use an unrecognized geometry type so validateLayerType passes
+      // the layer type through unchanged (rather than overriding to Point, etc.)
+      const features = [makeFeature('apple', '1', 'Custom', [0, 0])];
+      const result = getLayer(
+        { ...baseFd, geoJsonLayer: 'Heatmap' } as QueryFormData,
+        makePayload(features),
+        noopOnAddFilter,
+        noopSetTooltip,
+        baseCategories,
+      );
+      // eslint-disable-next-line no-underscore-dangle
+      expect((result as any).constructor.__mockName).toBe('GeoJsonLayer');
+    });
+  });
+
   describe('category filtering', () => {
     it('filters out features with disabled categories', () => {
       const features = [
@@ -502,6 +512,10 @@ describe('getLayer', () => {
   });
 
   describe('category sorting', () => {
+    // deck.gl draws features in array order: index 0 is drawn first (bottom
+    // of the visual stack) and the last element is drawn on top.  Sorting
+    // places higher-priority categories (lower config index) at the END of
+    // the array so they render on top of lower-priority ones.
     it('sorts features so earlier categories render on top (last in array)', () => {
       const features = [makeFeature('mango', '1'), makeFeature('apple', '2')];
       const result = getLayer(
@@ -851,6 +865,11 @@ describe('GeoSetLayer feature sorting by category order', () => {
   });
 
   describe('sortFeaturesByCategoryOrder', () => {
+    // Category index in the config object determines draw priority:
+    //   - Lower index → drawn last → visually on top
+    //   - Higher index → drawn first → visually on bottom
+    // The sort reverses by index so the highest-priority category ends up
+    // at the end of the array (drawn last by deck.gl).
     it('should sort features so earlier categories in config render on top (last in array)', () => {
       const categories = {
         apple: { enabled: true },
@@ -876,6 +895,9 @@ describe('GeoSetLayer feature sorting by category order', () => {
       expect(sorted[2].properties.category).toBe('apple');
     });
 
+    // Uncategorized features receive MAX_SAFE_INTEGER as their sort index,
+    // which places them at the beginning of the sorted array (drawn first
+    // by deck.gl = bottom of the visual stack).
     it('should place uncategorized features at the beginning (drawn first = bottom)', () => {
       const categories = {
         apple: { enabled: true },
@@ -900,6 +922,8 @@ describe('GeoSetLayer feature sorting by category order', () => {
       expect(sorted[2].properties.category).toBe('apple');
     });
 
+    // In metric mode, sorting is skipped entirely — features stay in their
+    // original order.  This preserves whatever ordering the backend returned.
     it('should not sort features in metric mode', () => {
       const categories = {
         apple: { enabled: true },

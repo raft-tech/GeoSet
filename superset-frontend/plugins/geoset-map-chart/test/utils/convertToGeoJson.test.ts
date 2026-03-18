@@ -88,6 +88,34 @@ describe('convertToGeoJSONFeature', () => {
     expect(result).toBeNull();
   });
 
+  it('parses WKT MULTIPOINT string', () => {
+    const result = convertToGeoJSONFeature('MULTIPOINT(10 20, 30 40)');
+
+    expect(result).not.toBeNull();
+    expect(result!.type).toBe('Feature');
+    expect(result!.geometry.type).toBe('MultiPoint');
+  });
+
+  it('parses WKT MULTILINESTRING string', () => {
+    const result = convertToGeoJSONFeature(
+      'MULTILINESTRING((0 0, 1 1), (2 2, 3 3))',
+    );
+
+    expect(result).not.toBeNull();
+    expect(result!.type).toBe('Feature');
+    expect(result!.geometry.type).toBe('MultiLineString');
+  });
+
+  it('parses WKT MULTIPOLYGON string', () => {
+    const result = convertToGeoJSONFeature(
+      'MULTIPOLYGON(((0 0, 1 0, 1 1, 0 0)))',
+    );
+
+    expect(result).not.toBeNull();
+    expect(result!.type).toBe('Feature');
+    expect(result!.geometry.type).toBe('MultiPolygon');
+  });
+
   it('returns null for a JSON string that is valid JSON but not a Feature', () => {
     // Valid JSON but no type/geometry
     const result = convertToGeoJSONFeature('{"name": "test"}');

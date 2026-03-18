@@ -193,20 +193,13 @@ describe('parseRawFeatures', () => {
 // normalizeNullCategory
 // ---------------------------------------------------------------------------
 describe('normalizeNullCategory', () => {
-  it('returns __NULL__ for null', () => {
-    expect(normalizeNullCategory(null)).toBe('__NULL__');
-  });
-
-  it('returns __NULL__ for undefined', () => {
-    expect(normalizeNullCategory(undefined)).toBe('__NULL__');
-  });
-
-  it('stringifies numbers', () => {
-    expect(normalizeNullCategory(42)).toBe('42');
-  });
-
-  it('passes through strings', () => {
-    expect(normalizeNullCategory('hello')).toBe('hello');
+  it.each([
+    [null, '__NULL__'],
+    [undefined, '__NULL__'],
+    [42, '42'],
+    ['hello', 'hello'],
+  ])('normalizeNullCategory(%j) → %j', (input, expected) => {
+    expect(normalizeNullCategory(input)).toBe(expected);
   });
 });
 
@@ -263,8 +256,7 @@ describe('getBreakPointColorScaler', () => {
     }
   });
 
-  it('returns a function (not null) even for unknown scheme when registry has a default', () => {
-    // The superset registry may return a default scheme for unknown names
+  it('returns a function for an unknown scheme when registry has a default', () => {
     const result = getBreakPointColorScaler(
       {
         break_points: [],
@@ -275,8 +267,8 @@ describe('getBreakPointColorScaler', () => {
       features,
       accessor,
     );
-    // Either null or a function — depends on registry config
-    expect(result === null || typeof result === 'function').toBe(true);
+    // The superset registry falls back to a default scheme
+    expect(typeof result).toBe('function');
   });
 
   it('returns a color scaler function with break points', () => {

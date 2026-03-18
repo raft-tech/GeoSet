@@ -23,15 +23,6 @@ import {
 import { Viewport } from '../../src/utils/fitViewport';
 
 describe('liveViewportStore', () => {
-  it('returns null before any viewport is set', () => {
-    // Module freshly loaded — should be null by default
-    // Note: since modules are cached, this relies on test ordering.
-    // The important thing is that set/get round-trips work.
-    const vp = getLiveViewport();
-    // Either null (first run) or a Viewport from a prior set — just verify it's callable
-    expect(vp === null || typeof vp === 'object').toBe(true);
-  });
-
   it('stores and retrieves a viewport', () => {
     const viewport: Viewport = {
       longitude: -77.0369,

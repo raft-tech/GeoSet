@@ -21,16 +21,7 @@ jest.mock('@material-ui/icons/MapTwoTone', () => {
   return { __esModule: true, default: MockMapIcon };
 });
 
-// Mock SVG icon utilities (imports .svg files via webpack loader)
-jest.mock('../../src/utils/svgIcons', () => ({
-  getColoredSvgUrl: (name: string) => `mock-${name}.svg`,
-}));
-
-jest.mock('../../src/utils/svgIcons/index', () => ({
-  loadSvgTemplate: () => '<svg></svg>',
-  svgTemplates: {},
-  getColoredSvgUrl: (name: string) => `mock-${name}.svg`,
-}));
+import '../mocks/svgIcons';
 
 // Stable reference to avoid infinite useEffect loop from default `layerVisibility = {}`
 const EMPTY_VISIBILITY: Record<string, boolean> = {};

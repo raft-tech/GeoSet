@@ -59,6 +59,13 @@ describe('getDefaultColors', () => {
     expect(getDefaultColors(entry)).toEqual({ fill: GREEN, stroke: GREEN });
   });
 
+  it('returns undefined fill/stroke when simpleStyle has undefined inner properties', () => {
+    const entry = createSimpleLegendEntry({
+      simpleStyle: { fillColor: undefined as any, strokeColor: undefined as any },
+    });
+    expect(getDefaultColors(entry)).toEqual({ fill: undefined, stroke: undefined });
+  });
+
   it('handles empty categories array with fallback teal', () => {
     const entry = createCategoricalLegendEntry({
       simpleStyle: undefined,
@@ -93,6 +100,18 @@ describe('applyCategoryEnabledState', () => {
     const result = applyCategoryEnabledState(categories, { A: false, B: true });
     expect(result![0].enabled).toBe(false);
     expect(result![1].enabled).toBe(true);
+  });
+
+  it('treats null, 0, and empty string as enabled (only strict false disables)', () => {
+    const categories = [
+      createCategoryEntry({ label: 'A' }),
+      createCategoryEntry({ label: 'B' }),
+      createCategoryEntry({ label: 'C' }),
+    ];
+    const result = applyCategoryEnabledState(categories, {
+      A: null as any, B: 0 as any, C: '' as any,
+    });
+    expect(result!.every(c => c.enabled)).toBe(true);
   });
 
   it('preserves other category properties', () => {

@@ -3,17 +3,7 @@ import userEvent from '@testing-library/user-event';
 import Legend, { LegendProps } from '../../src/components/Legend';
 import { renderWithTheme } from '../testHelpers';
 import { RED, GREEN, BLUE } from '../testFixtures';
-
-// Mock SVG icon utilities
-jest.mock('../../src/utils/svgIcons', () => ({
-  getColoredSvgUrl: (name: string) => `mock-${name}.svg`,
-}));
-
-jest.mock('../../src/utils/svgIcons/index', () => ({
-  loadSvgTemplate: () => '<svg></svg>',
-  svgTemplates: {},
-  getColoredSvgUrl: (name: string) => `mock-${name}.svg`,
-}));
+import '../mocks/svgIcons';
 
 // Mock child components to isolate Legend behavior
 jest.mock('../../src/components/GraduatedIcons', () => {
@@ -103,6 +93,13 @@ describe('Legend', () => {
       const { container } = renderLegend({ position: 'bl' });
       const legend = container.firstChild as HTMLElement;
       expect(legend).toHaveStyle({ left: '10px' });
+      expect(legend).toHaveStyle({ bottom: '0px' });
+    });
+
+    it('defaults to bottom-right for an invalid position string', () => {
+      const { container } = renderLegend({ position: 'invalid' });
+      const legend = container.firstChild as HTMLElement;
+      expect(legend).toHaveStyle({ right: '10px' });
       expect(legend).toHaveStyle({ bottom: '0px' });
     });
   });
