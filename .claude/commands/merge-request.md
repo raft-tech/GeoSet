@@ -6,7 +6,6 @@ This project uses a **fork-based workflow**. PRs are created from the contributo
 
 - Always use `--repo raft-tech/GeoSet` to target the upstream repository.
 - Use `--head <fork-owner>:<branch-name>` to specify the source branch from the fork.
-- Determine the fork owner from the `origin` remote URL.
 
 Additionally, each merge request should be given a score indicating how focused the changes are. The score should range between 1 (unfocused) and 10 (focused). A merge request that changes many different, unrelated parts of the code is a 1. A merge request that focuses on one change is a 10.
 
