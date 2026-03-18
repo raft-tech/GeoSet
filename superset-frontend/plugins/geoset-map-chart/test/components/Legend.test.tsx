@@ -97,7 +97,7 @@ describe('Legend', () => {
     });
 
     it('defaults to bottom-right for an invalid position string', () => {
-      const { container } = renderLegend({ position: 'invalid' });
+      const { container } = renderLegend({ position: 'invalid' as any });
       const legend = container.firstChild as HTMLElement;
       expect(legend).toHaveStyle({ right: '10px' });
       expect(legend).toHaveStyle({ bottom: '0px' });
