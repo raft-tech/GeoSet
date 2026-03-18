@@ -60,16 +60,7 @@ import {
   normalizeDeckSlices,
   loadLayersOrchestrated,
 } from './multiUtils';
-
-// Apply enabled state to legend categories based on visibility map
-const applyCategoryEnabledState = (
-  categories: CategoryEntry[] | undefined,
-  visibility: Record<string, boolean>,
-): CategoryEntry[] | undefined =>
-  categories?.map(cat => ({
-    ...cat,
-    enabled: visibility[cat.label] !== false,
-  }));
+import { applyCategoryEnabledState } from '../utils/legendHelpers';
 
 // Utility to convert snake_case or camelCase to Title Case
 const toTitleCase = (str: string) =>
@@ -909,8 +900,7 @@ const DeckMulti = (props: DeckMultiProps) => {
     }
 
     return result;
-  }, [pendingLegends, sortedLayers, categoryVisibility, normalizedDeckSlices],
-  );
+  }, [pendingLegends, sortedLayers, categoryVisibility, normalizedDeckSlices]);
 
   // Group legend entries that share the same display title
   const legendGroups = useGroupedLegend(legendsBySlice);
