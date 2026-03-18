@@ -149,7 +149,7 @@ describe('loadLayersOrchestrated', () => {
     expect(onLazyAppend).not.toHaveBeenCalled();
   });
 
-  it('loads lazy layers sequentially after eager layers', async () => {
+  it('loads lazy layers in batches after eager layers', async () => {
     const callOrder: string[] = [];
     const loadFn = jest.fn((subslice: { slice_id: number }) => {
       callOrder.push(`load-${subslice.slice_id}`);
@@ -170,7 +170,7 @@ describe('loadLayersOrchestrated', () => {
       { loadFn, onEagerComplete, onLazyAppend, isStale: () => false },
     );
 
-    // Eager layer loaded first, then lazy layers one-by-one
+    // Eager layer loaded first, then lazy layers in batches
     expect(onEagerComplete).toHaveBeenCalledWith(['layer-1']);
     expect(onLazyAppend).toHaveBeenCalledTimes(2);
     expect(onLazyAppend).toHaveBeenNthCalledWith(1, 'layer-2');
@@ -180,6 +180,51 @@ describe('loadLayersOrchestrated', () => {
     const eagerIdx = callOrder.indexOf('eager-complete');
     const firstLazyLoadIdx = callOrder.indexOf('load-2');
     expect(eagerIdx).toBeLessThan(firstLazyLoadIdx);
+  });
+
+  it('respects batch size — batches do not overlap', async () => {
+    let inFlight = 0;
+    let maxInFlight = 0;
+    const loadFn = jest.fn(
+      (subslice: { slice_id: number }) =>
+        new Promise<string>(resolve => {
+          inFlight += 1;
+          maxInFlight = Math.max(maxInFlight, inFlight);
+          // Resolve async to let all concurrent calls register
+          setTimeout(() => {
+            inFlight -= 1;
+            resolve(`layer-${subslice.slice_id}`);
+          }, 0);
+        }),
+    );
+    const onLazyAppend = jest.fn();
+
+    await loadLayersOrchestrated(
+      [
+        { slice_id: 1 },
+        { slice_id: 2 },
+        { slice_id: 3 },
+        { slice_id: 4 },
+        { slice_id: 5 },
+      ],
+      [
+        makeConfig(1, { lazyLoading: true }),
+        makeConfig(2, { lazyLoading: true }),
+        makeConfig(3, { lazyLoading: true }),
+        makeConfig(4, { lazyLoading: true }),
+        makeConfig(5, { lazyLoading: true }),
+      ],
+      {
+        loadFn,
+        onEagerComplete: jest.fn(),
+        onLazyAppend,
+        isStale: () => false,
+      },
+    );
+
+    // Batch size is 2, so max concurrent lazy loads should be 2
+    expect(maxInFlight).toBeLessThanOrEqual(2);
+    expect(onLazyAppend).toHaveBeenCalledTimes(5);
   });
 
   it('handles all-lazy slices (no eager phase)', async () => {

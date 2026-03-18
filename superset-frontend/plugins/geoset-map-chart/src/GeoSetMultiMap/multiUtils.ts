@@ -67,10 +67,13 @@ export interface OrchestrationCallbacks<TLayer> {
   isStale: () => boolean;
 }
 
+/** Number of lazy layers to load concurrently in each batch. */
+const LAZY_BATCH_SIZE = 2;
+
 /**
  * Orchestrates two-phase layer loading:
  *   Phase 1 — load all eager (non-lazy) layers in parallel.
- *   Phase 2 — load lazy layers one-by-one, calling onLazyAppend after each.
+ *   Phase 2 — load lazy layers in small batches, calling onLazyAppend after each.
  *
  * Returns a promise that resolves when the full chain (eager + lazy) finishes
  * or is aborted due to staleness.
@@ -96,16 +99,11 @@ export function loadLayersOrchestrated<TLayer>(
     }
   });
 
-  const safeLoadFn = (
+  // Async wrapper ensures synchronous throws from loadFn become rejected promises
+  const safeLoadFn = async (
     subslice: { slice_id: number },
     config: DeckSliceConfig | undefined,
-  ): Promise<TLayer | null> => {
-    try {
-      return callbacks.loadFn(subslice, config);
-    } catch (err) {
-      return Promise.reject(err);
-    }
-  };
+  ): Promise<TLayer | null> => callbacks.loadFn(subslice, config);
 
   // Phase 1: Load all eager layers in parallel
   const eagerPromise =
@@ -126,21 +124,26 @@ export function loadLayersOrchestrated<TLayer>(
     // eslint-disable-next-line consistent-return
     if (lazySlices.length === 0) return;
 
-    // Phase 2: Load lazy layers sequentially, appending each as it completes
-    return lazySlices.reduce(
-      (chain, subslice) =>
-        chain.then(() => {
-          if (callbacks.isStale()) return Promise.resolve();
+    // Phase 2: Load lazy layers in batches of LAZY_BATCH_SIZE
+    // eslint-disable-next-line consistent-return
+    return (async () => {
+      for (let i = 0; i < lazySlices.length; i += LAZY_BATCH_SIZE) {
+        if (callbacks.isStale()) return;
 
-          return safeLoadFn(subslice, configById.get(subslice.slice_id)).then(
-            layerEntry => {
-              if (layerEntry && !callbacks.isStale()) {
-                callbacks.onLazyAppend(layerEntry);
-              }
-            },
-          );
-        }),
-      Promise.resolve(),
-    );
+        const batch = lazySlices.slice(i, i + LAZY_BATCH_SIZE);
+        // eslint-disable-next-line no-await-in-loop
+        const results = await Promise.all(
+          batch.map(subslice =>
+            safeLoadFn(subslice, configById.get(subslice.slice_id)),
+          ),
+        );
+
+        for (const layerEntry of results) {
+          if (layerEntry && !callbacks.isStale()) {
+            callbacks.onLazyAppend(layerEntry);
+          }
+        }
+      }
+    })();
   });
 }

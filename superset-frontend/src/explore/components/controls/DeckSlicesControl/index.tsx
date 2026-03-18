@@ -197,15 +197,19 @@ const SelectedSliceRow = ({
     setSettingsOpen(open);
   };
 
+  // Track the user's autozoom choice before lazy loading overrides it
+  const autozoomBeforeLazyRef = useRef(draftAutozoom);
+
   // When lazy loading is toggled on, auto-disable autozoom;
-  // when toggled off, restore autozoom to its saved value.
+  // when toggled off, restore autozoom to the user's prior draft value.
   const handleToggleLazyLoading = () => {
     const newLazyLoading = !draftLazyLoading;
     setDraftLazyLoading(newLazyLoading);
     if (newLazyLoading) {
+      autozoomBeforeLazyRef.current = draftAutozoom;
       setDraftAutozoom(false);
     } else {
-      setDraftAutozoom(autozoom);
+      setDraftAutozoom(autozoomBeforeLazyRef.current);
     }
   };
 
