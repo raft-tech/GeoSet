@@ -1058,9 +1058,12 @@ const DeckMulti = (props: DeckMultiProps) => {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [measureState.isActive]);
 
-  // Show loading state until slices data is fetched and layers are processed
+  // Show loading state only until slice metadata is fetched (fast API call).
+  // Once metadata is available, render the map canvas immediately so the base
+  // map is visible while layers load in the background. The legend shows stub
+  // entries with loading spinners for layers that are still being fetched.
   const hasChartsToLoad = normalizedDeckSlices.length > 0;
-  const isLoading = hasChartsToLoad && subSlicesLayers.length === 0;
+  const isLoading = hasChartsToLoad && slicesData === null;
 
   if (isLoading) {
     return (
