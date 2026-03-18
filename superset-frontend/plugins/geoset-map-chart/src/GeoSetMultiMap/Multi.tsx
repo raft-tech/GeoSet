@@ -58,6 +58,7 @@ import {
   DeckSliceConfig,
   resolveLayerAutozoom,
   normalizeDeckSlices,
+  loadLayersOrchestrated,
 } from './multiUtils';
 
 // Apply enabled state to legend categories based on visibility map
@@ -119,6 +120,8 @@ const DeckMulti = (props: DeckMultiProps) => {
   const containerRef = useRef<DeckGLContainerHandle>(null);
   // Ref to track measure state for use in callbacks without creating dependencies
   const measureActiveRef = useRef(false);
+  // Generation counter to cancel stale lazy-loading chains
+  const loadGenerationRef = useRef(0);
   // Store initial autozoom viewport to prevent reset on category toggle
   const initialAutozoomViewportRef = useRef<Viewport | null>(null);
 
@@ -454,7 +457,17 @@ const DeckMulti = (props: DeckMultiProps) => {
             };
           });
         })
-        .catch(() => null);
+        // IMPORTANT: This .catch is load-bearing. It ensures a single layer
+        // failure resolves to null instead of rejecting, which would abort the
+        // entire lazy-loading reduce chain or the eager Promise.all batch.
+        .catch(err => {
+          // eslint-disable-next-line no-console
+          console.error(
+            `[GeoSet] Failed to load layer for slice ${subslice.slice_id}:`,
+            err,
+          );
+          return null;
+        });
     },
     [props.onAddFilter, setTooltip, handleFeatureClick],
   );
@@ -465,84 +478,23 @@ const DeckMulti = (props: DeckMultiProps) => {
       slices: JsonObject[],
       deckSlicesConfig: DeckSliceConfig[],
     ) => {
+      // Bump generation so any in-flight lazy chain from a prior call is ignored
+      // eslint-disable-next-line no-plusplus
+      const generation = ++loadGenerationRef.current;
       setSubSlicesLayers([]);
 
-      if (!slices || slices.length === 0) {
-        return;
-      }
-
-      // Split slices into eager (non-lazy) and lazy groups
-      const eagerSlices: JsonObject[] = [];
-      const lazySlices: JsonObject[] = [];
-
-      slices.forEach((subslice: JsonObject) => {
-        const config = deckSlicesConfig.find(
-          c => c.sliceId === subslice.slice_id,
-        );
-        if (config?.lazyLoading) {
-          lazySlices.push(subslice);
-        } else {
-          eagerSlices.push(subslice);
-        }
-      });
-
-      // Phase 1: Load all eager (non-lazy) layers in parallel
-      const eagerPromise =
-        eagerSlices.length > 0
-          ? Promise.all(
-              eagerSlices.map(subslice => {
-                const config = deckSlicesConfig.find(
-                  c => c.sliceId === subslice.slice_id,
-                );
-                return loadSingleLayer(formData, subslice, config);
-              }),
-            ).then(results =>
-              results.filter(
-                (entry): entry is SubsliceLayerEntry => entry !== null,
-              ),
-            )
-          : Promise.resolve([] as SubsliceLayerEntry[]);
-
-      console.time('[GeoSet] eager-layers');
-      eagerPromise.then(eagerLayers => {
-        console.timeEnd('[GeoSet] eager-layers');
-        console.log(
-          `[GeoSet] ${eagerLayers.length} eager layer(s) loaded, map rendering`,
-        );
-        // Set eager layers immediately so the map renders
-        setSubSlicesLayers(eagerLayers);
-
-        if (lazySlices.length === 0) return;
-
-        // Phase 2: Load lazy layers one-by-one, appending each as it completes
-        console.time('[GeoSet] lazy-layers');
-        let lazyCount = 0;
-        lazySlices
-          .reduce(
-            (chain, subslice) =>
-              chain.then(() => {
-                const config = deckSlicesConfig.find(
-                  c => c.sliceId === subslice.slice_id,
-                );
-                return loadSingleLayer(formData, subslice, config).then(
-                  layerEntry => {
-                    if (layerEntry) {
-                      lazyCount += 1;
-                      console.log(
-                        `[GeoSet] lazy layer ${lazyCount}/${lazySlices.length} loaded (slice ${subslice.slice_id})`,
-                      );
-                      setSubSlicesLayers(prev => [...prev, layerEntry]);
-                    }
-                  },
-                );
-              }),
-            Promise.resolve(),
-          )
-          .then(() => {
-            console.timeEnd('[GeoSet] lazy-layers');
-            console.log('[GeoSet] all layers loaded');
-          });
-      });
+      loadLayersOrchestrated<SubsliceLayerEntry>(
+        slices as { slice_id: number }[],
+        deckSlicesConfig,
+        {
+          loadFn: (subslice, config) =>
+            loadSingleLayer(formData, subslice, config),
+          onEagerComplete: eagerLayers => setSubSlicesLayers(eagerLayers),
+          onLazyAppend: layer =>
+            setSubSlicesLayers(prev => [...prev, layer]),
+          isStale: () => loadGenerationRef.current !== generation,
+        },
+      );
     },
     [loadSingleLayer],
   );

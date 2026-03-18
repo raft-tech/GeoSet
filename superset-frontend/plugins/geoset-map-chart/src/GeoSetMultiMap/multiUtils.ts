@@ -51,3 +51,85 @@ export const normalizeDeckSlices = (
           lazyLoading: item.lazyLoading ?? false,
         },
   ) ?? [];
+
+/** Callbacks for {@link loadLayersOrchestrated}. */
+export interface OrchestrationCallbacks<TLayer> {
+  /** Load a single slice, returning null on failure. */
+  loadFn: (
+    subslice: { slice_id: number },
+    config: DeckSliceConfig | undefined,
+  ) => Promise<TLayer | null>;
+  /** Called once with all eager layers after they finish loading in parallel. */
+  onEagerComplete: (layers: TLayer[]) => void;
+  /** Called for each lazy layer as it finishes loading sequentially. */
+  onLazyAppend: (layer: TLayer) => void;
+  /** Return true to abort — checked before each phase and between lazy loads. */
+  isStale: () => boolean;
+}
+
+/**
+ * Orchestrates two-phase layer loading:
+ *   Phase 1 — load all eager (non-lazy) layers in parallel.
+ *   Phase 2 — load lazy layers one-by-one, calling onLazyAppend after each.
+ *
+ * Returns a promise that resolves when the full chain (eager + lazy) finishes
+ * or is aborted due to staleness.
+ */
+export function loadLayersOrchestrated<TLayer>(
+  slices: { slice_id: number }[],
+  deckSlicesConfig: DeckSliceConfig[],
+  callbacks: OrchestrationCallbacks<TLayer>,
+): Promise<void> {
+  if (!slices || slices.length === 0) return Promise.resolve();
+
+  const configById = new Map(deckSlicesConfig.map(c => [c.sliceId, c]));
+
+  const eagerSlices: { slice_id: number }[] = [];
+  const lazySlices: { slice_id: number }[] = [];
+
+  slices.forEach(subslice => {
+    const config = configById.get(subslice.slice_id);
+    if (config?.lazyLoading) {
+      lazySlices.push(subslice);
+    } else {
+      eagerSlices.push(subslice);
+    }
+  });
+
+  // Phase 1: Load all eager layers in parallel
+  const eagerPromise =
+    eagerSlices.length > 0
+      ? Promise.all(
+          eagerSlices.map(subslice =>
+            callbacks.loadFn(subslice, configById.get(subslice.slice_id)),
+          ),
+        ).then(results => results.filter((e): e is TLayer => e !== null))
+      : Promise.resolve([] as TLayer[]);
+
+  return eagerPromise.then(eagerLayers => {
+    if (callbacks.isStale()) return;
+
+    callbacks.onEagerComplete(eagerLayers);
+
+    if (lazySlices.length === 0) return;
+
+    // Phase 2: Load lazy layers sequentially, appending each as it completes
+    return lazySlices
+      .reduce(
+        (chain, subslice) =>
+          chain.then(() => {
+            if (callbacks.isStale()) return Promise.resolve();
+
+            return callbacks
+              .loadFn(subslice, configById.get(subslice.slice_id))
+              .then(layerEntry => {
+                if (layerEntry && !callbacks.isStale()) {
+                  callbacks.onLazyAppend(layerEntry);
+                }
+              });
+          }),
+        Promise.resolve(),
+      )
+      .then(() => {});
+  });
+}

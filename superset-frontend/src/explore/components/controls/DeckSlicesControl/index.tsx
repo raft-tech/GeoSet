@@ -27,6 +27,10 @@ import { Popover } from '@superset-ui/core/components/Popover';
 import { Button } from '@superset-ui/core/components/Button';
 import ControlHeader from 'src/explore/components/ControlHeader';
 import {
+  normalizeDeckSlices,
+  type DeckSliceConfig,
+} from '@superset-ui/geoset-map-chart/src/GeoSetMultiMap/multiUtils';
+import {
   DragContainer,
   OptionControlContainer,
   CloseContainer,
@@ -41,14 +45,7 @@ interface DeckSliceOption {
   value: number;
   label: string;
 }
-
-export interface DeckSliceConfig {
-  sliceId: number;
-  autozoom: boolean;
-  legendCollapsed: boolean;
-  initiallyHidden: boolean;
-  lazyLoading: boolean;
-}
+export type { DeckSliceConfig };
 
 export interface DeckSlicesControlProps {
   value: (DeckSliceConfig | number)[] | undefined;
@@ -417,27 +414,8 @@ const SelectedSliceRow = ({
   );
 };
 
-// Normalize deck slices (handle legacy number[] format)
-const normalizeValue = (
-  value: (DeckSliceConfig | number)[] | undefined,
-): DeckSliceConfig[] =>
-  value?.map(item =>
-    typeof item === 'number'
-      ? {
-          sliceId: item,
-          autozoom: true,
-          legendCollapsed: false,
-          initiallyHidden: false,
-          lazyLoading: false,
-        }
-      : {
-          sliceId: item.sliceId,
-          autozoom: item.autozoom ?? true,
-          legendCollapsed: item.legendCollapsed ?? false,
-          initiallyHidden: item.initiallyHidden ?? false,
-          lazyLoading: item.lazyLoading ?? false,
-        },
-  ) ?? [];
+// Re-use the shared normalizer from multiUtils (handles legacy number[] format)
+const normalizeValue = normalizeDeckSlices;
 
 const DeckSlicesControl = ({
   value = [],
