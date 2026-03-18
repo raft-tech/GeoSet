@@ -96,16 +96,25 @@ export function loadLayersOrchestrated<TLayer>(
     }
   });
 
+  const safeLoadFn = (
+    subslice: { slice_id: number },
+    config: DeckSliceConfig | undefined,
+  ): Promise<TLayer | null> => {
+    try {
+      return callbacks.loadFn(subslice, config);
+    } catch (err) {
+      return Promise.reject(err);
+    }
+  };
+
   // Phase 1: Load all eager layers in parallel
   const eagerPromise =
     eagerSlices.length > 0
       ? Promise.all(
           eagerSlices.map(subslice =>
-            Promise.resolve().then(() =>
-              callbacks.loadFn(subslice, configById.get(subslice.slice_id)),
-            ),
+            safeLoadFn(subslice, configById.get(subslice.slice_id)),
           ),
-        ).then(results => results.filter((e): e is TLayer => e !== null))
+        ).then(results => results.filter(e => e !== null) as TLayer[])
       : Promise.resolve([] as TLayer[]);
 
   return eagerPromise.then(eagerLayers => {
@@ -123,15 +132,13 @@ export function loadLayersOrchestrated<TLayer>(
         chain.then(() => {
           if (callbacks.isStale()) return Promise.resolve();
 
-          return Promise.resolve()
-            .then(() =>
-              callbacks.loadFn(subslice, configById.get(subslice.slice_id)),
-            )
-            .then(layerEntry => {
+          return safeLoadFn(subslice, configById.get(subslice.slice_id)).then(
+            layerEntry => {
               if (layerEntry && !callbacks.isStale()) {
                 callbacks.onLazyAppend(layerEntry);
               }
-            });
+            },
+          );
         }),
       Promise.resolve(),
     );
