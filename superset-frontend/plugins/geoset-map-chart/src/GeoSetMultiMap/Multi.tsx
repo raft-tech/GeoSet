@@ -858,20 +858,26 @@ const DeckMulti = (props: DeckMultiProps) => {
   // Mark hidden layers with userVisible: false so deck.gl keeps them alive
   // but skips rendering. This allows instant toggle-back without reinitializing.
   // flatMap because polygon layers produce multiple LayerStates (fill + stroke)
-  const layerStatesWithVisibility = sortedLayers.flatMap(entry => {
-    const visKey = String(entry.sliceId);
-    const isVisible =
-      visKey in layerVisibility
-        ? layerVisibility[visKey] !== false
-        : !entry.initiallyHidden;
-    return entry.layerStates.map(ls => ({
-      ...ls,
-      options: {
-        ...ls.options,
-        userVisible: isVisible,
-      },
-    }));
-  });
+  // Memoized so DeckGLContainer only sees new prop references when visibility
+  // actually changes — prevents a spurious extra render on every Multi re-render.
+  const layerStatesWithVisibility = useMemo(
+    () =>
+      sortedLayers.flatMap(entry => {
+        const visKey = String(entry.sliceId);
+        const isVisible =
+          visKey in layerVisibility
+            ? layerVisibility[visKey] !== false
+            : !entry.initiallyHidden;
+        return entry.layerStates.map(ls => ({
+          ...ls,
+          options: {
+            ...ls.options,
+            userVisible: isVisible,
+          },
+        }));
+      }),
+    [sortedLayers, layerVisibility],
+  );
 
   // Build legendsBySlice for MultiLegend component, with category enabled state applied.
   // Merges loaded entries with stub entries so the legend shows all layers immediately.
