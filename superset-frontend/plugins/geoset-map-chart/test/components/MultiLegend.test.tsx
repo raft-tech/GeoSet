@@ -420,6 +420,73 @@ describe('MultiLegend', () => {
     });
   });
 
+  describe('optimistic visibility (no toggle lag)', () => {
+    it('group checkbox updates immediately on click without waiting for layerVisibility prop to change', () => {
+      const onToggle = jest.fn();
+      renderWithTheme(
+        <MultiLegend
+          legendGroups={[
+            createLegendGroup({
+              displayTitle: 'A',
+              entries: [
+                { sliceId: '1', legendEntry: createSimpleLegendEntry() },
+              ],
+            }),
+            createLegendGroup({
+              displayTitle: 'B',
+              entries: [
+                { sliceId: '2', legendEntry: createSimpleLegendEntry() },
+              ],
+            }),
+          ]}
+          layerVisibility={{ '1': true, '2': true }}
+          onToggleLayerVisibility={onToggle}
+        />,
+      );
+      userEvent.click(screen.getByText('Legend'));
+      const checkboxes = screen.getAllByRole('checkbox');
+      // Group A checkbox starts checked
+      expect(checkboxes[0]).toBeChecked();
+      // Click to toggle — layerVisibility prop does NOT change (simulates async parent update)
+      userEvent.click(checkboxes[0]);
+      // Checkbox should immediately reflect the toggled state via optimistic local state,
+      // without needing the parent to re-render with a new layerVisibility prop.
+      expect(checkboxes[0]).not.toBeChecked();
+      expect(onToggle).toHaveBeenCalledWith(['1']);
+    });
+
+    it('group checkbox re-toggles correctly on second click', () => {
+      const onToggle = jest.fn();
+      renderWithTheme(
+        <MultiLegend
+          legendGroups={[
+            createLegendGroup({
+              displayTitle: 'A',
+              entries: [
+                { sliceId: '1', legendEntry: createSimpleLegendEntry() },
+              ],
+            }),
+            createLegendGroup({
+              displayTitle: 'B',
+              entries: [
+                { sliceId: '2', legendEntry: createSimpleLegendEntry() },
+              ],
+            }),
+          ]}
+          layerVisibility={{ '1': true, '2': true }}
+          onToggleLayerVisibility={onToggle}
+        />,
+      );
+      userEvent.click(screen.getByText('Legend'));
+      const checkboxes = screen.getAllByRole('checkbox');
+      userEvent.click(checkboxes[0]); // toggle off
+      expect(checkboxes[0]).not.toBeChecked();
+      userEvent.click(checkboxes[0]); // toggle back on
+      expect(checkboxes[0]).toBeChecked();
+      expect(onToggle).toHaveBeenCalledTimes(2);
+    });
+  });
+
   describe('legend entry content rendering', () => {
     it('renders swatch and legend name for simple entry', () => {
       renderWithTheme(
