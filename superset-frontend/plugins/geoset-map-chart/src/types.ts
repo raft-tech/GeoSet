@@ -103,6 +103,7 @@ export type LegendEntry = {
   sizeEntry?: SizeLegend;
   isCombinedMetricSize?: boolean;
   initialCollapsed?: boolean; // Whether this legend entry starts collapsed
+  loading?: boolean; // True for stub entries whose layer data is still loading
 };
 
 export type LegendGroup = {

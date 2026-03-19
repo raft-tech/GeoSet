@@ -92,7 +92,22 @@ The GeoSet map plugin is a Superset chart plugin built on [deck.gl](https://deck
 | `GeoSetLayer/GeoSetLayer.tsx` | Main React component for the single-layer chart. Manages deck.gl layers, viewport, clustering, tooltips, and popups. |
 | `GeoSetLayer/controlPanel.ts` | Defines all chart controls visible in the explore panel. |
 | `GeoSetMultiMap/Multi.tsx` | React component for the multi-layer chart. Fetches and renders each sub-layer chart's data. |
+| `GeoSetMultiMap/multiUtils.ts` | Shared utilities: slice config normalization, autozoom resolution, and three-phase layer loading orchestration (see below). |
 | `GeoSetMultiMap/controlPanel.ts` | Control panel for the multi-layer chart. |
+
+### Layer Loading Orchestration
+
+`loadLayersOrchestrated()` in `multiUtils.ts` manages three sequential phases:
+
+| Phase | Layers | Loading strategy | When the map canvas appears |
+|---|---|---|---|
+| **1 — Autozoom** | Non-lazy layers with `autozoom: true` | All load in parallel (`Promise.all`) | Canvas gates on this phase so the viewport is correct on first render (no jump) |
+| **2 — Eager** | Non-lazy layers with `autozoom: false` | All load in parallel (`Promise.all`), each appended individually as results arrive | Canvas is already visible |
+| **3 — Lazy** | Layers with `lazyLoading: true` | Sequential batches of `LAZY_BATCH_SIZE` (2) | Canvas is already visible |
+
+Phase 2 and 3 both append layers incrementally, but phase 3 rate-limits concurrency to avoid overwhelming the backend when many layers are configured. If no autozoom layers exist, the canvas renders immediately after metadata fetch and phases 2/3 begin right away.
+
+Each phase checks a staleness flag before proceeding. When the user changes a filter or the slice list changes, the generation counter increments and any in-flight chain aborts before the next phase or batch begins.
 
 ### Key Utilities
 

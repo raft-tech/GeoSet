@@ -27,6 +27,10 @@ import { Popover } from '@superset-ui/core/components/Popover';
 import { Button } from '@superset-ui/core/components/Button';
 import ControlHeader from 'src/explore/components/ControlHeader';
 import {
+  normalizeDeckSlices,
+  type DeckSliceConfig,
+} from '@superset-ui/geoset-map-chart';
+import {
   DragContainer,
   OptionControlContainer,
   CloseContainer,
@@ -41,13 +45,7 @@ interface DeckSliceOption {
   value: number;
   label: string;
 }
-
-export interface DeckSliceConfig {
-  sliceId: number;
-  autozoom: boolean;
-  legendCollapsed: boolean;
-  initiallyHidden: boolean;
-}
+export type { DeckSliceConfig };
 
 export interface DeckSlicesControlProps {
   value: (DeckSliceConfig | number)[] | undefined;
@@ -96,6 +94,7 @@ interface SliceSettings {
   autozoom: boolean;
   legendCollapsed: boolean;
   initiallyHidden: boolean;
+  lazyLoading: boolean;
 }
 
 interface SelectedSliceRowProps {
@@ -104,6 +103,7 @@ interface SelectedSliceRowProps {
   autozoom: boolean;
   legendCollapsed: boolean;
   initiallyHidden: boolean;
+  lazyLoading: boolean;
   index: number;
   onRemove: (sliceId: number) => void;
   onMoveLabel: (dragIndex: number, hoverIndex: number) => void;
@@ -166,6 +166,7 @@ const SelectedSliceRow = ({
   autozoom,
   legendCollapsed,
   initiallyHidden,
+  lazyLoading,
   index,
   onRemove,
   onMoveLabel,
@@ -183,6 +184,7 @@ const SelectedSliceRow = ({
     useState(legendCollapsed);
   const [draftInitiallyHidden, setDraftInitiallyHidden] =
     useState(initiallyHidden);
+  const [draftLazyLoading, setDraftLazyLoading] = useState(lazyLoading);
 
   // Reset draft state when popover opens
   const handleOpenChange = (open: boolean) => {
@@ -190,8 +192,26 @@ const SelectedSliceRow = ({
       setDraftAutozoom(autozoom);
       setDraftLegendCollapsed(legendCollapsed);
       setDraftInitiallyHidden(initiallyHidden);
+      setDraftLazyLoading(lazyLoading);
+      autozoomBeforeLazyRef.current = autozoom;
     }
     setSettingsOpen(open);
+  };
+
+  // Track the user's autozoom choice before lazy loading overrides it
+  const autozoomBeforeLazyRef = useRef(draftAutozoom);
+
+  // When lazy loading is toggled on, auto-disable autozoom;
+  // when toggled off, restore autozoom to the user's prior draft value.
+  const handleToggleLazyLoading = () => {
+    const newLazyLoading = !draftLazyLoading;
+    setDraftLazyLoading(newLazyLoading);
+    if (newLazyLoading) {
+      autozoomBeforeLazyRef.current = draftAutozoom;
+      setDraftAutozoom(false);
+    } else {
+      setDraftAutozoom(autozoomBeforeLazyRef.current);
+    }
   };
 
   // Apply draft changes on Save - apply ALL changes in one update
@@ -199,12 +219,19 @@ const SelectedSliceRow = ({
     const autozoomChanged = draftAutozoom !== autozoom;
     const legendCollapsedChanged = draftLegendCollapsed !== legendCollapsed;
     const initiallyHiddenChanged = draftInitiallyHidden !== initiallyHidden;
+    const lazyLoadingChanged = draftLazyLoading !== lazyLoading;
 
-    if (autozoomChanged || legendCollapsedChanged || initiallyHiddenChanged) {
+    if (
+      autozoomChanged ||
+      legendCollapsedChanged ||
+      initiallyHiddenChanged ||
+      lazyLoadingChanged
+    ) {
       onUpdateSliceSettings(sliceId, {
         autozoom: draftAutozoom,
         legendCollapsed: draftLegendCollapsed,
         initiallyHidden: draftInitiallyHidden,
+        lazyLoading: draftLazyLoading,
       });
     }
     setSettingsOpen(false);
@@ -240,25 +267,29 @@ const SelectedSliceRow = ({
     labelRef.current &&
     labelRef.current.scrollWidth > labelRef.current.clientWidth;
 
+  const autozoomDisabled = staticViewportEnabled || draftLazyLoading;
+  const autozoomTooltip = (() => {
+    if (staticViewportEnabled) {
+      return t(
+        'Auto Zoom is disabled when Static Viewport is enabled on the map',
+      );
+    }
+    if (draftLazyLoading) {
+      return t('Auto Zoom is disabled when Lazy Loading is enabled');
+    }
+    return t('Automatically zoom the map to fit this layer');
+  })();
+
   const settingsContent = (
     <SettingsPopoverContent onClick={e => e.stopPropagation()}>
-      <SettingsRow style={staticViewportEnabled ? { opacity: 0.5 } : undefined}>
+      <SettingsRow style={autozoomDisabled ? { opacity: 0.5 } : undefined}>
         <Checkbox
           checked={draftAutozoom}
           onChange={() => setDraftAutozoom(!draftAutozoom)}
-          disabled={staticViewportEnabled}
+          disabled={autozoomDisabled}
         />
         <SettingsLabel>{t('Auto Zoom')}</SettingsLabel>
-        <Tooltip
-          title={
-            staticViewportEnabled
-              ? t(
-                  'Auto Zoom is disabled when Static Viewport is enabled on the map',
-                )
-              : t('Automatically zoom the map to fit this layer')
-          }
-          mouseLeaveDelay={0}
-        >
+        <Tooltip title={autozoomTooltip} mouseLeaveDelay={0}>
           <InfoIcon>
             <Icons.InfoCircleOutlined
               iconSize="s"
@@ -293,6 +324,26 @@ const SelectedSliceRow = ({
         <SettingsLabel>{t('Hidden by Default')}</SettingsLabel>
         <Tooltip
           title={t('Hide this layer when the map first loads')}
+          mouseLeaveDelay={0}
+        >
+          <InfoIcon>
+            <Icons.InfoCircleOutlined
+              iconSize="s"
+              iconColor={theme.colorTextSecondary}
+            />
+          </InfoIcon>
+        </Tooltip>
+      </SettingsRow>
+      <SettingsRow>
+        <Checkbox
+          checked={draftLazyLoading}
+          onChange={handleToggleLazyLoading}
+        />
+        <SettingsLabel>{t('Lazy Loading')}</SettingsLabel>
+        <Tooltip
+          title={t(
+            'Load this layer in the background after other layers have loaded. Auto Zoom is disabled for lazy-loaded layers.',
+          )}
           mouseLeaveDelay={0}
         >
           <InfoIcon>
@@ -371,25 +422,8 @@ const SelectedSliceRow = ({
   );
 };
 
-// Normalize deck slices (handle legacy number[] format)
-const normalizeValue = (
-  value: (DeckSliceConfig | number)[] | undefined,
-): DeckSliceConfig[] =>
-  value?.map(item =>
-    typeof item === 'number'
-      ? {
-          sliceId: item,
-          autozoom: true,
-          legendCollapsed: false,
-          initiallyHidden: false,
-        }
-      : {
-          sliceId: item.sliceId,
-          autozoom: item.autozoom ?? true,
-          legendCollapsed: item.legendCollapsed ?? false,
-          initiallyHidden: item.initiallyHidden ?? false,
-        },
-  ) ?? [];
+// Re-use the shared normalizer from multiUtils (handles legacy number[] format)
+const normalizeValue = normalizeDeckSlices;
 
 const DeckSlicesControl = ({
   value = [],
@@ -464,6 +498,7 @@ const DeckSlicesControl = ({
                 autozoom: v.autozoom,
                 legendCollapsed: v.legendCollapsed,
                 initiallyHidden: v.initiallyHidden,
+                lazyLoading: v.lazyLoading,
               }
             : null;
         })
@@ -471,6 +506,7 @@ const DeckSlicesControl = ({
         autozoom: boolean;
         legendCollapsed: boolean;
         initiallyHidden: boolean;
+        lazyLoading: boolean;
       })[],
     [localValues, options],
   );
@@ -498,6 +534,7 @@ const DeckSlicesControl = ({
               autozoom: true,
               legendCollapsed: false,
               initiallyHidden: false,
+              lazyLoading: false,
             },
           ],
     );
@@ -568,6 +605,7 @@ const DeckSlicesControl = ({
             autozoom={opt.autozoom}
             legendCollapsed={opt.legendCollapsed}
             initiallyHidden={opt.initiallyHidden}
+            lazyLoading={opt.lazyLoading}
             index={index}
             onRemove={handleRemove}
             onMoveLabel={moveLabel}

@@ -1,4 +1,5 @@
 import { styled } from '@superset-ui/core';
+import { Spin } from '@superset-ui/core/components/Spin';
 import { useState, useEffect, useRef } from 'react';
 import MapIcon from '@material-ui/icons/MapTwoTone';
 import { RGBAColor } from '../utils/colors';
@@ -222,6 +223,15 @@ const LegendEntryContent: React.FC<{
   onToggleVisibility,
   onToggleCategory,
 }) => {
+  if (legendEntry.loading) {
+    return (
+      <CategoryRow>
+        <Spin size="small" />
+        <div>{legendEntry.legendName}</div>
+      </CategoryRow>
+    );
+  }
+
   const { fill, stroke } = getDefaultColors(legendEntry);
 
   return (
@@ -482,26 +492,31 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
             const isIndeterminate =
               someVisibleSomeNot || (isVisible && hasPartialCategories);
 
+            const allLoading = entries.every(e => e.legendEntry.loading);
+
             return (
               <Group key={displayTitle}>
                 {/* Header */}
                 <Header>
-                  {showGroupCheckboxes && (
-                    <IndeterminateCheckbox
-                      checked={isVisible}
-                      indeterminate={isIndeterminate}
-                      onChange={e => {
-                        e.stopPropagation();
-                        setOptimisticVisibility(prev => ({
-                          ...prev,
-                          ...Object.fromEntries(
-                            allSliceIds.map(id => [id, !isVisible]),
-                          ),
-                        }));
-                        onToggleLayerVisibility?.(allSliceIds);
-                      }}
-                    />
-                  )}
+                  {showGroupCheckboxes &&
+                    (allLoading ? (
+                      <Spin size="small" />
+                    ) : (
+                      <IndeterminateCheckbox
+                        checked={isVisible}
+                        indeterminate={isIndeterminate}
+                        onChange={e => {
+                          e.stopPropagation();
+                          setOptimisticVisibility(prev => ({
+                            ...prev,
+                            ...Object.fromEntries(
+                              allSliceIds.map(id => [id, !isVisible]),
+                            ),
+                          }));
+                          onToggleLayerVisibility?.(allSliceIds);
+                        }}
+                      />
+                    ))}
                   <TitleRow
                     onClick={() => toggle(displayTitle, initialCollapsed)}
                   >

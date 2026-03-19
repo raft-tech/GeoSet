@@ -25,6 +25,9 @@ import {
   getLayerStates,
 } from '../../src/layers/GeoSetLayer/GeoSetLayer';
 
+// Shared SVG icon mocks — see test/mocks/svgIcons.ts
+import '../mocks/svgIcons';
+
 // ── DeckGL layer mocks ──
 // jest.mock factories can only reference variables prefixed with "mock".
 function mockMakeLayer(name: string) {
@@ -81,9 +84,6 @@ jest.mock('../../src/utils/sandbox', () => ({
   __esModule: true,
   default: (code: string) => () => code,
 }));
-
-// Shared SVG icon mocks — see test/mocks/svgIcons.ts
-import '../mocks/svgIcons';
 
 jest.mock('../../src/utils/layerBuilders/buildTextOverlayLayer', () => ({
   buildTextOverlayLayer: (opts: any) => ({
