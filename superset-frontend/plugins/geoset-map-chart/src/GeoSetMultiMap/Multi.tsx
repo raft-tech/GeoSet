@@ -536,7 +536,9 @@ const DeckMulti = (props: DeckMultiProps) => {
         {
           loadFn: (subslice, config) =>
             loadSingleLayer(formData, subslice, config),
-          onEagerComplete: eagerLayers => setSubSlicesLayers(eagerLayers),
+          onAutozoomComplete: autozoomLayers =>
+            setSubSlicesLayers(autozoomLayers),
+          onEagerAppend: layer => setSubSlicesLayers(prev => [...prev, layer]),
           onLazyAppend: layer => setSubSlicesLayers(prev => [...prev, layer]),
           isStale: () => loadGenerationRef.current !== generation,
         },
@@ -1058,12 +1060,19 @@ const DeckMulti = (props: DeckMultiProps) => {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [measureState.isActive]);
 
-  // Show loading state only until slice metadata is fetched (fast API call).
-  // Once metadata is available, render the map canvas immediately so the base
-  // map is visible while layers load in the background. The legend shows stub
-  // entries with loading spinners for layers that are still being fetched.
+  // Gate map canvas rendering to prevent a viewport jump when autozoom layers
+  // load. Phase 1 loads autozoom layers first; the canvas stays hidden until
+  // they complete so the viewport is correct on first render.
+  //
+  // - If any layer has autozoom: wait for phase 1 (autozoom batch) to complete.
+  // - If no layers have autozoom: show the map as soon as metadata is fetched.
   const hasChartsToLoad = normalizedDeckSlices.length > 0;
-  const isLoading = hasChartsToLoad && slicesData === null;
+  const hasAutozoomLayers = normalizedDeckSlices.some(config =>
+    resolveLayerAutozoom(config),
+  );
+  const isLoading =
+    hasChartsToLoad &&
+    (hasAutozoomLayers ? subSlicesLayers.length === 0 : slicesData === null);
 
   if (isLoading) {
     return (

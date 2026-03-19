@@ -59,9 +59,11 @@ export interface OrchestrationCallbacks<TLayer> {
     subslice: { slice_id: number },
     config: DeckSliceConfig | undefined,
   ) => Promise<TLayer | null>;
-  /** Called once with all eager layers after they finish loading in parallel. */
-  onEagerComplete: (layers: TLayer[]) => void;
-  /** Called for each lazy layer as it finishes loading sequentially. */
+  /** Called once with autozoom layers after they finish loading (phase 1). */
+  onAutozoomComplete: (layers: TLayer[]) => void;
+  /** Called for each non-autozoom eager layer as it finishes (phase 2). */
+  onEagerAppend: (layer: TLayer) => void;
+  /** Called for each lazy layer as it finishes loading sequentially (phase 3). */
   onLazyAppend: (layer: TLayer) => void;
   /** Return true to abort — checked before each phase and between lazy loads. */
   isStale: () => boolean;
@@ -71,11 +73,12 @@ export interface OrchestrationCallbacks<TLayer> {
 const LAZY_BATCH_SIZE = 2;
 
 /**
- * Orchestrates two-phase layer loading:
- *   Phase 1 — load all eager (non-lazy) layers in parallel.
- *   Phase 2 — load lazy layers in small batches, calling onLazyAppend after each.
+ * Orchestrates three-phase layer loading:
+ *   Phase 1 — load autozoom layers in parallel (map canvas gates on this).
+ *   Phase 2 — load remaining eager layers in parallel, appending each as it finishes.
+ *   Phase 3 — load lazy layers in small batches, appending each as it finishes.
  *
- * Returns a promise that resolves when the full chain (eager + lazy) finishes
+ * Returns a promise that resolves when the full chain finishes
  * or is aborted due to staleness.
  */
 export function loadLayersOrchestrated<TLayer>(
@@ -87,6 +90,7 @@ export function loadLayersOrchestrated<TLayer>(
 
   const configById = new Map(deckSlicesConfig.map(c => [c.sliceId, c]));
 
+  const autozoomSlices: { slice_id: number }[] = [];
   const eagerSlices: { slice_id: number }[] = [];
   const lazySlices: { slice_id: number }[] = [];
 
@@ -94,6 +98,8 @@ export function loadLayersOrchestrated<TLayer>(
     const config = configById.get(subslice.slice_id);
     if (config?.lazyLoading) {
       lazySlices.push(subslice);
+    } else if (resolveLayerAutozoom(config)) {
+      autozoomSlices.push(subslice);
     } else {
       eagerSlices.push(subslice);
     }
@@ -105,28 +111,40 @@ export function loadLayersOrchestrated<TLayer>(
     config: DeckSliceConfig | undefined,
   ): Promise<TLayer | null> => callbacks.loadFn(subslice, config);
 
-  // Phase 1: Load all eager layers in parallel
-  const eagerPromise =
-    eagerSlices.length > 0
+  // Phase 1: Load autozoom layers in parallel
+  const autozoomPromise =
+    autozoomSlices.length > 0
       ? Promise.all(
-          eagerSlices.map(subslice =>
+          autozoomSlices.map(subslice =>
             safeLoadFn(subslice, configById.get(subslice.slice_id)),
           ),
         ).then(results => results.filter(e => e !== null) as TLayer[])
       : Promise.resolve([] as TLayer[]);
 
-  return eagerPromise.then(eagerLayers => {
-    // Early abort if a newer load generation has started
+  return autozoomPromise.then(autozoomLayers => {
     if (callbacks.isStale()) return undefined;
 
-    callbacks.onEagerComplete(eagerLayers);
+    callbacks.onAutozoomComplete(autozoomLayers);
 
-    // eslint-disable-next-line consistent-return
-    if (lazySlices.length === 0) return;
-
-    // Phase 2: Load lazy layers in batches of LAZY_BATCH_SIZE
+    // Phase 2 + 3 run sequentially after autozoom completes
     // eslint-disable-next-line consistent-return
     return (async () => {
+      // Phase 2: Load remaining eager layers in parallel, append each as it finishes
+      if (eagerSlices.length > 0) {
+        const eagerResults = await Promise.all(
+          eagerSlices.map(subslice =>
+            safeLoadFn(subslice, configById.get(subslice.slice_id)),
+          ),
+        );
+
+        for (const layerEntry of eagerResults) {
+          if (layerEntry && !callbacks.isStale()) {
+            callbacks.onEagerAppend(layerEntry);
+          }
+        }
+      }
+
+      // Phase 3: Load lazy layers in batches of LAZY_BATCH_SIZE
       for (let i = 0; i < lazySlices.length; i += LAZY_BATCH_SIZE) {
         if (callbacks.isStale()) return;
 
