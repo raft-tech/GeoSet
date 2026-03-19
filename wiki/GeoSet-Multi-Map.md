@@ -41,9 +41,19 @@ Each layer has a **settings popover** (gear icon) with per-layer options:
 | **Auto Zoom** | Automatically zoom the map to fit this layer's features on load. Disabled when Lazy Loading is on or Static Viewport is enabled. |
 | **Collapse Legend** | Start with the legend entry collapsed in the map legend. |
 | **Hidden by Default** | Hide this layer when the map first loads. Toggle it on from the legend. |
-| **Lazy Loading** | Load this layer in the background after eager layers have loaded. Lazy layers are fetched in small batches so they don't compete with the initial render. Auto Zoom is automatically disabled for lazy-loaded layers. |
+| **Lazy Loading** | Load this layer in the background after other layers have loaded. Lazy layers are fetched in small batches so they don't compete with the initial render. Auto Zoom is automatically disabled for lazy-loaded layers. |
 
 > **Note:** If Enable Static Viewport is off, the viewport selection control is hidden — the map will use the default viewport.
+
+### Layer Loading Order
+
+Layers load in three phases to balance fast rendering with a smooth viewport experience:
+
+1. **Autozoom layers** — Layers with Auto Zoom enabled load first, in parallel. The map canvas waits for these to finish so it can calculate the correct viewport before rendering. This prevents a visible "jump" where the map snaps to a new position.
+2. **Eager layers** — Remaining non-lazy layers (with Auto Zoom off) load in parallel after the map canvas appears. Each layer is added to the map as it finishes.
+3. **Lazy layers** — Layers with Lazy Loading enabled load last, in small batches of 2. Each batch waits for the previous one to finish before starting, which avoids overwhelming the server with many simultaneous requests.
+
+If no layers have Auto Zoom enabled, the map canvas renders immediately after fetching layer metadata, and all non-lazy layers begin loading right away.
 
 ## Multi-Layer Legend
 

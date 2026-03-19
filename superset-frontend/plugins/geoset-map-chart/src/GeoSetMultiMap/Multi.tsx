@@ -530,16 +530,56 @@ const DeckMulti = (props: DeckMultiProps) => {
       const generation = ++loadGenerationRef.current;
       setSubSlicesLayers([]);
 
+      // Pre-set layer visibility from config — known upfront, no timing
+      // dependency on when layers finish loading.
+      const hiddenConfigs = deckSlicesConfig.filter(c => c.initiallyHidden);
+      if (hiddenConfigs.length > 0) {
+        setLayerVisibility(prev => ({
+          ...prev,
+          ...Object.fromEntries(
+            hiddenConfigs.map(c => [String(c.sliceId), false]),
+          ),
+        }));
+      }
+
+      // Category visibility can only be set once the layer loads (categories
+      // aren't known until data is fetched).
+      const hideCategoriesIfNeeded = (layers: SubsliceLayerEntry[]) => {
+        const categorical = layers.filter(
+          l => l.initiallyHidden && l.legendEntry.categories?.length,
+        );
+        if (categorical.length === 0) return;
+        setCategoryVisibility(prev => ({
+          ...prev,
+          ...Object.fromEntries(
+            categorical.map(l => [
+              String(l.sliceId),
+              Object.fromEntries(
+                l.legendEntry.categories!.map(c => [c.label, false]),
+              ),
+            ]),
+          ),
+        }));
+      };
+
       loadLayersOrchestrated<SubsliceLayerEntry>(
         slices as { slice_id: number }[],
         deckSlicesConfig,
         {
           loadFn: (subslice, config) =>
             loadSingleLayer(formData, subslice, config),
-          onAutozoomComplete: autozoomLayers =>
-            setSubSlicesLayers(autozoomLayers),
-          onEagerAppend: layer => setSubSlicesLayers(prev => [...prev, layer]),
-          onLazyAppend: layer => setSubSlicesLayers(prev => [...prev, layer]),
+          onAutozoomComplete: autozoomLayers => {
+            setSubSlicesLayers(autozoomLayers);
+            hideCategoriesIfNeeded(autozoomLayers);
+          },
+          onEagerAppend: layer => {
+            setSubSlicesLayers(prev => [...prev, layer]);
+            hideCategoriesIfNeeded([layer]);
+          },
+          onLazyAppend: layer => {
+            setSubSlicesLayers(prev => [...prev, layer]);
+            hideCategoriesIfNeeded([layer]);
+          },
           isStale: () => loadGenerationRef.current !== generation,
         },
       ).catch(err => {
@@ -592,43 +632,6 @@ const DeckMulti = (props: DeckMultiProps) => {
       });
     });
   }, [normalizedDeckSlices]);
-
-  // Initialize layer visibility based on initiallyHidden setting.
-  // Detects newly-added layers (including lazy-loaded ones) by comparing
-  // current slice IDs against the previous set, so layers arriving after
-  // the initial eager batch are also handled.
-  const currentSubSliceIds = useMemo(
-    () => new Set(subSlicesLayers.map(e => e.sliceId)),
-    [subSlicesLayers],
-  );
-  const prevSubSliceIds = usePrevious(currentSubSliceIds);
-  useEffect(() => {
-    const prevIds = prevSubSliceIds ?? new Set<number>();
-    const newLayers = subSlicesLayers.filter(e => !prevIds.has(e.sliceId));
-    const hiddenNewLayers = newLayers.filter(e => e.initiallyHidden);
-
-    if (hiddenNewLayers.length > 0) {
-      setLayerVisibility(prev => ({
-        ...prev,
-        ...Object.fromEntries(
-          hiddenNewLayers.map(e => [String(e.sliceId), false]),
-        ),
-      }));
-      setCategoryVisibility(prev => ({
-        ...prev,
-        ...Object.fromEntries(
-          hiddenNewLayers
-            .filter(e => e.legendEntry.categories?.length)
-            .map(e => [
-              String(e.sliceId),
-              Object.fromEntries(
-                e.legendEntry.categories!.map(c => [c.label, false]),
-              ),
-            ]),
-        ),
-      }));
-    }
-  }, [subSlicesLayers, prevSubSliceIds]);
 
   const { height, width } = props;
 
@@ -856,7 +859,11 @@ const DeckMulti = (props: DeckMultiProps) => {
   // but skips rendering. This allows instant toggle-back without reinitializing.
   // flatMap because polygon layers produce multiple LayerStates (fill + stroke)
   const layerStatesWithVisibility = sortedLayers.flatMap(entry => {
-    const isVisible = layerVisibility[String(entry.sliceId)] !== false;
+    const visKey = String(entry.sliceId);
+    const isVisible =
+      visKey in layerVisibility
+        ? layerVisibility[visKey] !== false
+        : !entry.initiallyHidden;
     return entry.layerStates.map(ls => ({
       ...ls,
       options: {
