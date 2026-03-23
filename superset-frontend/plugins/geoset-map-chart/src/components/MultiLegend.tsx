@@ -176,12 +176,13 @@ const Bounds = styled.div(
 `,
 );
 
-const VisibilityCheckbox = styled.input`
+const VisibilityCheckbox = styled.input<{ $empty?: boolean }>`
   width: 14px;
   height: 14px;
   cursor: pointer;
   margin: 0 !important;
   flex-shrink: 0;
+  ${({ $empty }) => $empty && 'accent-color: gray;'}
 `;
 
 // Checkbox that supports indeterminate state (shows minus sign when some but not all are selected)
@@ -189,7 +190,8 @@ const IndeterminateCheckbox: React.FC<{
   checked: boolean;
   indeterminate: boolean;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-}> = ({ checked, indeterminate, onChange }) => {
+  $empty?: boolean;
+}> = ({ checked, indeterminate, onChange, $empty }) => {
   const ref = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -204,6 +206,7 @@ const IndeterminateCheckbox: React.FC<{
       type="checkbox"
       checked={checked}
       onChange={onChange}
+      $empty={$empty}
     />
   );
 };
@@ -246,6 +249,7 @@ const LegendEntryContent: React.FC<{
                 type="checkbox"
                 checked={isVisible}
                 onChange={onToggleVisibility}
+                $empty={legendEntry.empty}
               />
             )}
             <Swatch
@@ -299,6 +303,7 @@ const LegendEntryContent: React.FC<{
                         type="checkbox"
                         checked={item.enabled}
                         onChange={() => onToggleCategory(sliceId, item.label)}
+                        $empty={legendEntry.empty}
                       />
                     )}
                     <span>{item.label}</span>
@@ -324,6 +329,7 @@ const LegendEntryContent: React.FC<{
                         type="checkbox"
                         checked={isEnabled}
                         onChange={() => onToggleCategory(sliceId, cat.label)}
+                        $empty={legendEntry.empty}
                       />
                     )}
                     <Swatch
@@ -364,6 +370,7 @@ const LegendEntryContent: React.FC<{
                 type="checkbox"
                 checked={isVisible}
                 onChange={onToggleVisibility}
+                $empty={legendEntry.empty}
               />
               <Swatch
                 fill={fill}
@@ -493,6 +500,9 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
               someVisibleSomeNot || (isVisible && hasPartialCategories);
 
             const allLoading = entries.every(e => e.legendEntry.loading);
+            const allEmpty = !allLoading && entries.every(
+              e => e.legendEntry.empty,
+            );
 
             return (
               <Group key={displayTitle}>
@@ -505,6 +515,7 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
                       <IndeterminateCheckbox
                         checked={isVisible}
                         indeterminate={isIndeterminate}
+                        $empty={allEmpty}
                         onChange={e => {
                           e.stopPropagation();
                           setOptimisticVisibility(prev => ({
