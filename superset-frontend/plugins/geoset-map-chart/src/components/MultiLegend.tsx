@@ -151,6 +151,13 @@ const CategoryRow = styled.div`
   gap: 8px;
 `;
 
+const NoDataLabel = styled.div`
+  font-size: 11px;
+  color: gray;
+  margin-bottom: 6px;
+  margin-left: -20px;
+`;
+
 const MetricBlock = styled.div`
   margin: 6px 0;
 `;
@@ -239,6 +246,9 @@ const LegendEntryContent: React.FC<{
 
   return (
     <div>
+      {legendEntry.empty && (
+        <NoDataLabel>Visible but Empty</NoDataLabel>
+      )}
       {/* SIMPLE - show icon and slice name (skip when sizeEntry handles the display) */}
       {legendEntry.type === 'simple' &&
         legendEntry.simpleStyle &&

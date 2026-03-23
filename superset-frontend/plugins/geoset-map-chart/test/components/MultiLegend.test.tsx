@@ -564,4 +564,215 @@ describe('MultiLegend', () => {
       expect(screen.getByText('500+')).toBeInTheDocument();
     });
   });
+
+  describe('empty layer state', () => {
+    it('shows checkbox and "no data" label instead of spinner for empty entry', () => {
+      renderWithTheme(
+        <MultiLegend
+          legendGroups={[
+            createLegendGroup({
+              displayTitle: 'Empty Group',
+              entries: [
+                {
+                  sliceId: '1',
+                  legendEntry: createSimpleLegendEntry({
+                    legendName: 'Empty Layer',
+                    empty: true,
+                  }),
+                },
+              ],
+            }),
+            createLegendGroup({ displayTitle: 'Other' }),
+          ]}
+          layerVisibility={EMPTY_VISIBILITY}
+          onToggleLayerVisibility={jest.fn()}
+        />,
+      );
+      userEvent.click(screen.getByText('Legend'));
+      expect(screen.getByText('Empty Layer')).toBeInTheDocument();
+      expect(
+        screen.getByText('Visible but Empty'),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    });
+
+    it('does not show "no data" label for non-empty entry', () => {
+      renderWithTheme(
+        <MultiLegend
+          legendGroups={[
+            createLegendGroup({
+              entries: [
+                {
+                  sliceId: '1',
+                  legendEntry: createSimpleLegendEntry({
+                    legendName: 'Normal Layer',
+                  }),
+                },
+              ],
+            }),
+          ]}
+          layerVisibility={EMPTY_VISIBILITY}
+        />,
+      );
+      userEvent.click(screen.getByText('Legend'));
+      expect(screen.getByText('Normal Layer')).toBeInTheDocument();
+      expect(
+        screen.queryByText('Visible but Empty'),
+      ).not.toBeInTheDocument();
+    });
+
+    it('group header shows checkbox (not spinner) when all entries are empty', () => {
+      renderWithTheme(
+        <MultiLegend
+          legendGroups={[
+            createLegendGroup({
+              displayTitle: 'All Empty',
+              entries: [
+                {
+                  sliceId: '1',
+                  legendEntry: createSimpleLegendEntry({ empty: true }),
+                },
+                {
+                  sliceId: '2',
+                  legendEntry: createSimpleLegendEntry({ empty: true }),
+                },
+              ],
+            }),
+            createLegendGroup({ displayTitle: 'Other' }),
+          ]}
+          layerVisibility={EMPTY_VISIBILITY}
+          onToggleLayerVisibility={jest.fn()}
+        />,
+      );
+      userEvent.click(screen.getByText('Legend'));
+      // Group header should render a checkbox, not a loading spinner
+      const checkboxes = screen.getAllByRole('checkbox');
+      expect(checkboxes.length).toBeGreaterThanOrEqual(2);
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    });
+
+    it('group header checkbox is present when some entries have data', () => {
+      renderWithTheme(
+        <MultiLegend
+          legendGroups={[
+            createLegendGroup({
+              displayTitle: 'Mixed',
+              entries: [
+                {
+                  sliceId: '1',
+                  legendEntry: createSimpleLegendEntry({ empty: true }),
+                },
+                {
+                  sliceId: '2',
+                  legendEntry: createSimpleLegendEntry({ empty: false }),
+                },
+              ],
+            }),
+            createLegendGroup({ displayTitle: 'Other' }),
+          ]}
+          layerVisibility={EMPTY_VISIBILITY}
+          onToggleLayerVisibility={jest.fn()}
+        />,
+      );
+      userEvent.click(screen.getByText('Legend'));
+      const checkboxes = screen.getAllByRole('checkbox');
+      expect(checkboxes.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it('shows spinner when loading, even if empty is also true', () => {
+      renderWithTheme(
+        <MultiLegend
+          legendGroups={[
+            createLegendGroup({
+              displayTitle: 'Loading',
+              entries: [
+                {
+                  sliceId: '1',
+                  legendEntry: createSimpleLegendEntry({
+                    loading: true,
+                    empty: true,
+                  }),
+                },
+              ],
+            }),
+            createLegendGroup({
+              displayTitle: 'Other',
+              entries: [
+                {
+                  sliceId: '2',
+                  legendEntry: createSimpleLegendEntry({
+                    loading: true,
+                  }),
+                },
+              ],
+            }),
+          ]}
+          layerVisibility={EMPTY_VISIBILITY}
+          onToggleLayerVisibility={jest.fn()}
+        />,
+      );
+      userEvent.click(screen.getByText('Legend'));
+      // Both group headers should show spinners, not checkboxes
+      expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+      expect(
+        screen.queryByText('Visible but Empty'),
+      ).not.toBeInTheDocument();
+    });
+
+    it('transitions from loading to empty without spinner', () => {
+      const { rerender } = renderWithTheme(
+        <MultiLegend
+          legendGroups={[
+            createLegendGroup({
+              displayTitle: 'Transitioning',
+              entries: [
+                {
+                  sliceId: '1',
+                  legendEntry: createSimpleLegendEntry({
+                    legendName: 'Trans Layer',
+                    loading: true,
+                  }),
+                },
+              ],
+            }),
+            createLegendGroup({ displayTitle: 'Other' }),
+          ]}
+          layerVisibility={EMPTY_VISIBILITY}
+          onToggleLayerVisibility={jest.fn()}
+        />,
+      );
+      userEvent.click(screen.getByText('Legend'));
+      expect(
+        screen.queryByText('Visible but Empty'),
+      ).not.toBeInTheDocument();
+
+      // Re-render with loading finished and empty result
+      rerender(
+        <MultiLegend
+          legendGroups={[
+            createLegendGroup({
+              displayTitle: 'Transitioning',
+              entries: [
+                {
+                  sliceId: '1',
+                  legendEntry: createSimpleLegendEntry({
+                    legendName: 'Trans Layer',
+                    loading: false,
+                    empty: true,
+                  }),
+                },
+              ],
+            }),
+            createLegendGroup({ displayTitle: 'Other' }),
+          ]}
+          layerVisibility={EMPTY_VISIBILITY}
+          onToggleLayerVisibility={jest.fn()}
+        />,
+      );
+      expect(screen.getByText('Trans Layer')).toBeInTheDocument();
+      expect(
+        screen.getByText('Visible but Empty'),
+      ).toBeInTheDocument();
+    });
+  });
 });
