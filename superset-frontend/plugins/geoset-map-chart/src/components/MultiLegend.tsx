@@ -500,9 +500,8 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
               someVisibleSomeNot || (isVisible && hasPartialCategories);
 
             const allLoading = entries.every(e => e.legendEntry.loading);
-            const allEmpty = !allLoading && entries.every(
-              e => e.legendEntry.empty,
-            );
+            const allEmpty =
+              !allLoading && entries.every(e => e.legendEntry.empty);
 
             return (
               <Group key={displayTitle}>
