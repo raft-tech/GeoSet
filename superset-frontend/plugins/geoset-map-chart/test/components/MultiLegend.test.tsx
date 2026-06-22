@@ -7,7 +7,6 @@ import {
   createCategoricalLegendEntry,
   createMetricLegendEntry,
   createLegendGroup,
-  createSizeLegend,
   createCategoryEntry,
   RED,
   GREEN,
