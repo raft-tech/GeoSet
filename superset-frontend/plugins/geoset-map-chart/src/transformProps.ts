@@ -255,7 +255,18 @@ export default function transformProps(chartProps: ChartProps) {
     );
 
     if (bounds) {
-      const { lower, upper, usesPercentBounds } = bounds;
+      const { sortedValues, lower, upper, usesPercentBounds } = bounds;
+
+      // Detect when all data points share the same size value (e.g. dashboard
+      // filter reduced to a single point).
+      const uniqueMin = sortedValues[0];
+      const uniqueMax = sortedValues[sortedValues.length - 1];
+      const noSizeRange = uniqueMin === uniqueMax;
+
+      // The scale always uses the original startSize/endSize so the point
+      // keeps its natural size on the configured range.  When lower === upper
+      // (no explicit bounds), computeSizeScale's range === 0 guard returns
+      // the midpoint automatically.
       sizeScale = computeSizeScale(
         {
           valueColumn: sizeValueColumn,
@@ -266,15 +277,37 @@ export default function transformProps(chartProps: ChartProps) {
         },
         [lower, upper],
       );
+
+      // The legend collapses startSize/endSize to the midpoint when there's
+      // no data variation, which suppresses graduated icons (nothing to
+      // differentiate).
+      const midSize = Math.round((startSize + endSize) / 2);
+      const legendStartSize = noSizeRange ? midSize : startSize;
+      const legendEndSize = noSizeRange ? midSize : endSize;
+
       sizeLegend = {
         lower,
         upper,
-        startSize,
-        endSize,
+        startSize: legendStartSize,
+        endSize: legendEndSize,
         valueColumn: sizeValueColumn,
         legendTitle: legend?.title,
+        legendName: legend?.name || legend?.title || sizeValueColumn,
         usesPercentBounds,
       };
+
+      // When there's a single unique value and metric coloring is active,
+      // compute the actual rendered color so the legend swatch matches the
+      // point on the map (startColor is only the gradient start, not the
+      // actual color at the point's position in the range).
+      if (noSizeRange && metricColorScale && colorByValue?.valueColumn) {
+        const metricVal = Number(
+          rawData[0]?.[colorByValue.valueColumn] ?? NaN,
+        );
+        if (!Number.isNaN(metricVal)) {
+          sizeLegend.singleValueColor = metricColorScale(metricVal) as RGBAColor;
+        }
+      }
     }
   }
 
@@ -303,6 +336,14 @@ export default function transformProps(chartProps: ChartProps) {
   const featureInfoColumnNames = (formData.featureInfoColumns || []).map(
     (col: any) => col.column_name || col.label || col,
   );
+
+  // Allowlist for lasso export: only hover and additional details columns.
+  // Styling inputs (colorByValue, pointSize, textLabel, dimension) are
+  // excluded — users care about data columns, not rendering config.
+  const exportColumnNames = [
+    ...hoverColumnNames,
+    ...featureInfoColumnNames,
+  ].filter((v, i, a) => a.indexOf(v) === i);
 
   if (!Array.isArray(rawFeatures) || rawFeatures.length === 0) {
     console.warn('🚨 No valid GeoJSON features found');
@@ -529,6 +570,7 @@ export default function transformProps(chartProps: ChartProps) {
     legend,
     hoverColumnNames,
     featureInfoColumnNames,
+    exportColumnNames,
     limitReached,
     visualConfig: {
       dimension,

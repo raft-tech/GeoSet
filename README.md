@@ -38,6 +38,7 @@ GeoSet bridges the gap between Superset and GIS tooling. This is accomplished by
 - Point size scaling by value (number or percentile bounds)
 - Collapsible legend with layer toggling and dynamic iconography
 - Native dashboard integration
+- Lasso select with CSV/Excel export
 - Text Overlay Formatting
 
 <p align="center">

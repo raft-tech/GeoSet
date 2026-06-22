@@ -45,15 +45,22 @@ import { LayerState } from '../types';
 import buildGeoSetMapLayerQuery from '../buildQuery';
 import transformGeoSetMapLayerProps from '../transformProps';
 import MultiLegend from '../components/MultiLegend';
-import type { CategoryEntry, LegendEntry } from '../types';
+import type { CategoryEntry, GeoJsonFeature, LegendEntry } from '../types';
 import { useGroupedLegend } from '../utils/hooks';
 import MapControls from '../components/MapControls';
+import { useLassoSelection } from '../hooks/useLassoSelection';
+import {
+  handleLassoPolygonComplete,
+  normalizeCategoryKey,
+  projectAnchorToScreen,
+} from '../utils/lassoSelection';
+import LassoResultsBar from '../components/LassoResultsBar';
 import { CategoryState, MetricLegend, RGBAColor } from '../utils/colors';
 import { getGeometryType } from '../utils/dataProcessing';
 import { fetchMapboxApiKey, getCachedMapboxApiKey } from '../utils/mapboxApi';
 import { multiChartMigration } from '../utils/migrationApi';
 import ClickPopupBox, { ClickedFeatureInfo } from '../components/ClickPopupBox';
-import { setLiveViewport } from '../utils/liveViewportStore';
+import { setLiveViewport, getLiveViewport } from '../utils/liveViewportStore';
 import {
   DeckSliceConfig,
   resolveLayerAutozoom,
@@ -132,10 +139,12 @@ type SubsliceLayerEntry = {
     visualConfig: any;
     hoverColumnNames: string[];
     featureInfoColumnNames: string[];
+    exportColumnNames: string[];
   };
   zoomSliderOptions: { minZoom: number; maxZoom: number };
   initiallyHidden: boolean; // Whether this layer starts hidden
   lazyLoading: boolean; // Whether this layer is configured for lazy loading
+  lassoSelectable: boolean; // Whether this layer appears in the lasso dropdown
 };
 
 interface ClickedFeatureWithColumns extends ClickedFeatureInfo {
@@ -146,6 +155,8 @@ const DeckMulti = (props: DeckMultiProps) => {
   const containerRef = useRef<DeckGLContainerHandle>(null);
   // Ref to track measure state for use in callbacks without creating dependencies
   const measureActiveRef = useRef(false);
+  const lassoIsActiveRef = useRef(false);
+  const lassoRequestIdRef = useRef(0);
   // Generation counter to cancel stale lazy-loading chains
   const loadGenerationRef = useRef(0);
   // Store initial autozoom viewport to prevent reset on category toggle
@@ -168,7 +179,7 @@ const DeckMulti = (props: DeckMultiProps) => {
   // Don't show popup when measurement mode is active (uses ref to avoid dependency issues)
   const handleFeatureClick = useCallback(
     (info: any, featureInfoColumnNames?: string[]) => {
-      if (measureActiveRef.current) return;
+      if (measureActiveRef.current || lassoIsActiveRef.current) return;
       if (info?.object?.properties) {
         setClickedFeature({
           properties: info.object.properties,
@@ -183,6 +194,8 @@ const DeckMulti = (props: DeckMultiProps) => {
     setClickedFeature(null);
   }, []);
   const setTooltip = useCallback((tooltip: TooltipProps['tooltip']) => {
+    // Suppress hover tooltips while lasso mode is active
+    if (lassoIsActiveRef.current) return;
     const { current } = containerRef;
     if (current) {
       current.setTooltip(tooltip);
@@ -494,10 +507,12 @@ const DeckMulti = (props: DeckMultiProps) => {
                   hoverColumnNames: transformedProps.hoverColumnNames,
                   featureInfoColumnNames:
                     transformedProps.featureInfoColumnNames || [],
+                  exportColumnNames: transformedProps.exportColumnNames || [],
                 },
                 zoomSliderOptions: newLayerStateOptions,
                 initiallyHidden: sliceInitiallyHidden,
                 lazyLoading: sliceLazyLoading,
+                lassoSelectable: sliceConfig?.lassoSelectable ?? true,
               };
             });
           })
@@ -626,6 +641,7 @@ const DeckMulti = (props: DeckMultiProps) => {
           ...layer,
           autozoom: resolveLayerAutozoom(config),
           lazyLoading: config?.lazyLoading ?? false,
+          lassoSelectable: config?.lassoSelectable ?? true,
         };
       });
     });
@@ -877,6 +893,20 @@ const DeckMulti = (props: DeckMultiProps) => {
     [sortedLayers, layerVisibility],
   );
 
+  // Layer list for lasso layer picker dropdown — only lasso-selectable layers
+  const lassoLayers = useMemo(
+    () =>
+      sortedLayers
+        .filter(entry => entry.lassoSelectable !== false)
+        .map(entry => ({
+          id: String(entry.sliceId),
+          name:
+            (entry.legendEntry.sliceName as string | undefined) ||
+            entry.legendEntry.legendName,
+        })),
+    [sortedLayers],
+  );
+
   // Build legendsBySlice for MultiLegend component, with category enabled state applied.
   // Merges loaded entries with stub entries so the legend shows all layers immediately.
   const legendsBySlice: Record<string, LegendEntry> = useMemo(() => {
@@ -996,6 +1026,92 @@ const DeckMulti = (props: DeckMultiProps) => {
   // Keep ref in sync with measure state for use in callbacks
   measureActiveRef.current = measureState.isActive;
 
+  const {
+    lassoIsActive,
+    lassoDrawMode,
+    setLassoDrawMode,
+    selectedLassoLayerId,
+    selectedFeatures,
+    setSelectedFeatures,
+    lassoPolygon,
+    anchorGeoCoord,
+    setAnchorGeoCoord,
+    clearSelection,
+    handleLassoToggle,
+    handleLassoActivate,
+    handleLassoComplete,
+    handleLassoLayerSelect,
+    deactivateLasso,
+  } = useLassoSelection({
+    availableLayers: lassoLayers,
+    onPolygonComplete: async polygon => {
+      const entry = sortedLayers.find(
+        e => String(e.sliceId) === selectedLassoLayerId,
+      );
+      if (!entry) return;
+
+      const allFeatures =
+        (entry.transformedProps.payload?.data?.features as GeoJsonFeature[]) ||
+        [];
+
+      // Build hidden-category set from the slice's category visibility map.
+      // Keys in categoryVisibility are display labels (mixed case), so we
+      // normalise them to match the lowercased keys used by buildLassoResult.
+      const sliceVisibility = categoryVisibility[String(entry.sliceId)];
+      const hiddenCategoryKeys = sliceVisibility
+        ? new Set(
+            Object.entries(sliceVisibility)
+              .filter(([, v]) => v === false)
+              .map(([k]) => normalizeCategoryKey(k)),
+          )
+        : undefined;
+
+      await handleLassoPolygonComplete(
+        polygon,
+        allFeatures,
+        {
+          dimension: entry.transformedProps.visualConfig?.dimension as
+            | string
+            | undefined,
+          hiddenCategoryKeys,
+        },
+        lassoRequestIdRef,
+        { setSelectedFeatures, setAnchorGeoCoord },
+      );
+    },
+    onActivate: () => {
+      setMeasureState({
+        startPoint: null,
+        endPoint: null,
+        isActive: false,
+        isDragging: false,
+      });
+      // Clear any visible tooltip when entering lasso mode
+      containerRef.current?.setTooltip(null);
+    },
+  });
+
+  // Keep ref in sync with lasso state for use in memoized callbacks
+  lassoIsActiveRef.current = lassoIsActive;
+
+  // Allowlist of query columns for lasso export (from the selected layer).
+  const exportColumns = useMemo(() => {
+    const entry = sortedLayers.find(
+      e => String(e.sliceId) === selectedLassoLayerId,
+    );
+    return entry?.transformedProps?.exportColumnNames;
+  }, [sortedLayers, selectedLassoLayerId]);
+
+  // Re-project anchor on every render so the results bar tracks pan/zoom.
+  // Use the live viewport (updated by DeckGLContainer on pan/zoom) instead of
+  // the initial/autozoom viewport, which goes stale after the user pans.
+  const anchorPosition = useMemo(() => {
+    if (!anchorGeoCoord) return null;
+    const liveVp = getLiveViewport();
+    const vp = liveVp ?? viewport;
+    return projectAnchorToScreen(anchorGeoCoord, vp, width, height);
+  }, [anchorGeoCoord, viewport, width, height]);
+
   const handleRulerToggle = useCallback(() => {
     setMeasureState(prev => {
       if (prev.isActive) {
@@ -1006,6 +1122,7 @@ const DeckMulti = (props: DeckMultiProps) => {
           isDragging: false,
         };
       }
+      deactivateLasso();
       return {
         startPoint: null,
         endPoint: null,
@@ -1013,7 +1130,7 @@ const DeckMulti = (props: DeckMultiProps) => {
         isDragging: false,
       };
     });
-  }, []);
+  }, [deactivateLasso]);
 
   const handleMeasureClick = useCallback((coordinate: [number, number]) => {
     setMeasureState(prev => {
@@ -1055,7 +1172,7 @@ const DeckMulti = (props: DeckMultiProps) => {
     });
   }, []);
 
-  // Handle escape key to exit ruler mode
+  // Handle escape key to exit ruler mode (lasso escape is handled by useLassoSelection)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && measureState.isActive) {
@@ -1122,6 +1239,11 @@ const DeckMulti = (props: DeckMultiProps) => {
         onMeasureDragStart={handleMeasureDragStart}
         onMeasureDrag={handleMeasureDrag}
         onMeasureDragEnd={handleMeasureDragEnd}
+        lassoIsActive={lassoIsActive}
+        lassoDrawMode={lassoDrawMode}
+        lassoPolygon={lassoPolygon}
+        onLassoComplete={handleLassoComplete}
+        selectedFeatures={selectedFeatures}
         onEmptyClick={handleClosePopup}
       />
       <MultiLegend
@@ -1136,8 +1258,27 @@ const DeckMulti = (props: DeckMultiProps) => {
         onResetView={handleResetView}
         onRulerToggle={handleRulerToggle}
         isRulerActive={measureState.isActive}
+        onLassoToggle={handleLassoToggle}
+        onLassoActivate={handleLassoActivate}
+        isLassoActive={lassoIsActive}
+        lassoLayers={lassoLayers}
+        activeLassoLayerId={selectedLassoLayerId}
+        onLassoLayerSelect={handleLassoLayerSelect}
+        lassoDrawMode={lassoDrawMode}
+        onLassoDrawModeChange={setLassoDrawMode}
         position="top-right"
       />
+      {(selectedFeatures.length > 0 || (lassoPolygon && anchorPosition)) && (
+        <LassoResultsBar
+          features={selectedFeatures}
+          lassoPolygon={lassoPolygon}
+          onClear={clearSelection}
+          anchorPosition={anchorPosition}
+          containerWidth={width}
+          containerHeight={height}
+          exportColumns={exportColumns}
+        />
+      )}
       {clickedFeature && (
         <ClickPopupBox
           feature={clickedFeature}

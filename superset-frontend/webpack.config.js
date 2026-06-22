@@ -356,7 +356,7 @@ const config = {
         },
       },
       {
-        test: /node_modules\/(@deck\.gl|@luma\.gl).*\.js$/,
+        test: /node_modules\/(@deck\.gl|@deck\.gl-community|@luma\.gl|@turf).*\.js$/,
         loader: 'imports-loader',
         options: {
           additionalCode: 'var module = module || {exports: {}};',

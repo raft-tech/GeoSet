@@ -235,6 +235,38 @@ Controls the appearance of text annotations rendered on the map. Only applies wh
 | `bold`       | boolean  | `false`               | Whether to render text in bold               |
 | `offset`     | `[x, y]` | `[0, 0]`              | Pixel offset from the feature's anchor point |
 
+## Lasso Select Tool
+
+The lasso tool lets you draw a shape on the map to select features and export them. It works on both single-layer and [[GeoSet Multi Map|multi-layer]] maps.
+
+### Usage
+
+1. Click the **lasso icon** in the top-right map controls
+2. Choose a layer from the dropdown (single-layer maps auto-select the active layer)
+3. Pick a draw mode — **Click-and-drag** (freehand), **Polygon**, **Circle**, or **Rectangle**
+4. Draw your selection shape on the map
+5. A results bar appears showing the count of selected features
+6. Use the kebab menu on the results bar to export as **CSV** or **Excel**
+7. Press **Escape** or click the **X** on the results bar to clear the selection
+
+### Selection Behavior
+
+| Geometry Type | How Selection Works |
+|---|---|
+| **Point** | Selected if the point falls inside the lasso shape |
+| **Polygon/MultiPolygon** | Selected if at least 50% of the polygon's area overlaps the lasso shape |
+| **Line/MultiLine** | Selected if any segment of the line geometrically intersects the lasso shape |
+
+Selected features are highlighted with their original colors while unselected features are dimmed. The map can be panned and zoomed after drawing to inspect the selection.
+
+### Export Columns
+
+Exported CSV and Excel files include the **Hover Data** and **Feature Info** columns configured on the layer, plus geometry metadata (type, longitude, latitude). Internal styling properties are excluded.
+
+### Per-Layer Configuration
+
+In [[GeoSet Multi Map|multi-layer maps]], each layer has a **Lasso Selectable** toggle in its settings popover. Disable it for layers that shouldn't appear in the lasso dropdown (e.g., boundary or reference layers).
+
 ## Schema Versioning
 
 The GeoJSON Config is validated on the backend through versioned Marshmallow schemas (V1, V2, V3, etc.). When you save a chart, the frontend includes a `schema_version` number. If a chart was saved with an older schema version, the backend can automatically upgrade it to the latest version via the `/geoset_map/schema/<from>/<to>` conversion endpoint. This means older chart configurations continue to work as new fields are added in later schema versions.

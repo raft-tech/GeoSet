@@ -23,6 +23,7 @@ export interface DeckSliceConfig {
   legendCollapsed: boolean;
   initiallyHidden: boolean;
   lazyLoading: boolean;
+  lassoSelectable: boolean;
 }
 
 /** Resolve effective autozoom for a slice: disabled when lazy loading is on */
@@ -42,6 +43,7 @@ export const normalizeDeckSlices = (
           legendCollapsed: false,
           initiallyHidden: false,
           lazyLoading: false,
+          lassoSelectable: true,
         }
       : {
           sliceId: item.sliceId,
@@ -49,6 +51,7 @@ export const normalizeDeckSlices = (
           legendCollapsed: item.legendCollapsed ?? false,
           initiallyHidden: item.initiallyHidden ?? false,
           lazyLoading: item.lazyLoading ?? false,
+          lassoSelectable: item.lassoSelectable ?? true,
         },
   ) ?? [];
 

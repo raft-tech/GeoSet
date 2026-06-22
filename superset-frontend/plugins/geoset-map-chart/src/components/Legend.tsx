@@ -103,6 +103,9 @@ export type SizeLegend = {
   endSize: number;
   valueColumn: string;
   legendTitle?: string;
+  legendName?: string;
+  /** Actual computed color of the single remaining point (when noSizeRange). */
+  singleValueColor?: RGBAColor;
   usesPercentBounds?: boolean;
 };
 
@@ -154,6 +157,23 @@ const Legend = ({
     return formatNumber(d3Format, numValue);
   };
 
+  /** Render a Swatch + label row for single-value size legends. */
+  const renderSingleValueRow = (
+    swatchFill: RGBAColor,
+    swatchStroke: RGBAColor,
+    label: string,
+  ) => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <Swatch
+        fill={swatchFill}
+        stroke={swatchStroke}
+        icon={icon}
+        geometryType={geometryType}
+      />
+      <span>{label}</span>
+    </div>
+  );
+
   // --- Render metric legend if present and not forcing categorical ---
   const metricLegendContent = metricLegend ? (
     <div className="metric-legend">
@@ -190,8 +210,8 @@ const Legend = ({
   ) : null;
 
   // --- Render size legend if present ---
-  const sizeLegendContent =
-    sizeLegend && sizeLegend.startSize !== sizeLegend.endSize ? (
+  const sizeLegendContent = sizeLegend ? (
+    sizeLegend.startSize !== sizeLegend.endSize ? (
       <div className="metric-legend">
         <div className="legend-title">
           {sizeLegend.legendTitle || toTitleCase(sizeLegend.valueColumn)}
@@ -207,7 +227,24 @@ const Legend = ({
           usesPercentBounds={sizeLegend.usesPercentBounds}
         />
       </div>
-    ) : null;
+    ) : (
+      // Single-value fallback: show a standard entry instead of graduated icons
+      <div className="metric-legend">
+        <div className="legend-title">
+          {sizeLegend.legendTitle || toTitleCase(sizeLegend.valueColumn)}
+        </div>
+        {renderSingleValueRow(
+          sizeLegend.singleValueColor ??
+            metricLegend?.startColor ??
+            fillColor,
+          sizeLegend.singleValueColor ??
+            metricLegend?.startColor ??
+            strokeColor,
+          sizeLegend.legendName || toTitleCase(sizeLegend.valueColumn),
+        )}
+      </div>
+    )
+  ) : null;
 
   // --- Combined metric+size: 4 gradient-colored circles replacing gradient bar + size circles ---
   const combinedMetricSizeContent =
@@ -218,15 +255,25 @@ const Legend = ({
             metricLegend.legendName ||
             toTitleCase(sizeLegend.valueColumn)}
         </div>
-        <GraduatedIcons
-          responsive
-          lower={sizeLegend.lower}
-          upper={sizeLegend.upper}
-          startColor={metricLegend.startColor}
-          endColor={metricLegend.endColor}
-          icon={icon}
-          usesPercentBounds={sizeLegend.usesPercentBounds}
-        />
+        {sizeLegend.startSize !== sizeLegend.endSize ? (
+          <GraduatedIcons
+            responsive
+            lower={sizeLegend.lower}
+            upper={sizeLegend.upper}
+            startColor={metricLegend.startColor}
+            endColor={metricLegend.endColor}
+            icon={icon}
+            usesPercentBounds={sizeLegend.usesPercentBounds}
+          />
+        ) : (
+          renderSingleValueRow(
+            sizeLegend.singleValueColor ?? metricLegend.startColor,
+            sizeLegend.singleValueColor ?? metricLegend.startColor,
+            sizeLegend.legendName ||
+              metricLegend.legendName ||
+              toTitleCase(sizeLegend.valueColumn),
+          )
+        )}
       </div>
     ) : null;
 

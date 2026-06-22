@@ -84,8 +84,8 @@ export function computeSizeScale(
   const upper = config.upperBound ?? max;
   const range = upper - lower;
   return (val: number) => {
-    if (val == null || Number.isNaN(val) || range === 0)
-      return config.startSize;
+    if (val == null || Number.isNaN(val)) return config.startSize;
+    if (range === 0) return Math.round((config.startSize + config.endSize) / 2);
     const t = Math.max(0, Math.min(1, (val - lower) / range));
     return Math.round(
       config.startSize + t * (config.endSize - config.startSize),

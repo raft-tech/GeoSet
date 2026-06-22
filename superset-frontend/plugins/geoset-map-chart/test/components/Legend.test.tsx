@@ -299,12 +299,56 @@ describe('Legend', () => {
       expect(screen.getByText('Custom Title')).toBeInTheDocument();
     });
 
-    it('does not render when startSize equals endSize', () => {
-      const { container } = renderLegend({
-        sizeLegend: { ...sizeLegend, startSize: 20, endSize: 20 },
+    it('renders single-value fallback when startSize equals endSize', () => {
+      renderLegend({
+        sizeLegend: {
+          ...sizeLegend,
+          startSize: 20,
+          endSize: 20,
+          legendName: 'Sensor A',
+        },
         categories: {},
       });
-      expect(container).toBeEmptyDOMElement();
+      // Should show the legend title and the legend name instead of graduated icons
+      expect(screen.getByText('Population')).toBeInTheDocument();
+      expect(screen.getByText('Sensor A')).toBeInTheDocument();
+      expect(screen.queryByTestId('graduated-icons')).not.toBeInTheDocument();
+    });
+
+    it('single-value fallback uses singleValueColor for swatch when provided', () => {
+      renderLegend({
+        sizeLegend: {
+          ...sizeLegend,
+          startSize: 20,
+          endSize: 20,
+          legendName: 'Sensor A',
+          singleValueColor: [255, 128, 0, 255] as [
+            number,
+            number,
+            number,
+            number,
+          ],
+        },
+        categories: {},
+      });
+      // The swatch should be present and graduated icons absent
+      expect(screen.getByText('Sensor A')).toBeInTheDocument();
+      expect(screen.queryByTestId('graduated-icons')).not.toBeInTheDocument();
+    });
+
+    it('single-value fallback falls back to fillColor when no singleValueColor', () => {
+      renderLegend({
+        sizeLegend: {
+          ...sizeLegend,
+          startSize: 20,
+          endSize: 20,
+          legendName: 'Sensor A',
+        },
+        fillColor: [0, 200, 100, 255] as [number, number, number, number],
+        categories: {},
+      });
+      expect(screen.getByText('Sensor A')).toBeInTheDocument();
+      expect(screen.queryByTestId('graduated-icons')).not.toBeInTheDocument();
     });
 
     it('passes bounds to GraduatedIcons', () => {
@@ -368,6 +412,41 @@ describe('Legend', () => {
         isCombinedMetricSize: true,
         metricLegend,
         sizeLegend,
+        categories: {},
+      });
+      expect(container.querySelector('.gradient-bar')).not.toBeInTheDocument();
+    });
+
+    it('renders single-value fallback when combined and startSize equals endSize', () => {
+      renderLegend({
+        isCombinedMetricSize: true,
+        metricLegend,
+        sizeLegend: {
+          ...sizeLegend,
+          startSize: 20,
+          endSize: 20,
+          legendName: 'Single Sensor',
+        },
+        categories: {},
+      });
+      expect(screen.getByText('Single Sensor')).toBeInTheDocument();
+      expect(screen.queryByTestId('graduated-icons')).not.toBeInTheDocument();
+      // Should not render the gradient bar either (combined mode suppresses it)
+      const { container } = renderLegend({
+        isCombinedMetricSize: true,
+        metricLegend,
+        sizeLegend: {
+          ...sizeLegend,
+          startSize: 20,
+          endSize: 20,
+          legendName: 'Single Sensor',
+          singleValueColor: [200, 50, 50, 255] as [
+            number,
+            number,
+            number,
+            number,
+          ],
+        },
         categories: {},
       });
       expect(container.querySelector('.gradient-bar')).not.toBeInTheDocument();

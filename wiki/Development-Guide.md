@@ -72,6 +72,7 @@ GeoSet/
 │               │   └── GeoSetLayer/   # Single-layer chart (deck_geoset_map_layer)
 │               ├── GeoSetMultiMap/    # Multi-layer chart (deck_geoset_multi_map)
 │               ├── components/        # Legend, Tooltip, MapControls, etc.
+│               ├── hooks/             # Shared React hooks (lasso selection, etc.)
 │               ├── utils/             # Color utilities, geometry helpers, viewport
 │               ├── buildQuery.ts      # PostGIS query builder
 │               └── transformProps.ts  # Data transformation pipeline
@@ -118,7 +119,13 @@ Each phase checks a staleness flag before proceeding. When the user changes a fi
 | `utils/fitViewport.ts` | Autozoom calculation to fit features in the viewport |
 | `utils/liveViewportStore.ts` | Module-level store for live viewport state (bypasses Redux to avoid "Altered" chart state) |
 | `components/MultiLegend.tsx` | Drag-and-drop multi-layer legend with toggle/isolate |
-| `components/MapControls.tsx` | Measurement tool and zoom controls |
+| `components/MapControls.tsx` | Zoom controls, measurement tool, and lasso select tool |
+| `components/LassoDropdown.tsx` | Layer picker and draw-mode toggle dropdown for the lasso tool |
+| `components/useLassoLayer.ts` | Lasso drawing layers (freehand, polygon, circle, and rectangle modes) via `useLassoLayer` hook |
+| `components/LassoResultsBar.tsx` | Selection count bar with CSV/Excel export menu |
+| `hooks/useLassoSelection.ts` | Shared React hook managing lasso state, polygon completion, and layer selection |
+| `utils/lassoSelection.ts` | Geometric intersection filtering (point-in-polygon, area-overlap, and line-intersection) for lasso-selected features |
+| `utils/lassoExport.ts` | CSV and Excel export for lasso-selected features (allowlisted to Hover Data + Feature Info columns) |
 
 ## Branch Strategy
 

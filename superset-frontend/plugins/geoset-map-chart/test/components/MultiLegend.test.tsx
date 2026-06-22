@@ -7,10 +7,38 @@ import {
   createCategoricalLegendEntry,
   createMetricLegendEntry,
   createLegendGroup,
+  createSizeLegend,
   createCategoryEntry,
   RED,
   GREEN,
 } from '../testFixtures';
+
+import '../mocks/svgIcons';
+
+// Mock GraduatedIcons to isolate legend rendering behavior
+jest.mock('../../src/components/GraduatedIcons', () => {
+  const MockGraduatedIcons = (props: any) => (
+    <div
+      data-test="graduated-icons"
+      data-lower={props.lower}
+      data-upper={props.upper}
+    />
+  );
+  MockGraduatedIcons.displayName = 'MockGraduatedIcons';
+  return { __esModule: true, default: MockGraduatedIcons };
+});
+
+jest.mock('../../src/components/CategorySizeGrid', () => {
+  const MockCategorySizeGrid = (props: any) => (
+    <div data-test="category-size-grid">
+      {props.categories.map((cat: any) => (
+        <span key={cat.key}>{props.renderLabel(cat)}</span>
+      ))}
+    </div>
+  );
+  MockCategorySizeGrid.displayName = 'MockCategorySizeGrid';
+  return { __esModule: true, default: MockCategorySizeGrid };
+});
 
 // Mock Material-UI icon to avoid transform issues
 jest.mock('@material-ui/icons/MapTwoTone', () => {
@@ -20,8 +48,6 @@ jest.mock('@material-ui/icons/MapTwoTone', () => {
   MockMapIcon.displayName = 'MockMapIcon';
   return { __esModule: true, default: MockMapIcon };
 });
-
-import '../mocks/svgIcons';
 
 // Stable reference to avoid infinite useEffect loop from default `layerVisibility = {}`
 const EMPTY_VISIBILITY: Record<string, boolean> = {};
@@ -590,9 +616,7 @@ describe('MultiLegend', () => {
       );
       userEvent.click(screen.getByText('Legend'));
       expect(screen.getByText('Empty Layer')).toBeInTheDocument();
-      expect(
-        screen.getByText('Visible but Empty'),
-      ).toBeInTheDocument();
+      expect(screen.getByText('Visible but Empty')).toBeInTheDocument();
       expect(screen.queryByRole('status')).not.toBeInTheDocument();
     });
 
@@ -616,9 +640,7 @@ describe('MultiLegend', () => {
       );
       userEvent.click(screen.getByText('Legend'));
       expect(screen.getByText('Normal Layer')).toBeInTheDocument();
-      expect(
-        screen.queryByText('Visible but Empty'),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByText('Visible but Empty')).not.toBeInTheDocument();
     });
 
     it('group header shows checkbox (not spinner) when all entries are empty', () => {
@@ -714,9 +736,7 @@ describe('MultiLegend', () => {
       userEvent.click(screen.getByText('Legend'));
       // Both group headers should show spinners, not checkboxes
       expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
-      expect(
-        screen.queryByText('Visible but Empty'),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByText('Visible but Empty')).not.toBeInTheDocument();
     });
 
     it('transitions from loading to empty without spinner', () => {
@@ -742,9 +762,7 @@ describe('MultiLegend', () => {
         />,
       );
       userEvent.click(screen.getByText('Legend'));
-      expect(
-        screen.queryByText('Visible but Empty'),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByText('Visible but Empty')).not.toBeInTheDocument();
 
       // Re-render with loading finished and empty result
       rerender(
@@ -770,9 +788,7 @@ describe('MultiLegend', () => {
         />,
       );
       expect(screen.getByText('Trans Layer')).toBeInTheDocument();
-      expect(
-        screen.getByText('Visible but Empty'),
-      ).toBeInTheDocument();
+      expect(screen.getByText('Visible but Empty')).toBeInTheDocument();
     });
   });
 });

@@ -40,6 +40,7 @@ Each layer has a **settings popover** (gear icon) with per-layer options:
 | **Collapse Legend** | Start with the legend entry collapsed in the map legend. |
 | **Hidden by Default** | Hide this layer when the map first loads. Toggle it on from the legend. |
 | **Lazy Loading** | Load this layer in the background after other layers have loaded. Lazy layers are fetched in small batches so they don't compete with the initial render. Auto Zoom is automatically disabled for lazy-loaded layers. |
+| **Lasso Selectable** | Include this layer in the lasso tool's layer selection dropdown. Enabled by default. Disable it to hide layers that shouldn't be lasso-selectable (e.g., boundary or reference layers). |
 
 > **Note:** If Enable Static Viewport is off, the viewport selection control is hidden — the map will use the default viewport.
 
@@ -63,6 +64,12 @@ When a Multi Map chart is rendered on a dashboard, a unified legend is shown cov
 - **Isolate** — double-click a legend entry to hide all other categories
 - **Layer ordering** — drag layer groups in the legend to change their z-order (front to back)
 - **Collapse/expand** — click a group title to collapse its entries
+
+## Lasso Select Tool
+
+The lasso tool is available on multi-layer maps for selecting and exporting features from a single layer at a time. See [[GeoSet Map Layer#Lasso Select Tool|Lasso Select Tool]] for full usage details, draw modes, and selection behavior.
+
+On multi-layer maps, the lasso dropdown lists all layers that have the **Lasso Selectable** setting enabled. Only the selected layer's features are evaluated against the drawn shape. Exported files include the **Hover Data** and **Feature Info** columns configured on that layer.
 
 ## Filters
 

@@ -95,6 +95,7 @@ interface SliceSettings {
   legendCollapsed: boolean;
   initiallyHidden: boolean;
   lazyLoading: boolean;
+  lassoSelectable: boolean;
 }
 
 interface SelectedSliceRowProps {
@@ -104,6 +105,7 @@ interface SelectedSliceRowProps {
   legendCollapsed: boolean;
   initiallyHidden: boolean;
   lazyLoading: boolean;
+  lassoSelectable: boolean;
   index: number;
   onRemove: (sliceId: number) => void;
   onMoveLabel: (dragIndex: number, hoverIndex: number) => void;
@@ -167,6 +169,7 @@ const SelectedSliceRow = ({
   legendCollapsed,
   initiallyHidden,
   lazyLoading,
+  lassoSelectable,
   index,
   onRemove,
   onMoveLabel,
@@ -185,6 +188,8 @@ const SelectedSliceRow = ({
   const [draftInitiallyHidden, setDraftInitiallyHidden] =
     useState(initiallyHidden);
   const [draftLazyLoading, setDraftLazyLoading] = useState(lazyLoading);
+  const [draftLassoSelectable, setDraftLassoSelectable] =
+    useState(lassoSelectable);
 
   // Reset draft state when popover opens
   const handleOpenChange = (open: boolean) => {
@@ -193,6 +198,7 @@ const SelectedSliceRow = ({
       setDraftLegendCollapsed(legendCollapsed);
       setDraftInitiallyHidden(initiallyHidden);
       setDraftLazyLoading(lazyLoading);
+      setDraftLassoSelectable(lassoSelectable);
       autozoomBeforeLazyRef.current = autozoom;
     }
     setSettingsOpen(open);
@@ -220,18 +226,21 @@ const SelectedSliceRow = ({
     const legendCollapsedChanged = draftLegendCollapsed !== legendCollapsed;
     const initiallyHiddenChanged = draftInitiallyHidden !== initiallyHidden;
     const lazyLoadingChanged = draftLazyLoading !== lazyLoading;
+    const lassoSelectableChanged = draftLassoSelectable !== lassoSelectable;
 
     if (
       autozoomChanged ||
       legendCollapsedChanged ||
       initiallyHiddenChanged ||
-      lazyLoadingChanged
+      lazyLoadingChanged ||
+      lassoSelectableChanged
     ) {
       onUpdateSliceSettings(sliceId, {
         autozoom: draftAutozoom,
         legendCollapsed: draftLegendCollapsed,
         initiallyHidden: draftInitiallyHidden,
         lazyLoading: draftLazyLoading,
+        lassoSelectable: draftLassoSelectable,
       });
     }
     setSettingsOpen(false);
@@ -343,6 +352,26 @@ const SelectedSliceRow = ({
         <Tooltip
           title={t(
             'Load this layer in the background after other layers have loaded. Auto Zoom is disabled for lazy-loaded layers.',
+          )}
+          mouseLeaveDelay={0}
+        >
+          <InfoIcon>
+            <Icons.InfoCircleOutlined
+              iconSize="s"
+              iconColor={theme.colorTextSecondary}
+            />
+          </InfoIcon>
+        </Tooltip>
+      </SettingsRow>
+      <SettingsRow>
+        <Checkbox
+          checked={draftLassoSelectable}
+          onChange={() => setDraftLassoSelectable(!draftLassoSelectable)}
+        />
+        <SettingsLabel>{t('Lasso Selectable')}</SettingsLabel>
+        <Tooltip
+          title={t(
+            "Include this layer in the lasso tool's layer selection dropdown",
           )}
           mouseLeaveDelay={0}
         >
@@ -499,6 +528,7 @@ const DeckSlicesControl = ({
                 legendCollapsed: v.legendCollapsed,
                 initiallyHidden: v.initiallyHidden,
                 lazyLoading: v.lazyLoading,
+                lassoSelectable: v.lassoSelectable,
               }
             : null;
         })
@@ -507,6 +537,7 @@ const DeckSlicesControl = ({
         legendCollapsed: boolean;
         initiallyHidden: boolean;
         lazyLoading: boolean;
+        lassoSelectable: boolean;
       })[],
     [localValues, options],
   );
@@ -535,6 +566,7 @@ const DeckSlicesControl = ({
               legendCollapsed: false,
               initiallyHidden: false,
               lazyLoading: false,
+              lassoSelectable: true,
             },
           ],
     );
@@ -606,6 +638,7 @@ const DeckSlicesControl = ({
             legendCollapsed={opt.legendCollapsed}
             initiallyHidden={opt.initiallyHidden}
             lazyLoading={opt.lazyLoading}
+            lassoSelectable={opt.lassoSelectable}
             index={index}
             onRemove={handleRemove}
             onMoveLabel={moveLabel}

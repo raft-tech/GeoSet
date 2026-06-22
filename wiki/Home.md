@@ -10,7 +10,7 @@ GeoSet is a geospatial data monitoring and visualization platform built on [Apac
 |---|---|---|
 | Map visualization | Basic deck.gl GeoJSON layer | Full-featured map charts with points, lines, polygons, icons, and clustering |
 | Geometry rendering | Limited styling | Configurable fill/stroke, category coloring, metric gradient coloring, dashed lines, dynamic point sizing |
-| Interactivity | Basic tooltips | Hover tooltips, click popups, measurement/ruler tool, zoom-based layer visibility |
+| Interactivity | Basic tooltips | Hover tooltips, click popups, measurement/ruler tool, lasso select, zoom-based layer visibility |
 | Legends | Standard chart legends | Categorical legends with toggle/isolate, metric gradient legends, multi-layer legends |
 | Performance | Default deck.gl settings | Server-side geometry simplification (PostGIS), polygon caching, GPU picking optimizations, hover throttling |
 | Point clustering | Not available | Supercluster-based clustering with configurable radius, zoom, and min-points |

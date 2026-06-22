@@ -407,10 +407,11 @@ describe('computeSizeScale', () => {
     expect(scale(null as any)).toBe(4);
   });
 
-  it('returns startSize when range is zero', () => {
+  it('returns midpoint size when range is zero', () => {
     const zeroRange = { ...config, lowerBound: 50, upperBound: 50 };
     const scale = computeSizeScale(zeroRange, [50, 50]);
-    expect(scale(50)).toBe(4);
+    // midpoint of startSize (4) and endSize (30) = 17
+    expect(scale(50)).toBe(17);
   });
 
   it('uses data domain when bounds are null', () => {

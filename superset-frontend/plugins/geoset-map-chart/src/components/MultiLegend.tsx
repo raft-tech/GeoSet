@@ -244,15 +244,28 @@ const LegendEntryContent: React.FC<{
 
   const { fill, stroke } = getDefaultColors(legendEntry);
 
+  /** Render a single-value size swatch (used when startSize === endSize). */
+  const singleValueSizeRow = legendEntry.sizeEntry ? (
+    <CategoryRow>
+      <Swatch
+        fill={legendEntry.sizeEntry.singleValueColor ?? fill}
+        stroke={legendEntry.sizeEntry.singleValueColor ?? stroke}
+        icon={legendEntry.icon}
+        geometryType={legendEntry.geometryType}
+      />
+      <div>{legendEntry.legendName}</div>
+    </CategoryRow>
+  ) : null;
+
   return (
     <div>
-      {legendEntry.empty && (
-        <NoDataLabel>Visible but Empty</NoDataLabel>
-      )}
+      {legendEntry.empty && <NoDataLabel>Visible but Empty</NoDataLabel>}
       {/* SIMPLE - show icon and slice name (skip when sizeEntry handles the display) */}
       {legendEntry.type === 'simple' &&
         legendEntry.simpleStyle &&
-        !legendEntry.sizeEntry && (
+        (!legendEntry.sizeEntry ||
+          legendEntry.sizeEntry.startSize ===
+            legendEntry.sizeEntry.endSize) && (
           <CategoryRow>
             {showEntryCheckbox && (
               <VisibilityCheckbox
@@ -360,7 +373,7 @@ const LegendEntryContent: React.FC<{
       {legendEntry.isCombinedMetricSize &&
         legendEntry.metric &&
         legendEntry.sizeEntry &&
-        legendEntry.sizeEntry.startSize !== legendEntry.sizeEntry.endSize && (
+        (legendEntry.sizeEntry.startSize !== legendEntry.sizeEntry.endSize ? (
           <GraduatedIcons
             lower={legendEntry.sizeEntry.lower}
             upper={legendEntry.sizeEntry.upper}
@@ -369,7 +382,9 @@ const LegendEntryContent: React.FC<{
             icon={legendEntry.icon}
             usesPercentBounds={legendEntry.sizeEntry.usesPercentBounds}
           />
-        )}
+        ) : (
+          singleValueSizeRow
+        ))}
 
       {/* METRIC GRADIENT — only when NOT combined */}
       {!legendEntry.isCombinedMetricSize && legendEntry.metric && (
@@ -424,7 +439,7 @@ const LegendEntryContent: React.FC<{
       {!legendEntry.isCombinedMetricSize &&
         !(legendEntry.categories && legendEntry.categories.length > 0) &&
         legendEntry.sizeEntry &&
-        legendEntry.sizeEntry.startSize !== legendEntry.sizeEntry.endSize && (
+        (legendEntry.sizeEntry.startSize !== legendEntry.sizeEntry.endSize ? (
           <GraduatedIcons
             lower={legendEntry.sizeEntry.lower}
             upper={legendEntry.sizeEntry.upper}
@@ -434,7 +449,9 @@ const LegendEntryContent: React.FC<{
             icon={legendEntry.icon}
             usesPercentBounds={legendEntry.sizeEntry.usesPercentBounds}
           />
-        )}
+        ) : (
+          singleValueSizeRow
+        ))}
     </div>
   );
 };

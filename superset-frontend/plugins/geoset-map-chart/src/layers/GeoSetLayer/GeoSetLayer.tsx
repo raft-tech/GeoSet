@@ -39,6 +39,7 @@ import {
 } from '@superset-ui/core';
 import { Alert } from 'antd';
 import Layer from '@deck.gl/core/dist/lib/layer';
+import { useLassoSelection } from '../../hooks/useLassoSelection';
 import {
   DeckGLContainerHandle,
   DeckGLContainerStyledWrapper,
@@ -56,6 +57,11 @@ import { calculateAutozoomViewport, Viewport } from '../../utils/fitViewport';
 import { TooltipProps } from '../../components/Tooltip';
 import Legend, { SizeLegend } from '../../components/Legend';
 import MapControls from '../../components/MapControls';
+import LassoResultsBar from '../../components/LassoResultsBar';
+import {
+  handleLassoPolygonComplete,
+  projectAnchorToScreen,
+} from '../../utils/lassoSelection';
 import { GeoJsonFeature, LayerState } from '../../types';
 import { useDebouncedValue } from '../../utils/hooks';
 import { normalizeRGBA } from '../../utils/colorsFallback';
@@ -78,7 +84,10 @@ import {
 import { handleSchemaCheck } from '../../utils/migrationApi';
 import MeasureOverlay, { MeasureState } from '../../components/MeasureOverlay';
 import { Coordinate } from '../../utils/measureDistance';
-import { setLiveViewport } from '../../utils/liveViewportStore';
+import {
+  setLiveViewport,
+  getLiveViewport,
+} from '../../utils/liveViewportStore';
 import ClickPopupBox, {
   ClickedFeatureInfo,
 } from '../../components/ClickPopupBox';
@@ -175,7 +184,7 @@ const recurseGeoJson = (
     };
     // save dimension/category so we don't lose it in metric mode
     if (propOverrides.dimensionColumn) {
-      (enrichedFeature as any).categoryName =
+      enrichedFeature.categoryName =
         alteredProps[propOverrides.dimensionColumn];
     }
 
@@ -340,8 +349,7 @@ export function getLayer(
   } else {
     // Helper to normalize category keys for lookup
     const getCategoryKey = (f: GeoJsonFeature): string | null => {
-      const categoryRaw =
-        (f as any).categoryName ?? f.properties?.[dimension as string];
+      const categoryRaw = f.categoryName ?? f.properties?.[dimension as string];
       if (categoryRaw == null) return null;
       return typeof categoryRaw === 'string'
         ? categoryRaw.trim().toLowerCase()
@@ -705,6 +713,7 @@ export type DeckGLGeoJsonProps = {
   mapStyle: string;
   hoverColumnNames?: string[];
   featureInfoColumnNames?: string[];
+  exportColumnNames?: string[];
   limitReached?: boolean;
   visualConfig?: {
     dimension?: string;
@@ -738,11 +747,16 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
     visualConfig: propVisualConfig,
     hoverColumnNames,
     featureInfoColumnNames,
+    exportColumnNames,
     limitReached,
   } = props;
 
   const containerRef = useRef<DeckGLContainerHandle>();
+  const lassoRequestIdRef = useRef(0);
+  const lassoIsActiveRef = useRef(false);
   const setTooltip = useCallback((tooltip: TooltipProps['tooltip']) => {
+    // Suppress hover tooltips while lasso mode is active
+    if (lassoIsActiveRef.current) return;
     const { current } = containerRef;
     if (current) {
       current.setTooltip(tooltip);
@@ -947,21 +961,70 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
     isDragging: false,
   });
 
+  const {
+    lassoIsActive,
+    lassoDrawMode,
+    setLassoDrawMode,
+    selectedFeatures,
+    setSelectedFeatures,
+    lassoPolygon,
+    anchorGeoCoord,
+    setAnchorGeoCoord,
+    clearSelection,
+    handleLassoToggle,
+    handleLassoActivate,
+    handleLassoComplete,
+    deactivateLasso,
+  } = useLassoSelection({
+    onPolygonComplete: async polygon => {
+      const allFeatures = (payload?.data?.features as GeoJsonFeature[]) || [];
+
+      const hiddenCategoryKeys = new Set<string>(
+        Object.entries(categories)
+          .filter(([, cat]) => cat.enabled === false)
+          .map(([key]) => key),
+      );
+
+      await handleLassoPolygonComplete(
+        polygon,
+        allFeatures,
+        {
+          dimension: propVisualConfig?.dimension as string | undefined,
+          hiddenCategoryKeys,
+        },
+        lassoRequestIdRef,
+        { setSelectedFeatures, setAnchorGeoCoord },
+      );
+    },
+    onActivate: () => {
+      setMeasureState({
+        startPoint: null,
+        endPoint: null,
+        isActive: false,
+        isDragging: false,
+      });
+      // Clear any visible tooltip when entering lasso mode
+      containerRef.current?.setTooltip(null);
+    },
+  });
+
+  // Keep ref in sync with lasso state for use in memoized callbacks
+  lassoIsActiveRef.current = lassoIsActive;
+
   // Don't show popup when measurement mode is active
   const handleFeatureClick = useCallback(
     (info: any) => {
-      if (measureState.isActive) return;
+      if (measureState.isActive || lassoIsActive) return;
       if (info?.object?.properties) {
         setClickedFeature({ properties: info.object.properties });
       }
     },
-    [measureState.isActive],
+    [measureState.isActive, lassoIsActive],
   );
 
   const handleRulerToggle = useCallback(() => {
     setMeasureState(prev => {
       if (prev.isActive) {
-        // Exiting ruler mode - clear points
         return {
           startPoint: null,
           endPoint: null,
@@ -969,7 +1032,7 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
           isDragging: false,
         };
       }
-      // Entering ruler mode
+      deactivateLasso();
       return {
         startPoint: null,
         endPoint: null,
@@ -977,7 +1040,7 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
         isDragging: false,
       };
     });
-  }, []);
+  }, [deactivateLasso]);
 
   const handleMeasureClick = useCallback((coordinate: Coordinate) => {
     setMeasureState(prev => {
@@ -1062,6 +1125,15 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
     props.viewport,
     width,
   ]);
+
+  // Re-project anchor on every render so the results bar tracks pan/zoom.
+  // Use the live viewport instead of the initial/autozoom viewport.
+  const anchorPosition = useMemo(() => {
+    if (!anchorGeoCoord) return null;
+    const liveVp = getLiveViewport();
+    const vp = liveVp ?? viewport;
+    return projectAnchorToScreen(anchorGeoCoord, vp, width, height);
+  }, [anchorGeoCoord, viewport, width, height]);
 
   // Write live viewport to module-level store (outside Redux) so the actual
   // viewport control value is only changed by explicit user Save actions.
@@ -1204,6 +1276,11 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
         onMeasureDragStart={handleMeasureDragStart}
         onMeasureDrag={handleMeasureDrag}
         onMeasureDragEnd={handleMeasureDragEnd}
+        lassoIsActive={lassoIsActive}
+        lassoDrawMode={lassoDrawMode}
+        lassoPolygon={lassoPolygon}
+        onLassoComplete={handleLassoComplete}
+        selectedFeatures={selectedFeatures}
         onEmptyClick={handleClosePopup}
       />
       <Legend
@@ -1226,8 +1303,24 @@ const DeckGLGeoJson = (props: DeckGLGeoJsonProps) => {
         onResetView={handleResetView}
         onRulerToggle={handleRulerToggle}
         isRulerActive={measureState.isActive}
+        onLassoToggle={handleLassoToggle}
+        onLassoActivate={handleLassoActivate}
+        isLassoActive={lassoIsActive}
+        lassoDrawMode={lassoDrawMode}
+        onLassoDrawModeChange={setLassoDrawMode}
         position="top-right"
       />
+      {(selectedFeatures.length > 0 || (lassoPolygon && anchorPosition)) && (
+        <LassoResultsBar
+          features={selectedFeatures}
+          lassoPolygon={lassoPolygon}
+          onClear={clearSelection}
+          anchorPosition={anchorPosition}
+          containerWidth={width}
+          containerHeight={height}
+          exportColumns={exportColumnNames}
+        />
+      )}
       <MeasureOverlay
         measureState={measureState}
         onMapClick={handleMeasureClick}

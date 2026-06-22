@@ -162,16 +162,25 @@ describe('computeSizeScale', () => {
     expect(scale(200)).toBe(50);
   });
 
-  it('returns startSize when range is 0', () => {
+  it('returns midpoint size when range is 0 (single unique value)', () => {
     const scale = computeSizeScale(
       { ...config, lowerBound: 50, upperBound: 50 },
       [50, 50],
     );
-    expect(scale(50)).toBe(5);
+    // midpoint of startSize (5) and endSize (50) = 27.5, rounded = 28
+    expect(scale(50)).toBe(28);
   });
 
   it('returns startSize for null value', () => {
     const scale = computeSizeScale(config, [0, 100]);
+    expect(scale(null as any)).toBe(5);
+  });
+
+  it('returns startSize for null value even when range is 0', () => {
+    const scale = computeSizeScale(
+      { ...config, lowerBound: 50, upperBound: 50 },
+      [50, 50],
+    );
     expect(scale(null as any)).toBe(5);
   });
 

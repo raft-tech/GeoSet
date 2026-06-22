@@ -16,8 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { memo } from 'react';
+import { memo, useCallback, useState, useRef } from 'react';
 import { styled } from '@superset-ui/core';
+
+import type { LassoDrawMode, LassoLayer } from '../types';
+import LassoDropdown from './LassoDropdown';
+import { HomeIcon, RulerIcon, LassoIcon } from './icons';
+import { useClickOutside } from '../hooks/useClickOutside';
 
 export type MapControlsProps = {
   onZoomIn: () => void;
@@ -25,6 +30,14 @@ export type MapControlsProps = {
   onResetView: () => void;
   onRulerToggle: () => void;
   isRulerActive: boolean;
+  onLassoToggle: () => void;
+  onLassoActivate?: () => void;
+  isLassoActive: boolean;
+  lassoLayers?: LassoLayer[];
+  activeLassoLayerId?: string;
+  onLassoLayerSelect?: (layerId: string) => void;
+  lassoDrawMode?: LassoDrawMode;
+  onLassoDrawModeChange?: (mode: LassoDrawMode) => void;
   position?: 'top-left' | 'top-right';
 };
 
@@ -85,69 +98,87 @@ const ControlButton = styled.button<{ $isActive?: boolean }>(
 `,
 );
 
-const HomeIcon = () => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-    <polyline points="9 22 9 12 15 12 15 22" />
-  </svg>
-);
-
-const RulerIcon = () => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z" />
-    <path d="m14.5 12.5 2-2" />
-    <path d="m11.5 9.5 2-2" />
-    <path d="m8.5 6.5 2-2" />
-    <path d="m17.5 15.5 2-2" />
-  </svg>
-);
-
 const MapControls = ({
   onZoomIn,
   onZoomOut,
   onResetView,
   onRulerToggle,
   isRulerActive,
+  onLassoToggle,
+  onLassoActivate,
+  isLassoActive,
+  lassoLayers = [],
+  activeLassoLayerId,
+  onLassoLayerSelect,
+  lassoDrawMode = 'freehand',
+  onLassoDrawModeChange,
   position = 'top-left',
-}: MapControlsProps) => (
-  <ControlsContainer $position={position}>
-    <ButtonGroup>
-      <ControlButton onClick={onResetView} title="Reset view">
-        <HomeIcon />
-      </ControlButton>
-      <ControlButton onClick={onZoomOut} title="Zoom out">
-        −
-      </ControlButton>
-      <ControlButton onClick={onZoomIn} title="Zoom in">
-        +
-      </ControlButton>
-      <ControlButton
-        onClick={onRulerToggle}
-        title={isRulerActive ? 'Exit measure mode (Esc)' : 'Measure distance'}
-        $isActive={isRulerActive}
-      >
-        <RulerIcon />
-      </ControlButton>
-    </ButtonGroup>
-  </ControlsContainer>
-);
+}: MapControlsProps) => {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const hasMultipleLayers = lassoLayers.length > 1;
+
+  const closeAndActivate = useCallback(() => {
+    setIsDropdownOpen(false);
+    if (!hasMultipleLayers || activeLassoLayerId) {
+      onLassoActivate?.();
+    }
+  }, [hasMultipleLayers, activeLassoLayerId, onLassoActivate]);
+
+  useClickOutside(containerRef, closeAndActivate, isDropdownOpen);
+
+  const handleLassoButtonClick = () => {
+    if (isLassoActive) {
+      onLassoToggle();
+      setIsDropdownOpen(false);
+    } else {
+      setIsDropdownOpen(prev => !prev);
+    }
+  };
+
+  return (
+    <ControlsContainer $position={position} ref={containerRef}>
+      <ButtonGroup>
+        <ControlButton onClick={onResetView} title="Reset view">
+          <HomeIcon />
+        </ControlButton>
+        <ControlButton onClick={onZoomOut} title="Zoom out">
+          −
+        </ControlButton>
+        <ControlButton onClick={onZoomIn} title="Zoom in">
+          +
+        </ControlButton>
+        <ControlButton
+          onClick={onRulerToggle}
+          title={isRulerActive ? 'Exit measure mode (Esc)' : 'Measure distance'}
+          $isActive={isRulerActive}
+        >
+          <RulerIcon />
+        </ControlButton>
+        <ControlButton
+          onClick={handleLassoButtonClick}
+          title={
+            isLassoActive ? 'Exit lasso mode (Esc)' : 'Lasso select features'
+          }
+          $isActive={isLassoActive || isDropdownOpen}
+        >
+          <LassoIcon />
+        </ControlButton>
+      </ButtonGroup>
+
+      {isDropdownOpen && (
+        <LassoDropdown
+          hasMultipleLayers={hasMultipleLayers}
+          layers={lassoLayers}
+          activeLassoLayerId={activeLassoLayerId}
+          onLayerSelect={onLassoLayerSelect}
+          drawMode={lassoDrawMode}
+          onDrawModeChange={onLassoDrawModeChange}
+          onClose={closeAndActivate}
+        />
+      )}
+    </ControlsContainer>
+  );
+};
 
 export default memo(MapControls);

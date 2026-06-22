@@ -34,6 +34,7 @@ const makeConfig = (
   legendCollapsed: false,
   initiallyHidden: false,
   lazyLoading: false,
+  lassoSelectable: true,
   ...overrides,
 });
 
@@ -46,6 +47,7 @@ describe('resolveLayerAutozoom', () => {
         legendCollapsed: false,
         initiallyHidden: false,
         lazyLoading: true,
+        lassoSelectable: true,
       }),
     ).toBe(false);
   });
@@ -58,6 +60,7 @@ describe('resolveLayerAutozoom', () => {
         legendCollapsed: false,
         initiallyHidden: false,
         lazyLoading: true,
+        lassoSelectable: true,
       }),
     ).toBe(false);
   });
@@ -70,6 +73,7 @@ describe('resolveLayerAutozoom', () => {
         legendCollapsed: false,
         initiallyHidden: false,
         lazyLoading: false,
+        lassoSelectable: true,
       }),
     ).toBe(true);
   });
@@ -82,6 +86,7 @@ describe('resolveLayerAutozoom', () => {
         legendCollapsed: false,
         initiallyHidden: false,
         lazyLoading: false,
+        lassoSelectable: true,
       }),
     ).toBe(false);
   });
@@ -107,6 +112,7 @@ describe('normalizeDeckSlices', () => {
         legendCollapsed: false,
         initiallyHidden: false,
         lazyLoading: true,
+        lassoSelectable: true,
       },
     ]);
     expect(result[0].lazyLoading).toBe(true);
@@ -120,6 +126,7 @@ describe('normalizeDeckSlices', () => {
         legendCollapsed: false,
         initiallyHidden: false,
         lazyLoading: true,
+        lassoSelectable: true,
       },
     ]);
     expect(resolveLayerAutozoom(result[0])).toBe(false);
@@ -127,6 +134,32 @@ describe('normalizeDeckSlices', () => {
 
   it('returns empty array when input is undefined', () => {
     expect(normalizeDeckSlices(undefined)).toEqual([]);
+  });
+
+  it('sets lassoSelectable to true by default for legacy number entries', () => {
+    const result = normalizeDeckSlices([1, 2]);
+    result.forEach(slice => {
+      expect(slice.lassoSelectable).toBe(true);
+    });
+  });
+
+  it('preserves lassoSelectable: false from config objects', () => {
+    const result = normalizeDeckSlices([
+      makeConfig(1, { lassoSelectable: false }),
+    ]);
+    expect(result[0].lassoSelectable).toBe(false);
+  });
+
+  it('defaults lassoSelectable to true when field is missing from config object', () => {
+    const configWithoutLasso = {
+      sliceId: 1,
+      autozoom: true,
+      legendCollapsed: false,
+      initiallyHidden: false,
+      lazyLoading: false,
+    } as any;
+    const result = normalizeDeckSlices([configWithoutLasso]);
+    expect(result[0].lassoSelectable).toBe(true);
   });
 });
 
