@@ -1,6 +1,6 @@
 # GeoSet Versioning
 
-**Current Version:** 6.0.50
+**Current Version:** 6.0.51
 **Based on:** Apache Superset 6.0.0
 
 > GeoSet aligns with Apache Superset's major and minor version. For example, when Superset releases version 6.1.0, GeoSet will sync with Superset, and GeoSet's version will be set to 6.1.0. However, the GeoSet and Superset patch version numbers (the third value) increment independently. Our patch version is simply a counter of how many merge requests GeoSet has merged since the last sync with upstream Superset.
@@ -19,6 +19,7 @@ Version incrementing is handled automatically by the `Version Bump` GitHub Actio
 
 | Version | PR                                                   | Description                                                             |
 | ------- | ---------------------------------------------------- | ----------------------------------------------------------------------- |
+| 6.0.51 | [#359](https://github.com/raft-tech/GeoSet/pull/359) | Bug fix/lazy loading on empty layers |
 | 6.0.50 | [#357](https://github.com/raft-tech/GeoSet/pull/357) | Fix point size scaling when filtering to single value |
 | 6.0.49 | [#354](https://github.com/raft-tech/GeoSet/pull/354) | Add lasso spatial selection tool to map charts |
 | 6.0.48 | [#348](https://github.com/raft-tech/GeoSet/pull/348) | Fix up wiki docs within GitHub |
