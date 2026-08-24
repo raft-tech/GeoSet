@@ -167,6 +167,7 @@ const FilterValue: FC<FilterControlProps> = ({
       // Prevent unnecessary backend requests by validating parent filter selections first
 
       let selectedParentFilterValueCounts = 0;
+      let allParentsSelected = true;
 
       filter?.cascadeParentIds?.forEach(pId => {
         const extraFormData = dataMaskSelected?.[pId]?.extraFormData;
@@ -174,8 +175,23 @@ const FilterValue: FC<FilterControlProps> = ({
           selectedParentFilterValueCounts += extraFormData.filters.length;
         } else if (extraFormData?.time_range) {
           selectedParentFilterValueCounts += 1;
+        } else {
+          allParentsSelected = false;
         }
       });
+
+      // Keep the dependent filter empty and skip its values request until every
+      // parent has a selection when the dashboard author enables this option.
+      if (
+        filter.controlValues?.waitForParentSelections &&
+        !allParentsSelected
+      ) {
+        setState([]);
+        setFormData(newFormData);
+        setIsLoading(false);
+        setIsRefreshing(false);
+        return;
+      }
 
       // check if all parent filters with defaults have a value selected
 

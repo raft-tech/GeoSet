@@ -21,6 +21,9 @@
 from flask_caching.backends.filesystemcache import FileSystemCache
 from superset_config import *  # noqa: F403
 
+# Enable Jinja templating for SQL Lab, virtual datasets, and dashboard filters.
+FEATURE_FLAGS["ENABLE_TEMPLATE_PROCESSING"] = True  # noqa: F405
+
 # Override caching to use simple in-memory cache instead of Redis
 RESULTS_BACKEND = FileSystemCache("/app/superset_home/sqllab")
 

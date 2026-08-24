@@ -56,6 +56,7 @@ import { useSelector } from 'react-redux';
 import { getChartDataRequest } from 'src/components/Chart/chartAction';
 import {
   Constants,
+  Checkbox,
   FormItem,
   type FormInstance,
   Collapse,
@@ -923,39 +924,73 @@ const FiltersConfigForm = (
                                 {canDependOnOtherFilters &&
                                   (hasAvailableFilters ||
                                     dependencies.length > 0) && (
-                                    <StyledRowFormItem
-                                      expanded={expanded}
-                                      name={[
-                                        'filters',
-                                        filterId,
-                                        'dependencies',
-                                      ]}
-                                      initialValue={dependencies}
-                                    >
-                                      <DependencyList
-                                        availableFilters={availableFilters}
-                                        dependencies={dependencies}
-                                        onDependenciesChange={dependencies => {
-                                          setNativeFilterFieldValues(
-                                            form,
-                                            filterId,
-                                            {
-                                              dependencies,
-                                            },
-                                          );
-                                          forceUpdate();
-                                          validateDependencies();
-                                          formChanged();
-                                        }}
-                                        getDependencySuggestion={() =>
-                                          getDependencySuggestion(filterId)
-                                        }
+                                    <>
+                                      <StyledRowFormItem
+                                        expanded={expanded}
+                                        name={[
+                                          'filters',
+                                          filterId,
+                                          'dependencies',
+                                        ]}
+                                        initialValue={dependencies}
                                       >
-                                        {hasTimeDependency
-                                          ? timeColumn
-                                          : undefined}
-                                      </DependencyList>
-                                    </StyledRowFormItem>
+                                        <DependencyList
+                                          availableFilters={availableFilters}
+                                          dependencies={dependencies}
+                                          onDependenciesChange={dependencies => {
+                                            setNativeFilterFieldValues(
+                                              form,
+                                              filterId,
+                                              { dependencies },
+                                            );
+                                            forceUpdate();
+                                            validateDependencies();
+                                            formChanged();
+                                          }}
+                                          getDependencySuggestion={() =>
+                                            getDependencySuggestion(filterId)
+                                          }
+                                        >
+                                          {hasTimeDependency
+                                            ? timeColumn
+                                            : undefined}
+                                        </DependencyList>
+                                      </StyledRowFormItem>
+                                      {dependencies.length > 0 && (
+                                        <StyledRowFormItem
+                                          expanded={expanded}
+                                          name={[
+                                            'filters',
+                                            filterId,
+                                            'controlValues',
+                                            'waitForParentSelections',
+                                          ]}
+                                          initialValue={
+                                            filterToEdit?.controlValues
+                                              ?.waitForParentSelections ?? false
+                                          }
+                                          valuePropName="checked"
+                                          colon={false}
+                                        >
+                                          <Checkbox
+                                            onChange={() => formChanged()}
+                                          >
+                                            <>
+                                              {t(
+                                                'Wait for parent selections before loading values',
+                                              )}
+                                              &nbsp;
+                                              <InfoTooltip
+                                                placement="top"
+                                                tooltip={t(
+                                                  'Keep this filter empty until every parent filter has a selection.',
+                                                )}
+                                              />
+                                            </>
+                                          </Checkbox>
+                                        </StyledRowFormItem>
+                                      )}
+                                    </>
                                   )}
                                 {hasDataset && hasAdditionalFilters && (
                                   <FormItem

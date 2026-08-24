@@ -22,7 +22,9 @@ import { RawAntdSelect } from '@superset-ui/core/components';
 import { SearchOption } from '../../types';
 
 const StyledSelect = styled(RawAntdSelect)`
-  width: 120px;
+  width: fit-content;
+  min-width: 120px;
+  max-width: min(320px, 40vw);
   margin-right: 8px;
 `;
 
