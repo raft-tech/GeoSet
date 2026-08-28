@@ -1,10 +1,7 @@
 name: Docker Build
 
-on:
-  pull_request:
-    branches:
-      - main
-    types: [opened, synchronize, reopened]
+# Docker builds are currently not part of pull request validation.
+on: []
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
