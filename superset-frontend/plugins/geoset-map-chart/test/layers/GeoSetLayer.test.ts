@@ -388,6 +388,49 @@ describe('getLayer', () => {
       // eslint-disable-next-line no-underscore-dangle
       expect((result as any).constructor.__mockName).toBe('PathLayer');
     });
+
+    it('expands MultiLineString geometry into individual paths', () => {
+      const features = [
+        makeFeature('apple', '1', 'MultiLineString', [
+          [
+            [0, 0],
+            [1, 1],
+          ],
+          [
+            [2, 2],
+            [3, 3],
+          ],
+        ]),
+      ];
+      const result = getLayer(
+        { ...baseFd, geoJsonLayer: 'LineString' } as QueryFormData,
+        makePayload(features),
+        noopOnAddFilter,
+        noopSetTooltip,
+        baseCategories,
+      ) as any;
+
+      // eslint-disable-next-line no-underscore-dangle
+      expect(result.constructor.__mockName).toBe('PathLayer');
+      expect(result.props.data).toHaveLength(2);
+      expect(result.props.data.map(result.props.getPath)).toEqual([
+        [
+          [0, 0],
+          [1, 1],
+        ],
+        [
+          [2, 2],
+          [3, 3],
+        ],
+      ]);
+      expect(result.props.data[0].properties).toMatchObject({
+        category: 'apple',
+        id: '1',
+      });
+      expect(result.props.data[1].properties).toBe(
+        result.props.data[0].properties,
+      );
+    });
   });
 
   describe('Polygon layer', () => {
