@@ -1,12 +1,7 @@
 name: Docker Build
 
-on:
-  # PR code is untrusted, so validate builds without exposing Docker Hub secrets.
-  pull_request:
-    branches:
-      - main
-    types: [opened, synchronize, reopened]
-  # workflow_dispatch:
+# Docker image builds are currently unused, so do not run this workflow.
+on: []
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
