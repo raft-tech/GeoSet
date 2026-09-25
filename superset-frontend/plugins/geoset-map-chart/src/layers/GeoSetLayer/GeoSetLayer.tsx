@@ -410,16 +410,16 @@ export function getLayer(
     // POINTS -- uses PointClusterLayer for automatic clustering (unless disabled or metrics are applied)
     case 'Point': {
       const iconSize = Number(pointSize) || 5;
+      const hasDynamicSize = sortedFeatures.some(f => f.sizeValue != null);
       // Check if clustering is enabled (default to false if not set)
       const clusteringEnabled = fd.enableClustering === true;
 
-      // Skip clustering when metrics are applied (each point has unique color) or when disabled
-      if (isMetric || !clusteringEnabled) {
+      // Clustering cannot preserve each point's data-driven size, so dynamic
+      // size layers render their individual points just like metric layers.
+      if (isMetric || hasDynamicSize || !clusteringEnabled) {
         if (pointType) {
           let iconName = pointType.replace('-icon', '');
           if (!iconName) iconName = 'circle';
-
-          const hasDynamicSize = sortedFeatures.some(f => f.sizeValue != null);
 
           return new IconLayer({
             id: `icon-layer-${fd.slice_id}-${sortedFeatures.length}`,
@@ -457,8 +457,6 @@ export function getLayer(
           });
         }
 
-        const hasDynamicRadius = sortedFeatures.some(f => f.sizeValue != null);
-
         return new ScatterplotLayer({
           id: `point-layer-${fd.slice_id}`,
           data: sortedFeatures as Feature<Geometry, GeoJsonProperties>[],
@@ -469,7 +467,7 @@ export function getLayer(
           getFillColor: (feature: any) => feature.color || fillColorArray,
           getLineColor: () => strokeColorArray,
           getLineWidth: lineWidth ?? (fd.lineWidth || 1),
-          getRadius: hasDynamicRadius
+          getRadius: hasDynamicSize
             ? (f: any) => f.sizeValue ?? iconSize
             : () => iconSize,
           radiusUnits: 'pixels',
@@ -477,7 +475,7 @@ export function getLayer(
           radiusMaxPixels: 200,
           radiusScale: 1,
           updateTriggers: {
-            getRadius: [iconSize, hasDynamicRadius],
+            getRadius: [iconSize, hasDynamicSize],
           },
           ...baseLayerProps,
         });
@@ -710,11 +708,36 @@ export function getLayerStates(
 ): LayerState[] {
   if (!layers) return [];
   const arr = Array.isArray(layers) ? layers : [layers];
-  return arr.map(layer => ({
-    id: layer.id,
-    layer,
-    options,
-  }));
+  return arr.map(layer => {
+    const layerProps = (layer.props ?? {}) as Record<string, any>;
+    const hasDynamicPointSizes =
+      Array.isArray(layerProps.data) &&
+      layerProps.data.some(
+        (feature: GeoJsonFeature) => feature.sizeValue != null,
+      );
+    const dynamicPointSizeScaleProperty = hasDynamicPointSizes
+      ? layerProps.radiusScale != null
+        ? ('radiusScale' as const)
+        : layerProps.sizeScale != null
+          ? ('sizeScale' as const)
+          : undefined
+      : undefined;
+
+    return {
+      id: layer.id,
+      layer,
+      options: {
+        ...options,
+        ...(dynamicPointSizeScaleProperty
+          ? {
+              dynamicPointSizeScaleProperty,
+              dynamicPointSizeBaseScale:
+                layerProps[dynamicPointSizeScaleProperty] ?? 1,
+            }
+          : {}),
+      },
+    };
+  });
 }
 
 export type DeckGLGeoJsonProps = {

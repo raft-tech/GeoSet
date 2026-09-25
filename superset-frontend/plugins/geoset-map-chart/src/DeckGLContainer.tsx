@@ -47,6 +47,7 @@ import { GeoJsonFeature, LassoDrawMode, LayerState } from './types';
 import { MeasureState, useMeasureLayers } from './components/MeasureOverlay';
 import { LASSO_CURSOR, useLassoLayer } from './components/useLassoLayer';
 import { Coordinate } from './utils/measureDistance';
+import { getDynamicPointZoomScale } from './utils/pointSize';
 
 const TICK = 250; // milliseconds
 
@@ -447,12 +448,26 @@ export const DeckGLContainer = memo(
       ];
     }, [hasSelection, selectedFeaturesArr]);
 
+    // Quantize the multiplier to half-zoom steps so zooming does not clone
+    // data layers on every animation frame.
+    const pointSizeZoomScale = getDynamicPointZoomScale(
+      Math.floor((viewState.zoom ?? 0) * 2) / 2,
+    );
+
     const allLayers = useMemo(() => {
       if (!layerStates || layerStates.length === 0) {
         return [...measureLayers, ...highlightLayer, ...lassoLayers] as Layer[];
       }
       let layers = layerStates
-        .map(ls => ls?.layer)
+        .map(ls => {
+          if (!ls?.layer) return null;
+          const scaleProperty = ls.options?.dynamicPointSizeScaleProperty;
+          if (!scaleProperty) return ls.layer;
+          return ls.layer.clone({
+            [scaleProperty]:
+              (ls.options.dynamicPointSizeBaseScale ?? 1) * pointSizeZoomScale,
+          });
+        })
         .filter(Boolean) as Layer[];
 
       // Dim all data layers when there's an active lasso selection
@@ -466,7 +481,14 @@ export const DeckGLContainer = memo(
         ...measureLayers,
         ...lassoLayers,
       ] as Layer[];
-    }, [layerStates, measureLayers, lassoLayers, highlightLayer, hasSelection]);
+    }, [
+      layerStates,
+      measureLayers,
+      lassoLayers,
+      highlightLayer,
+      hasSelection,
+      pointSizeZoomScale,
+    ]);
 
     useEffect(() => {
       if (!props.layerStates) return;

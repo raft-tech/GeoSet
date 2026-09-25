@@ -65,6 +65,8 @@ export type LayerState = {
     minZoom: number;
     maxZoom: number;
     userVisible?: boolean; // User-toggled visibility (undefined = visible)
+    dynamicPointSizeScaleProperty?: 'radiusScale' | 'sizeScale';
+    dynamicPointSizeBaseScale?: number;
   };
 };
 

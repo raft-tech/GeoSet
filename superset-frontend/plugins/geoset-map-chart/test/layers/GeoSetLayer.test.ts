@@ -180,6 +180,25 @@ describe('getLayerStates', () => {
     });
   });
 
+  it('marks dynamically sized scatterplot layers for zoom scaling', () => {
+    const layer = {
+      id: 'dynamic-points',
+      props: {
+        data: [{ ...makeFeature('apple', '1'), sizeValue: 4 }],
+        radiusScale: 1,
+      },
+    } as any;
+
+    const [state] = getLayerStates(layer, { minZoom: 0, maxZoom: 22 });
+
+    expect(state.options).toEqual({
+      minZoom: 0,
+      maxZoom: 22,
+      dynamicPointSizeScaleProperty: 'radiusScale',
+      dynamicPointSizeBaseScale: 1,
+    });
+  });
+
   it('handles an array of layers', () => {
     const layers = [{ id: 'a' }, { id: 'b' }] as any[];
     const result = getLayerStates(layers, { minZoom: 0, maxZoom: 22 });
@@ -299,6 +318,22 @@ describe('getLayer', () => {
       );
       // eslint-disable-next-line no-underscore-dangle
       expect((result as any).constructor.__mockName).toBe('PointClusterLayer');
+    });
+
+    it('preserves dynamic point sizes instead of clustering them', () => {
+      const feature = { ...makeFeature('apple', '1', 'Point'), sizeValue: 4 };
+      const result = getLayer(
+        { ...pointFd, enableClustering: true } as QueryFormData,
+        makePayload([feature]),
+        noopOnAddFilter,
+        noopSetTooltip,
+        baseCategories,
+        { dimension: 'category' },
+      ) as any;
+
+      // eslint-disable-next-line no-underscore-dangle
+      expect(result.constructor.__mockName).toBe('ScatterplotLayer');
+      expect(result.props.getRadius(feature)).toBe(4);
     });
 
     it('uses pointSize for scatterplot radius', () => {
