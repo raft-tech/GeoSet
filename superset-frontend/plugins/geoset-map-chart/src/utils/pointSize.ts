@@ -1,9 +1,9 @@
 /**
  * Scale dynamically sized points as the map zooms in so small values remain
- * visible. The multiplier grows gradually above zoom 4 and is capped to keep
- * large points from overwhelming the map.
+ * visible. Keep the configured size through zoom 4, then grow by 1 per zoom
+ * level up to an 8x cap.
  */
 export const getDynamicPointZoomScale = (zoom: number): number => {
   if (!Number.isFinite(zoom)) return 1;
-  return Math.min(3.5, 1 + Math.max(0, zoom - 4) * 0.25);
+  return Math.min(8, 1 + Math.max(0, zoom - 4));
 };
