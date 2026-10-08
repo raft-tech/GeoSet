@@ -1,6 +1,6 @@
 # GeoSet Versioning
 
-**Current Version:** 6.0.53
+**Current Version:** 6.0.54
 **Based on:** Apache Superset 6.0.0
 
 > GeoSet aligns with Apache Superset's major and minor version. For example, when Superset releases version 6.1.0, GeoSet will sync with Superset, and GeoSet's version will be set to 6.1.0. However, the GeoSet and Superset patch version numbers (the third value) increment independently. Our patch version is simply a counter of how many merge requests GeoSet has merged since the last sync with upstream Superset.
@@ -19,6 +19,7 @@ Version incrementing is handled automatically by the `Version Bump` GitHub Actio
 
 | Version | PR                                                   | Description                                                             |
 | ------- | ---------------------------------------------------- | ----------------------------------------------------------------------- |
+| 6.0.54 | [#383](https://github.com/raft-tech/GeoSet/pull/383) | Increase zoom-driven dynamic point sizing |
 | 6.0.53 | [#381](https://github.com/raft-tech/GeoSet/pull/381) | Sync Dynamic Point Sizing Updates From GitLab |
 | 6.0.52 | [#372](https://github.com/raft-tech/GeoSet/pull/372) | Support disaster workflow filter dependencies |
 | 6.0.51 | [#359](https://github.com/raft-tech/GeoSet/pull/359) | Bug fix/lazy loading on empty layers |
