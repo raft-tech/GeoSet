@@ -157,7 +157,7 @@ const DeckMulti = (props: DeckMultiProps) => {
   const measureActiveRef = useRef(false);
   const lassoIsActiveRef = useRef(false);
   const lassoRequestIdRef = useRef(0);
-  // Generation counter to cancel stale lazy-loading chains
+  // Generation counter to ignore results from superseded layer loads
   const loadGenerationRef = useRef(0);
   // Store initial autozoom viewport to prevent reset on category toggle
   const initialAutozoomViewportRef = useRef<Viewport | null>(null);
@@ -165,6 +165,7 @@ const DeckMulti = (props: DeckMultiProps) => {
   const [subSlicesLayers, setSubSlicesLayers] = useState<SubsliceLayerEntry[]>(
     [],
   );
+  const [autozoomComplete, setAutozoomComplete] = useState(false);
   const [slicesData, setSlicesData] = useState<JsonObject[] | null>(null);
   const [layerVisibility, setLayerVisibility] = useState<
     Record<string, boolean>
@@ -538,10 +539,12 @@ const DeckMulti = (props: DeckMultiProps) => {
       slices: JsonObject[],
       deckSlicesConfig: DeckSliceConfig[],
     ) => {
-      // Bump generation so any in-flight lazy chain from a prior call is ignored
+      // Bump generation so results from any prior load are ignored
       // eslint-disable-next-line no-plusplus
       const generation = ++loadGenerationRef.current;
       setSubSlicesLayers([]);
+      setAutozoomComplete(false);
+      initialAutozoomViewportRef.current = null;
 
       // Pre-set layer visibility from config — known upfront, no timing
       // dependency on when layers finish loading.
@@ -581,9 +584,12 @@ const DeckMulti = (props: DeckMultiProps) => {
         {
           loadFn: (subslice, config) =>
             loadSingleLayer(formData, subslice, config),
-          onAutozoomComplete: autozoomLayers => {
-            setSubSlicesLayers(autozoomLayers);
-            hideCategoriesIfNeeded(autozoomLayers);
+          onAutozoomAppend: layer => {
+            setSubSlicesLayers(prev => [...prev, layer]);
+            hideCategoriesIfNeeded([layer]);
+          },
+          onAutozoomComplete: () => {
+            setAutozoomComplete(true);
           },
           onEagerAppend: layer => {
             setSubSlicesLayers(prev => [...prev, layer]);
@@ -969,6 +975,8 @@ const DeckMulti = (props: DeckMultiProps) => {
       return initialAutozoomViewportRef.current;
     }
 
+    if (!autozoomComplete) return props.viewport;
+
     const autozoomLayers = sortedLayers.filter(entry => entry.autozoom);
     if (!autozoomLayers.length) return props.viewport;
 
@@ -983,7 +991,14 @@ const DeckMulti = (props: DeckMultiProps) => {
     // Store the initial autozoom viewport
     initialAutozoomViewportRef.current = calculatedViewport;
     return calculatedViewport;
-  }, [sortedLayers, props.viewport, width, height, props.enableStaticViewport]);
+  }, [
+    sortedLayers,
+    props.viewport,
+    width,
+    height,
+    props.enableStaticViewport,
+    autozoomComplete,
+  ]);
 
   // Write live viewport to module-level store (outside Redux) so the actual
   // viewport control value is only changed by explicit user Save actions.
@@ -1188,11 +1203,11 @@ const DeckMulti = (props: DeckMultiProps) => {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [measureState.isActive]);
 
-  // Gate map canvas rendering to prevent a viewport jump when autozoom layers
-  // load. Phase 1 loads autozoom layers first; the canvas stays hidden until
-  // they complete so the viewport is correct on first render.
+  // Show autozoom layers as they load at the current viewport, then fit all
+  // autozoom layers once the autozoom loading group completes.
   //
-  // - If any layer has autozoom: wait for phase 1 (autozoom batch) to complete.
+  // - If any layer has autozoom: show the canvas after the first layer loads,
+  //   or after the autozoom group completes if all those layers are empty or fail.
   // - If no layers have autozoom: show the map as soon as metadata is fetched.
   const hasChartsToLoad = normalizedDeckSlices.length > 0;
   const hasAutozoomLayers = normalizedDeckSlices.some(config =>
@@ -1200,7 +1215,9 @@ const DeckMulti = (props: DeckMultiProps) => {
   );
   const isLoading =
     hasChartsToLoad &&
-    (hasAutozoomLayers ? subSlicesLayers.length === 0 : slicesData === null);
+    (hasAutozoomLayers
+      ? subSlicesLayers.length === 0 && !autozoomComplete
+      : slicesData === null);
 
   if (isLoading) {
     return (

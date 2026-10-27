@@ -46,13 +46,13 @@ Each layer has a **settings popover** (gear icon) with per-layer options:
 
 ### Layer Loading Order
 
-Layers load in three phases to balance fast rendering with a smooth viewport experience:
+Layers load in coordinated groups to balance fast rendering with a smooth viewport experience:
 
-1. **Autozoom layers** — Layers with Auto Zoom enabled load first, in parallel. The map canvas waits for these to finish so it can calculate the correct viewport before rendering. This prevents a visible "jump" where the map snaps to a new position.
-2. **Eager layers** — Remaining non-lazy layers (with Auto Zoom off) load in parallel after the map canvas appears. Each layer is added to the map as it finishes.
-3. **Lazy layers** — Layers with Lazy Loading enabled load last, in small batches of 2. Each batch waits for the previous one to finish before starting, which avoids overwhelming the server with many simultaneous requests.
+1. **Autozoom layers** — Layers with Auto Zoom enabled load in parallel. Each successfully loaded layer appears as soon as it finishes, while the viewport waits for the full group to finish before fitting to all enabled autozoom layers. Empty or failed layers do not keep the viewport waiting indefinitely.
+2. **Eager layers** — Remaining non-lazy layers (with Auto Zoom off) load concurrently with the autozoom group. Each eager layer is added to the map as it finishes, without waiting for the autozoom fit.
+3. **Lazy layers** — Layers with Lazy Loading enabled load after the eager and autozoom groups finish, in batches of 2. Each batch waits for the previous one to finish before starting, which avoids overwhelming the server with many simultaneous requests.
 
-If no layers have Auto Zoom enabled, the map canvas renders immediately after fetching layer metadata, and all non-lazy layers begin loading right away.
+If no layers have Auto Zoom enabled, the map canvas renders immediately after fetching layer metadata. All eager layers begin loading right away.
 
 ## Multi-Layer Legend
 

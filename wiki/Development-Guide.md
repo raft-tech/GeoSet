@@ -93,22 +93,22 @@ The GeoSet map plugin is a Superset chart plugin built on [deck.gl](https://deck
 | `GeoSetLayer/GeoSetLayer.tsx` | Main React component for the single-layer chart. Manages deck.gl layers, viewport, clustering, tooltips, and popups. |
 | `GeoSetLayer/controlPanel.ts` | Defines all chart controls visible in the explore panel. |
 | `GeoSetMultiMap/Multi.tsx` | React component for the multi-layer chart. Fetches and renders each sub-layer chart's data. |
-| `GeoSetMultiMap/multiUtils.ts` | Shared utilities: slice config normalization, autozoom resolution, and three-phase layer loading orchestration (see below). |
+| `GeoSetMultiMap/multiUtils.ts` | Shared utilities: slice config normalization, autozoom resolution, and coordinated layer loading orchestration (see below). |
 | `GeoSetMultiMap/controlPanel.ts` | Control panel for the multi-layer chart. |
 
 ### Layer Loading Orchestration
 
-`loadLayersOrchestrated()` in `multiUtils.ts` manages three sequential phases:
+`loadLayersOrchestrated()` in `multiUtils.ts` coordinates these loading groups:
 
-| Phase | Layers | Loading strategy | When the map canvas appears |
+| Group | Layers | Loading strategy | When layers appear |
 |---|---|---|---|
-| **1 — Autozoom** | Non-lazy layers with `autozoom: true` | All load in parallel (`Promise.all`) | Canvas gates on this phase so the viewport is correct on first render (no jump) |
-| **2 — Eager** | Non-lazy layers with `autozoom: false` | All load in parallel (`Promise.all`), each appended individually as results arrive | Canvas is already visible |
-| **3 — Lazy** | Layers with `lazyLoading: true` | Sequential batches of `LAZY_BATCH_SIZE` (2) | Canvas is already visible |
+| **Autozoom** | Non-lazy layers with `autozoom: true` | All load in parallel (`Promise.all`) | Each successful layer is appended as it finishes; viewport fitting waits until all autozoom layers finish |
+| **Eager** | Non-lazy layers with `autozoom: false` | All load in parallel (`Promise.all`) and append individually as results arrive | Can appear while autozoom layers are still loading |
+| **Lazy** | Layers with `lazyLoading: true` | Sequential batches of `LAZY_BATCH_SIZE` (2), after all eager and autozoom loads finish | Canvas is already visible |
 
-Phase 2 and 3 both append layers incrementally, but phase 3 rate-limits concurrency to avoid overwhelming the backend when many layers are configured. If no autozoom layers exist, the canvas renders immediately after metadata fetch and phases 2/3 begin right away.
+The eager and autozoom groups overlap so eager layers do not wait for viewport fitting to begin. If no autozoom layers exist, the canvas renders immediately after metadata fetch. Lazy loading rate-limits concurrency to avoid overwhelming the backend when many layers are configured.
 
-Each phase checks a staleness flag before proceeding. When the user changes a filter or the slice list changes, the generation counter increments and any in-flight chain aborts before the next phase or batch begins.
+Each loading group checks the staleness flag before appending or proceeding. When the user changes a filter or the slice list changes, the generation counter increments and in-flight results from the superseded load are ignored before lazy batches continue.
 
 ### Key Utilities
 

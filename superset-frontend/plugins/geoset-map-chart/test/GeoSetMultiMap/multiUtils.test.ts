@@ -164,7 +164,7 @@ describe('normalizeDeckSlices', () => {
 });
 
 describe('loadLayersOrchestrated', () => {
-  // ── Phase 1: Autozoom layers ──────────────────────────────────────
+  // ── Autozoom loading group ───────────────────────────────────────
 
   it('loads autozoom layers in parallel and calls onAutozoomComplete', async () => {
     const loadFn = jest.fn((subslice: { slice_id: number }) =>
@@ -215,6 +215,48 @@ describe('loadLayersOrchestrated', () => {
     expect(onAutozoomComplete).toHaveBeenCalledWith(['layer-2']);
   });
 
+  it('appends autozoom layers as they finish, before marking the batch complete', async () => {
+    const resolveAutozoomLoads = new Map<number, (layer: string) => void>();
+    let resolveAutozoomLoadsStarted!: () => void;
+    const autozoomLoadsStarted = new Promise<void>(resolve => {
+      resolveAutozoomLoadsStarted = resolve;
+    });
+    let resolveFirstLayerAppended!: () => void;
+    const firstLayerAppended = new Promise<void>(resolve => {
+      resolveFirstLayerAppended = resolve;
+    });
+    const onAutozoomAppend = jest.fn((layer: string) => {
+      if (layer === 'layer-2') resolveFirstLayerAppended();
+    });
+    const onAutozoomComplete = jest.fn();
+    const orchestration = loadLayersOrchestrated(
+      [{ slice_id: 1 }, { slice_id: 2 }],
+      [makeConfig(1), makeConfig(2)],
+      {
+        loadFn: (subslice: { slice_id: number }) =>
+          new Promise<string>(resolve => {
+            resolveAutozoomLoads.set(subslice.slice_id, resolve);
+            if (resolveAutozoomLoads.size === 2) resolveAutozoomLoadsStarted();
+          }),
+        onAutozoomAppend,
+        onAutozoomComplete,
+        onEagerAppend: jest.fn(),
+        onLazyAppend: jest.fn(),
+        isStale: () => false,
+      },
+    );
+
+    await autozoomLoadsStarted;
+    resolveAutozoomLoads.get(2)?.('layer-2');
+    await firstLayerAppended;
+    expect(onAutozoomAppend).toHaveBeenCalledWith('layer-2');
+    expect(onAutozoomComplete).not.toHaveBeenCalled();
+
+    resolveAutozoomLoads.get(1)?.('layer-1');
+    await orchestration;
+    expect(onAutozoomComplete).toHaveBeenCalledWith(['layer-1', 'layer-2']);
+  });
+
   it('calls onAutozoomComplete with empty array when no autozoom layers exist', async () => {
     const onAutozoomComplete = jest.fn();
     const onEagerAppend = jest.fn();
@@ -241,9 +283,9 @@ describe('loadLayersOrchestrated', () => {
     expect(onLazyAppend).toHaveBeenCalledWith('layer-2');
   });
 
-  // ── Phase 2: Eager (non-autozoom) layers ──────────────────────────
+  // ── Eager (non-autozoom) layers ──────────────────────────────────
 
-  it('loads eager non-autozoom layers in phase 2 after autozoom completes', async () => {
+  it('loads eager autozoom and non-autozoom layers concurrently', async () => {
     const callOrder: string[] = [];
     const loadFn = jest.fn((subslice: { slice_id: number }) => {
       callOrder.push(`load-${subslice.slice_id}`);
@@ -275,10 +317,101 @@ describe('loadLayersOrchestrated', () => {
     expect(onAutozoomComplete).toHaveBeenCalledWith(['layer-1']);
     expect(onEagerAppend).toHaveBeenCalledTimes(2);
 
-    // Verify ordering: autozoom completes before eager loads start
+    // All eager loads start before the autozoom batch completes.
     const autozoomIdx = callOrder.indexOf('autozoom-complete');
     const firstEagerLoadIdx = callOrder.indexOf('load-2');
-    expect(autozoomIdx).toBeLessThan(firstEagerLoadIdx);
+    expect(firstEagerLoadIdx).toBeLessThan(autozoomIdx);
+  });
+
+  it('appends non-autozoom eager layers before autozoom finishes', async () => {
+    let resolveAutozoom!: (layer: string) => void;
+    let resolveEager!: (layer: string) => void;
+    let resolveEagerStarted!: () => void;
+    const eagerStarted = new Promise<void>(resolve => {
+      resolveEagerStarted = resolve;
+    });
+    let resolveEagerAppended!: () => void;
+    const eagerAppended = new Promise<void>(resolve => {
+      resolveEagerAppended = resolve;
+    });
+    const onEagerAppend = jest.fn((layer: string) => {
+      if (layer === 'layer-2') resolveEagerAppended();
+    });
+    const onAutozoomComplete = jest.fn();
+    const orchestration = loadLayersOrchestrated(
+      [{ slice_id: 1 }, { slice_id: 2 }],
+      [makeConfig(1), makeConfig(2, { autozoom: false })],
+      {
+        loadFn: (subslice: { slice_id: number }) =>
+          new Promise<string>(resolve => {
+            if (subslice.slice_id === 1) {
+              resolveAutozoom = resolve;
+            } else {
+              resolveEager = resolve;
+              resolveEagerStarted();
+            }
+          }),
+        onAutozoomComplete,
+        onEagerAppend,
+        onLazyAppend: jest.fn(),
+        isStale: () => false,
+      },
+    );
+
+    await eagerStarted;
+    resolveEager('layer-2');
+    await eagerAppended;
+    expect(onAutozoomComplete).not.toHaveBeenCalled();
+
+    resolveAutozoom('layer-1');
+    await orchestration;
+    expect(onAutozoomComplete).toHaveBeenCalledWith(['layer-1']);
+  });
+
+  it('appends eager layers as they finish loading', async () => {
+    const resolveEagerLoads = new Map<number, (layer: string) => void>();
+    let resolveEagerLoadsStarted!: () => void;
+    const eagerLoadsStarted = new Promise<void>(resolve => {
+      resolveEagerLoadsStarted = resolve;
+    });
+    let resolveThirdLayerAppended!: () => void;
+    const thirdLayerAppended = new Promise<void>(resolve => {
+      resolveThirdLayerAppended = resolve;
+    });
+    const onEagerAppend = jest.fn((layer: string) => {
+      if (layer === 'layer-3') resolveThirdLayerAppended();
+    });
+    const orchestration = loadLayersOrchestrated(
+      [{ slice_id: 1 }, { slice_id: 2 }, { slice_id: 3 }],
+      [
+        makeConfig(1),
+        makeConfig(2, { autozoom: false }),
+        makeConfig(3, { autozoom: false }),
+      ],
+      {
+        loadFn: (subslice: { slice_id: number }) => {
+          if (subslice.slice_id === 1) return Promise.resolve('layer-1');
+          const result = new Promise<string>(resolve => {
+            resolveEagerLoads.set(subslice.slice_id, resolve);
+          });
+          if (resolveEagerLoads.size === 2) resolveEagerLoadsStarted();
+          return result;
+        },
+        onAutozoomComplete: jest.fn(),
+        onEagerAppend,
+        onLazyAppend: jest.fn(),
+        isStale: () => false,
+      },
+    );
+
+    await eagerLoadsStarted;
+    resolveEagerLoads.get(3)?.('layer-3');
+    await thirdLayerAppended;
+    expect(onEagerAppend).toHaveBeenCalledTimes(1);
+    expect(onEagerAppend).toHaveBeenCalledWith('layer-3');
+    resolveEagerLoads.get(2)?.('layer-2');
+    await orchestration;
+    expect(onEagerAppend).toHaveBeenNthCalledWith(2, 'layer-2');
   });
 
   it('skips null results from eager phase without aborting', async () => {
@@ -310,7 +443,7 @@ describe('loadLayersOrchestrated', () => {
     expect(onEagerAppend).toHaveBeenCalledWith('layer-3');
   });
 
-  // ── Phase 3: Lazy layers ──────────────────────────────────────────
+  // ── Lazy loading group ────────────────────────────────────────────
 
   it('loads lazy layers in batches after eager layers', async () => {
     const callOrder: string[] = [];
@@ -432,9 +565,9 @@ describe('loadLayersOrchestrated', () => {
     expect(onLazyAppend).toHaveBeenNthCalledWith(2, 'layer-2');
   });
 
-  // ── Three-phase ordering ──────────────────────────────────────────
+  // ── Eager and lazy ordering ───────────────────────────────────────
 
-  it('runs all three phases in order: autozoom → eager → lazy', async () => {
+  it('loads eager layers concurrently and waits for them before lazy layers', async () => {
     const callOrder: string[] = [];
     const loadFn = jest.fn((subslice: { slice_id: number }) => {
       callOrder.push(`load-${subslice.slice_id}`);
@@ -444,9 +577,9 @@ describe('loadLayersOrchestrated', () => {
     await loadLayersOrchestrated(
       [{ slice_id: 1 }, { slice_id: 2 }, { slice_id: 3 }],
       [
-        makeConfig(1, { autozoom: true }), // phase 1: autozoom
-        makeConfig(2, { autozoom: false }), // phase 2: eager non-autozoom
-        makeConfig(3, { lazyLoading: true }), // phase 3: lazy
+        makeConfig(1, { autozoom: true }),
+        makeConfig(2, { autozoom: false }),
+        makeConfig(3, { lazyLoading: true }),
       ],
       {
         loadFn,
@@ -457,13 +590,13 @@ describe('loadLayersOrchestrated', () => {
       },
     );
 
-    // Verify strict phase ordering
+    // Autozoom controls fitting; all eager layers load before lazy layers.
     const autozoomCompleteIdx = callOrder.indexOf('autozoom-complete');
     const eagerLoadIdx = callOrder.indexOf('load-2');
     const eagerAppendIdx = callOrder.indexOf('eager-layer-2');
     const lazyLoadIdx = callOrder.indexOf('load-3');
 
-    expect(autozoomCompleteIdx).toBeLessThan(eagerLoadIdx);
+    expect(eagerLoadIdx).toBeLessThan(autozoomCompleteIdx);
     expect(eagerAppendIdx).toBeLessThan(lazyLoadIdx);
   });
 
@@ -474,10 +607,7 @@ describe('loadLayersOrchestrated', () => {
 
     await loadLayersOrchestrated(
       [{ slice_id: 1 }, { slice_id: 2 }],
-      [
-        makeConfig(1, { autozoom: false }),
-        makeConfig(2, { autozoom: false }),
-      ],
+      [makeConfig(1, { autozoom: false }), makeConfig(2, { autozoom: false })],
       {
         loadFn: (subslice: { slice_id: number }) =>
           Promise.resolve(`layer-${subslice.slice_id}`),
