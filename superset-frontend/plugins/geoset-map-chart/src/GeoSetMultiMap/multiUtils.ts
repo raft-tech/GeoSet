@@ -80,6 +80,7 @@ const LAZY_BATCH_SIZE = 2;
  *   Phase 1 — load autozoom layers in parallel (map canvas gates on this).
  *   Phase 2 — load remaining eager layers in parallel, appending each as it finishes.
  *   Phase 3 — load lazy layers in small batches, appending each as it finishes.
+ *   Initially hidden slices are skipped during startup; the caller can load them on demand.
  *
  * Returns a promise that resolves when the full chain finishes
  * or is aborted due to staleness.
@@ -99,6 +100,9 @@ export function loadLayersOrchestrated<TLayer>(
 
   slices.forEach(subslice => {
     const config = configById.get(subslice.slice_id);
+    if (config?.initiallyHidden) {
+      return;
+    }
     if (config?.lazyLoading) {
       lazySlices.push(subslice);
     } else if (resolveLayerAutozoom(config)) {

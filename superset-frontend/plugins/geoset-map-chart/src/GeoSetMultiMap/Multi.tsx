@@ -79,6 +79,7 @@ const toTitleCase = (str: string) =>
 const buildStubLegendEntry = (
   subslice: JsonObject,
   sliceConfig: DeckSliceConfig | undefined,
+  loading: boolean,
 ): LegendEntry => {
   const geojsonConfig = subslice.form_data?.geojsonConfig;
   let icon: string | undefined;
@@ -106,7 +107,9 @@ const buildStubLegendEntry = (
     geometryType: subslice.form_data?.geoJsonLayer,
     type: 'simple',
     initialCollapsed: sliceConfig?.legendCollapsed ?? false,
-    loading: true,
+    loading,
+    deferred: !loading && (sliceConfig?.initiallyHidden ?? false),
+    visibilityToggle: sliceConfig?.initiallyHidden ?? false,
   };
 };
 
@@ -157,14 +160,19 @@ const DeckMulti = (props: DeckMultiProps) => {
   const measureActiveRef = useRef(false);
   const lassoIsActiveRef = useRef(false);
   const lassoRequestIdRef = useRef(0);
-  // Generation counter to cancel stale lazy-loading chains
+  // Generation counter to ignore results from superseded layer loads
   const loadGenerationRef = useRef(0);
+  const onDemandLoadsRef = useRef(new Set<string>());
+  const requestedHiddenSliceIdsRef = useRef(new Set<number>());
   // Store initial autozoom viewport to prevent reset on category toggle
   const initialAutozoomViewportRef = useRef<Viewport | null>(null);
 
   const [subSlicesLayers, setSubSlicesLayers] = useState<SubsliceLayerEntry[]>(
     [],
   );
+  const [loadingSliceIds, setLoadingSliceIds] = useState<
+    Record<string, boolean>
+  >({});
   const [slicesData, setSlicesData] = useState<JsonObject[] | null>(null);
   const [layerVisibility, setLayerVisibility] = useState<
     Record<string, boolean>
@@ -236,15 +244,19 @@ const DeckMulti = (props: DeckMultiProps) => {
     if (!slicesData?.length) return {};
     const configById = new Map(normalizedDeckSlices.map(c => [c.sliceId, c]));
     return Object.fromEntries(
-      slicesData.map((subslice: JsonObject) => [
-        String(subslice.slice_id),
-        buildStubLegendEntry(
-          subslice,
-          configById.get(subslice.slice_id as number),
-        ),
-      ]),
+      slicesData.map((subslice: JsonObject) => {
+        const sliceId = String(subslice.slice_id);
+        const sliceConfig = configById.get(subslice.slice_id as number);
+        const isInitiallyHidden =
+          (sliceConfig?.initiallyHidden ?? false) &&
+          !requestedHiddenSliceIdsRef.current.has(subslice.slice_id as number);
+        const loading = isInitiallyHidden
+          ? (loadingSliceIds[sliceId] ?? false)
+          : true;
+        return [sliceId, buildStubLegendEntry(subslice, sliceConfig, loading)];
+      }),
     );
-  }, [slicesData, normalizedDeckSlices]);
+  }, [slicesData, normalizedDeckSlices, loadingSliceIds]);
 
   // Fetch slice metadata when deckSlices changes and payload doesn't have slices
   useEffect(() => {
@@ -470,6 +482,7 @@ const DeckMulti = (props: DeckMultiProps) => {
                   initialCollapsed: sliceLegendCollapsed,
                 };
               }
+              legendEntry.visibilityToggle = sliceInitiallyHidden;
 
               const zoomSlider = subsliceCopy.form_data.minMaxZoomSlider || [
                 0, 22,
@@ -542,6 +555,7 @@ const DeckMulti = (props: DeckMultiProps) => {
       // eslint-disable-next-line no-plusplus
       const generation = ++loadGenerationRef.current;
       setSubSlicesLayers([]);
+      setLoadingSliceIds({});
 
       // Pre-set layer visibility from config — known upfront, no timing
       // dependency on when layers finish loading.
@@ -550,7 +564,9 @@ const DeckMulti = (props: DeckMultiProps) => {
         setLayerVisibility(prev => ({
           ...prev,
           ...Object.fromEntries(
-            hiddenConfigs.map(c => [String(c.sliceId), false]),
+            hiddenConfigs
+              .filter(c => !requestedHiddenSliceIdsRef.current.has(c.sliceId))
+              .map(c => [String(c.sliceId), false]),
           ),
         }));
       }
@@ -559,7 +575,10 @@ const DeckMulti = (props: DeckMultiProps) => {
       // aren't known until data is fetched).
       const hideCategoriesIfNeeded = (layers: SubsliceLayerEntry[]) => {
         const categorical = layers.filter(
-          l => l.initiallyHidden && l.legendEntry.categories?.length,
+          l =>
+            l.initiallyHidden &&
+            !requestedHiddenSliceIdsRef.current.has(l.sliceId) &&
+            l.legendEntry.categories?.length,
         );
         if (categorical.length === 0) return;
         setCategoryVisibility(prev => ({
@@ -577,12 +596,37 @@ const DeckMulti = (props: DeckMultiProps) => {
 
       loadLayersOrchestrated<SubsliceLayerEntry>(
         slices as { slice_id: number }[],
-        deckSlicesConfig,
+        deckSlicesConfig.map(config =>
+          config.initiallyHidden &&
+          requestedHiddenSliceIdsRef.current.has(config.sliceId)
+            ? { ...config, initiallyHidden: false, autozoom: false }
+            : config,
+        ),
         {
-          loadFn: (subslice, config) =>
-            loadSingleLayer(formData, subslice, config),
+          loadFn: (subslice, config) => {
+            const originalConfig = deckSlicesConfig.find(
+              candidate => candidate.sliceId === subslice.slice_id,
+            );
+            return loadSingleLayer(
+              formData,
+              subslice,
+              originalConfig?.initiallyHidden
+                ? { ...originalConfig, autozoom: false }
+                : config,
+            );
+          },
           onAutozoomComplete: autozoomLayers => {
-            setSubSlicesLayers(autozoomLayers);
+            setSubSlicesLayers(currentLayers => {
+              const autozoomSliceIds = new Set(
+                autozoomLayers.map(layer => layer.sliceId),
+              );
+              return [
+                ...currentLayers.filter(
+                  layer => !autozoomSliceIds.has(layer.sliceId),
+                ),
+                ...autozoomLayers,
+              ];
+            });
             hideCategoriesIfNeeded(autozoomLayers);
           },
           onEagerAppend: layer => {
@@ -649,6 +693,70 @@ const DeckMulti = (props: DeckMultiProps) => {
 
   const { height, width } = props;
 
+  const loadInitiallyHiddenLayer = useCallback(
+    async (sliceId: string) => {
+      const generation = loadGenerationRef.current;
+      const requestKey = `${generation}:${sliceId}`;
+      const numericSliceId = Number(sliceId);
+      const config = normalizedDeckSlices.find(
+        candidate => candidate.sliceId === numericSliceId,
+      );
+      const subslice = slicesData?.find(
+        candidate => String(candidate.slice_id) === sliceId,
+      );
+
+      if (
+        !config?.initiallyHidden ||
+        !subslice ||
+        subSlicesLayers.some(layer => String(layer.sliceId) === sliceId) ||
+        onDemandLoadsRef.current.has(requestKey)
+      ) {
+        return;
+      }
+
+      onDemandLoadsRef.current.add(requestKey);
+      setLoadingSliceIds(prev => ({ ...prev, [sliceId]: true }));
+
+      try {
+        const layer = await loadSingleLayer(props.formData, subslice, {
+          ...config,
+          autozoom: false,
+        });
+        if (loadGenerationRef.current !== generation) return;
+        if (layer) {
+          setSubSlicesLayers(prev =>
+            prev.some(entry => String(entry.sliceId) === sliceId)
+              ? prev
+              : [...prev, layer],
+          );
+        } else {
+          setLayerVisibility(prev => ({ ...prev, [sliceId]: false }));
+        }
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error(
+          `[GeoSet] Failed to load hidden layer for slice ${sliceId}:`,
+          error,
+        );
+        if (loadGenerationRef.current === generation) {
+          setLayerVisibility(prev => ({ ...prev, [sliceId]: false }));
+        }
+      } finally {
+        onDemandLoadsRef.current.delete(requestKey);
+        if (loadGenerationRef.current === generation) {
+          setLoadingSliceIds(prev => ({ ...prev, [sliceId]: false }));
+        }
+      }
+    },
+    [
+      loadSingleLayer,
+      normalizedDeckSlices,
+      props.formData,
+      slicesData,
+      subSlicesLayers,
+    ],
+  );
+
   // Toggle layer visibility callback (supports legend groups with multiple sliceIds)
   const handleToggleLayerVisibility = useCallback(
     (sliceIds: string[]) => {
@@ -700,8 +808,38 @@ const DeckMulti = (props: DeckMultiProps) => {
         ...prev,
         ...Object.fromEntries(sliceIds.map(id => [id, !isGroupVisible])),
       }));
+      if (!isGroupVisible) {
+        sliceIds.forEach(sliceId => {
+          const numericSliceId = Number(sliceId);
+          if (
+            normalizedDeckSlices.some(
+              config =>
+                config.sliceId === numericSliceId && config.initiallyHidden,
+            )
+          ) {
+            requestedHiddenSliceIdsRef.current.add(numericSliceId);
+          }
+          loadInitiallyHiddenLayer(sliceId).catch(error => {
+            // eslint-disable-next-line no-console
+            console.error(
+              `[GeoSet] Unexpected hidden-layer loading failure for slice ${sliceId}:`,
+              error,
+            );
+          });
+        });
+      } else {
+        sliceIds.forEach(sliceId => {
+          requestedHiddenSliceIdsRef.current.delete(Number(sliceId));
+        });
+      }
     },
-    [subSlicesLayers, categoryVisibility, layerVisibility],
+    [
+      subSlicesLayers,
+      categoryVisibility,
+      layerVisibility,
+      loadInitiallyHiddenLayer,
+      normalizedDeckSlices,
+    ],
   );
 
   // Toggle a single category within a slice
