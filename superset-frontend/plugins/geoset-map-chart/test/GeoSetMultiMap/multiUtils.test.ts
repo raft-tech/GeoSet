@@ -215,6 +215,29 @@ describe('loadLayersOrchestrated', () => {
     expect(onAutozoomComplete).toHaveBeenCalledWith(['layer-2']);
   });
 
+  it('does not request initially hidden layers until they are explicitly loaded', async () => {
+    const loadFn = jest.fn((subslice: { slice_id: number }) =>
+      Promise.resolve(`layer-${subslice.slice_id}`),
+    );
+    const onAutozoomComplete = jest.fn();
+
+    await loadLayersOrchestrated(
+      [{ slice_id: 1 }, { slice_id: 2 }],
+      [makeConfig(1), makeConfig(2, { initiallyHidden: true })],
+      {
+        loadFn,
+        onAutozoomComplete,
+        onEagerAppend: jest.fn(),
+        onLazyAppend: jest.fn(),
+        isStale: () => false,
+      },
+    );
+
+    expect(loadFn).toHaveBeenCalledTimes(1);
+    expect(loadFn).toHaveBeenCalledWith({ slice_id: 1 }, expect.anything());
+    expect(onAutozoomComplete).toHaveBeenCalledWith(['layer-1']);
+  });
+
   it('calls onAutozoomComplete with empty array when no autozoom layers exist', async () => {
     const onAutozoomComplete = jest.fn();
     const onEagerAppend = jest.fn();
@@ -474,10 +497,7 @@ describe('loadLayersOrchestrated', () => {
 
     await loadLayersOrchestrated(
       [{ slice_id: 1 }, { slice_id: 2 }],
-      [
-        makeConfig(1, { autozoom: false }),
-        makeConfig(2, { autozoom: false }),
-      ],
+      [makeConfig(1, { autozoom: false }), makeConfig(2, { autozoom: false })],
       {
         loadFn: (subslice: { slice_id: number }) =>
           Promise.resolve(`layer-${subslice.slice_id}`),

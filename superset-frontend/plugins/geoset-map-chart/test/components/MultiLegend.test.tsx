@@ -174,6 +174,57 @@ describe('MultiLegend', () => {
   });
 
   describe('layer visibility checkboxes', () => {
+    it('shows a load checkbox for a deferred hidden layer in a single-entry group', () => {
+      const onToggleLayerVisibility = jest.fn();
+      const { rerender } = renderWithTheme(
+        <MultiLegend
+          legendGroups={[
+            createLegendGroup({
+              entries: [
+                {
+                  sliceId: '1',
+                  legendEntry: createSimpleLegendEntry({
+                    legendName: 'Deferred Layer',
+                    deferred: true,
+                  }),
+                },
+              ],
+            }),
+          ]}
+          layerVisibility={{ '1': false }}
+          onToggleLayerVisibility={onToggleLayerVisibility}
+        />,
+      );
+
+      userEvent.click(screen.getByText('Legend'));
+      userEvent.click(
+        screen.getByRole('checkbox', { name: 'Load Deferred Layer' }),
+      );
+
+      expect(onToggleLayerVisibility).toHaveBeenCalledWith(['1']);
+
+      rerender(
+        <MultiLegend
+          legendGroups={[
+            createLegendGroup({
+              entries: [
+                {
+                  sliceId: '1',
+                  legendEntry: createSimpleLegendEntry({
+                    legendName: 'Deferred Layer',
+                    visibilityToggle: true,
+                  }),
+                },
+              ],
+            }),
+          ]}
+          layerVisibility={{ '1': true }}
+          onToggleLayerVisibility={onToggleLayerVisibility}
+        />,
+      );
+      expect(screen.getByRole('checkbox')).toBeInTheDocument();
+    });
+
     it('does not show group checkboxes when only one group', () => {
       renderWithTheme(
         <MultiLegend

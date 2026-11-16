@@ -102,11 +102,13 @@ The GeoSet map plugin is a Superset chart plugin built on [deck.gl](https://deck
 
 | Phase | Layers | Loading strategy | When the map canvas appears |
 |---|---|---|---|
-| **1 — Autozoom** | Non-lazy layers with `autozoom: true` | All load in parallel (`Promise.all`) | Canvas gates on this phase so the viewport is correct on first render (no jump) |
-| **2 — Eager** | Non-lazy layers with `autozoom: false` | All load in parallel (`Promise.all`), each appended individually as results arrive | Canvas is already visible |
-| **3 — Lazy** | Layers with `lazyLoading: true` | Sequential batches of `LAZY_BATCH_SIZE` (2) | Canvas is already visible |
+| **1 — Autozoom** | Initially visible, non-lazy layers with `autozoom: true` | All load in parallel (`Promise.all`) | Canvas gates on this phase so the viewport is correct on first render (no jump) |
+| **2 — Eager** | Initially visible, non-lazy layers with `autozoom: false` | All load in parallel (`Promise.all`), each appended individually as results arrive | Canvas is already visible |
+| **3 — Lazy** | Initially visible layers with `lazyLoading: true` | Sequential batches of `LAZY_BATCH_SIZE` (2) | Canvas is already visible |
 
 Phase 2 and 3 both append layers incrementally, but phase 3 rate-limits concurrency to avoid overwhelming the backend when many layers are configured. If no autozoom layers exist, the canvas renders immediately after metadata fetch and phases 2/3 begin right away.
+
+Layers marked `initiallyHidden` are excluded from startup loading and autozoom. Their data is requested only when the user enables them from the legend; on-demand loads do not change the viewport.
 
 Each phase checks a staleness flag before proceeding. When the user changes a filter or the slice list changes, the generation counter increments and any in-flight chain aborts before the next phase or batch begins.
 

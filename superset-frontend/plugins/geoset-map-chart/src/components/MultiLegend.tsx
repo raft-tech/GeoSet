@@ -242,6 +242,21 @@ const LegendEntryContent: React.FC<{
     );
   }
 
+  if (legendEntry.deferred) {
+    return (
+      <CategoryRow>
+        <VisibilityCheckbox
+          type="checkbox"
+          checked={isVisible}
+          onChange={onToggleVisibility}
+          aria-label={`Load ${legendEntry.legendName}`}
+        />
+        <MapIcon fontSize="small" />
+        <div>{legendEntry.legendName}</div>
+      </CategoryRow>
+    );
+  }
+
   const { fill, stroke } = getDefaultColors(legendEntry);
 
   /** Render a single-value size swatch (used when startSize === endSize). */
@@ -573,7 +588,10 @@ export const MultiLegend: React.FC<MultiLegendProps> = ({
                           sliceId={sliceId}
                           legendEntry={legendEntry}
                           isVisible={entryVisible}
-                          showEntryCheckbox={entries.length > 1}
+                          showEntryCheckbox={
+                            entries.length > 1 ||
+                            legendEntry.visibilityToggle === true
+                          }
                           onToggleVisibility={() => {
                             setOptimisticVisibility(prev => ({
                               ...prev,
